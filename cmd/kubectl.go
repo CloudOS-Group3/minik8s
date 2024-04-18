@@ -2,22 +2,23 @@ package main
 
 import (
 	"fmt"
+	"minik8s/pkg/kubectl/cmd"
 	"os"
-	
+
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use: "kubectl",
+		Use:  "kubectl",
 		Long: "Welcome to use kubectl CLI tool!",
-		Run: nil,
+		Run:  nil,
 	}
 
-	rootCmd.AddCommand(getCmd())
-	rootCmd.AddCommand(applyCmd())
-	rootCmd.AddCommand(deleteCmd())
-	rootCmd.AddCommand(describeCmd())
+	rootCmd.AddCommand(cmd.GetCmd())
+	rootCmd.AddCommand(cmd.ApplyCmd())
+	rootCmd.AddCommand(cmd.DeleteCmd())
+	rootCmd.AddCommand(cmd.DescribeCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

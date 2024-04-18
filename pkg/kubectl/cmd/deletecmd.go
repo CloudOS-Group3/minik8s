@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func deleteCmd() *cobra.Command {
+func DeleteCmd() *cobra.Command {
 
 	var deleteCmd, deletePodCmd, deleteDeploymentCmd, deleteServiceCmd *cobra.Command
 

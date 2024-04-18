@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func describeCmd() *cobra.Command {
+func DescribeCmd() *cobra.Command {
 
 	var describeCmd, describePodCmd, describeDeploymentCmd, describeServiceCmd, describeNodeCmd *cobra.Command
 

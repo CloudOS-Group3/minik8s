@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func getCmd() *cobra.Command {
-	
+func GetCmd() *cobra.Command {
+
 	var getCmd, getPodCmd, getDeploymentCmd, getServiceCmd, getNodeCmd *cobra.Command
 
 	// getCmd is the root of the other four commands
@@ -20,25 +20,25 @@ func getCmd() *cobra.Command {
 	getPodCmd = &cobra.Command{
 		Use:   "pod",
 		Short: "get pod",
-		Run: getPodCmdHandler,
+		Run:   getPodCmdHandler,
 	}
 
 	getDeploymentCmd = &cobra.Command{
 		Use:   "deployment",
 		Short: "get deployment",
-		Run: getDeploymentCmdHandler,
+		Run:   getDeploymentCmdHandler,
 	}
 
 	getServiceCmd = &cobra.Command{
 		Use:   "service",
 		Short: "get service",
-		Run: getServiceCmdHandler,
+		Run:   getServiceCmdHandler,
 	}
 
 	getNodeCmd = &cobra.Command{
 		Use:   "node",
 		Short: "get node",
-		Run: getNodeCmdHandler,
+		Run:   getNodeCmdHandler,
 	}
 
 	// support -a flag, but the implementation could be troublesome
@@ -54,7 +54,6 @@ func getCmd() *cobra.Command {
 
 	return getCmd
 }
-
 
 // all the handlers below should be replaced by real k8s logic later
 func getPodCmdHandler(cmd *cobra.Command, args []string) {

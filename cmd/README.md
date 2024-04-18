@@ -33,6 +33,7 @@ kubectl delete service \<service_name\>
 如要使用上述命令，需要先构建所有文件
 
 ```
-go build kubectl.go getcmd.go deletecmd.go describecmd.go applycmd.go
+cd cmd
+go run kubectl.go
 ```
 
