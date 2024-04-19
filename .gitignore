@@ -6,3 +6,5 @@
 
 # windows executable files
 **/*.exe
+
+build

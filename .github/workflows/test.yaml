@@ -1,0 +1,27 @@
+name: minik8s
+
+on:
+    push:
+        branches: ["master", "dev", "feature/*"]
+
+    pull_request:
+        branches: ["master", "dev", "feature/*"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
+
+            - name: Set up Go
+              uses: actions/setup-go@v2
+              with:
+                  go-version: "1.17"
+
+            - name: Run tests
+              run: go test ./...
+
+            - name: Build
+              run: go build -o ./build/kubectl ./cmd
