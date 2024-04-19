@@ -1,4 +1,4 @@
-name: minik8s
+name: test all cases and build
 
 on:
     push:
