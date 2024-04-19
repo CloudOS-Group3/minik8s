@@ -20,5 +20,8 @@ jobs:
         with:
           go-version: 1.21
 
+      - name: Set test file permission
+        run: chmod +x ./test/image_manager_test.go
+
       - name: Run Tests
         run: go test ./test/image_manager_test.go
