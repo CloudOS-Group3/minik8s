@@ -18,7 +18,7 @@ type Resource struct {
 		Replicas int `yaml:"replicas"`
 		Selector struct {
 			MatchLabels struct {
-				App string `yaml:"nginx"`
+				App string `yaml:"app"`
 			} `yaml:"matchLabels"`
 		} `yaml:"selector"`
 	} `yaml:"spec"`
@@ -37,6 +37,19 @@ func ApplyCmd() *cobra.Command {
 	return applyCmd
 }
 
+func parseYamlFileToResource(file *os.File) *Resource {
+	decoder := yaml.NewDecoder(file)
+	resource := &Resource{}
+
+	err := decoder.Decode(resource)
+	if err != nil {
+		fmt.Println("Error decoding yaml:", err)
+		return nil
+	}
+	fmt.Printf("Decode yaml successfully, resource:%+v\n", resource)
+	return resource
+}
+
 func applyCmdHandler(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("file")
 	if err != nil {
@@ -52,15 +65,7 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 
 	defer file.Close()
 
-	decoder := yaml.NewDecoder(file)
-
-	resource := &Resource{}
-	err = decoder.Decode(resource)
-	if err != nil {
-		fmt.Println("Error decoding yaml:", err)
-	}
-
-	fmt.Printf("Decode yaml successfully, resource:%+v\n", resource)
+	resource := parseYamlFileToResource(file)
 
 	switch resource.Kind {
 	case "Pod":
