@@ -1,0 +1,24 @@
+name: Go Test
+
+on:
+  push:
+    branches:
+      - dev
+      - feature/*
+
+jobs:
+  test:
+    name: Test Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21
+
+      - name: Run Tests
+        run: go test ./test/image_manager_test.go
