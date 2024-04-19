@@ -20,8 +20,8 @@ type Resource struct {
 			MatchLabels struct {
 				App string `yaml:"nginx"`
 			} `yaml:"matchLabels"`
-		} `yaml:"spec"`
-	}
+		} `yaml:"selector"`
+	} `yaml:"spec"`
 }
 
 func ApplyCmd() *cobra.Command {
@@ -54,13 +54,13 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 
 	decoder := yaml.NewDecoder(file)
 
-	var resource Resource
-	err = decoder.Decode(&resource)
+	resource := &Resource{}
+	err = decoder.Decode(resource)
 	if err != nil {
 		fmt.Println("Error decoding yaml:", err)
 	}
 
-	fmt.Println("Decode yaml successfully, resource:", resource)
+	fmt.Printf("Decode yaml successfully, resource:%+v\n", resource)
 
 	switch resource.Kind {
 	case "Pod":
@@ -79,22 +79,22 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 
 }
 
-func applyPodHandler(resource Resource) {
+func applyPodHandler(resource *Resource) {
 	fmt.Println("creating or updating pod")
 }
 
-func applyServiceHandler(resource Resource) {
+func applyServiceHandler(resource *Resource) {
 	fmt.Println("creating or updating service")
 }
 
-func applyDeploymentHandler(resource Resource) {
+func applyDeploymentHandler(resource *Resource) {
 	fmt.Println("creating or updating deployment")
 }
 
-func applyReplicaSetHandler(resource Resource) {
+func applyReplicaSetHandler(resource *Resource) {
 	fmt.Println("creating or updating replicaset")
 }
 
-func applyStatefulSetHandler(resource Resource) {
+func applyStatefulSetHandler(resource *Resource) {
 	fmt.Println("creating or updating statefulset")
 }
