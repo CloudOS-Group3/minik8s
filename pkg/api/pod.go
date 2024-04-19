@@ -114,3 +114,9 @@ type Volume struct {
 	// HostPath, a directory on the host.
 	HostPath string `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
 }
+
+const (
+	PullPolicyAlways       = "Always"
+	PullPolicyIfNotPresent = "IfNotPresent"
+	PullPolicyNever        = "Never"
+)
