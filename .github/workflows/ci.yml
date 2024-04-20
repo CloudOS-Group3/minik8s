@@ -24,4 +24,4 @@ jobs:
 #        run: chmod +x ./test/image_manager_test.go
 
       - name: Run Tests
-        run: sudo go test ./test/..
+        run: sudo go test ./test/...
