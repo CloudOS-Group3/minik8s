@@ -11,8 +11,8 @@ type PodManager struct {
 }
 
 func (pm *PodManager) CreatePod(pod *api.Pod) {
-	for _, container := range pod.Spec.Containers {
-		pm.ContainerManager.CreateContainer(container)
+	for _, container_ := range pod.Spec.Containers {
+		pm.ContainerManager.CreateContainer(container_)
 	}
 }
 
