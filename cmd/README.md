@@ -37,3 +37,5 @@ cd cmd
 go run kubectl.go
 ```
 
+kubectl apply -f \<filename\>
+已经可以使用，请正确指定yaml文件的路径
