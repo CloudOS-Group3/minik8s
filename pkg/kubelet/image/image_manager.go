@@ -13,9 +13,9 @@ type ImageManager struct {
 
 // PullImage pulls the image from the registry.
 // reference: https://www.rectcircle.cn/posts/containerd-2-client-core-process/
-func (im *ImageManager) PullImage(imageName string, pullPolicy string, client *containerd.Client) containerd.Image {
+func (im *ImageManager) PullImage(imageName string, pullPolicy string, client *containerd.Client, namespace string) containerd.Image {
 
-	ctx := namespaces.WithNamespace(context.Background(), "default")
+	ctx := namespaces.WithNamespace(context.Background(), namespace)
 	switch pullPolicy {
 	case api.PullPolicyAlways:
 		// Always pull the image
