@@ -2,12 +2,18 @@ package pod_manager
 
 import (
 	"minik8s/pkg/api"
-	"minik8s/pkg/kubelet/image"
+	"minik8s/pkg/kubelet/container"
 )
 
 type PodManager struct {
-	podByName    map[string]*api.Pod
-	ImageManager *image_manager.ImageManager
+	podByName        map[string]*api.Pod
+	ContainerManager *container.ContainerManager
+}
+
+func (pm *PodManager) CreatePod(pod *api.Pod) {
+	for _, container := range pod.Spec.Containers {
+		pm.ContainerManager.CreateContainer(container)
+	}
 }
 
 //func (pm *PodManager) GetPodByName(name string) *api.Pod {

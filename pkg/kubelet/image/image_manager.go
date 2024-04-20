@@ -1,4 +1,4 @@
-package image_manager
+package image
 
 import (
 	"context"
@@ -13,13 +13,7 @@ type ImageManager struct {
 
 // PullImage pulls the image from the registry.
 // reference: https://www.rectcircle.cn/posts/containerd-2-client-core-process/
-func (im *ImageManager) PullImage(imageName string, pullPolicy string) containerd.Image {
-	client, err := containerd.New("/run/containerd/containerd.sock") // default address
-	if err != nil {
-		log.Printf("Failed to create containerd client: %v", err)
-		return nil
-	}
-	defer client.Close()
+func (im *ImageManager) PullImage(imageName string, pullPolicy string, client *containerd.Client) containerd.Image {
 
 	ctx := namespaces.WithNamespace(context.Background(), "default")
 	switch pullPolicy {
