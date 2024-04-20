@@ -1,0 +1,27 @@
+name: Go Test
+
+on:
+  push:
+    branches:
+      - dev
+      - feature/*
+
+jobs:
+  test:
+    name: Test Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.22.2
+
+#      - name: Set test file permission
+#        run: chmod +x ./test/image_manager_test.go
+
+      - name: Run Tests
+        run: sudo go test ./test/...
