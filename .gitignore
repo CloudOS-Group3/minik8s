@@ -3,3 +3,8 @@
 
 # jetbrain related files
 .idea
+
+# windows executable files
+**/*.exe
+
+build
