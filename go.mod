@@ -1,6 +1,6 @@
 module minik8s
 
-go 1.22
+go 1.22.2
 
 require (
 	github.com/containerd/containerd v1.7.15
