@@ -90,7 +90,10 @@ func (*ContainerManager) StartContainer(container containerd.Container, ctx cont
 			log.Printf("Container %s already started", container.ID())
 			return true
 		}
-		tasks.Delete(ctx, containerd.WithProcessKill)
+		_, err := tasks.Delete(ctx, containerd.WithProcessKill)
+		if err != nil {
+			return false
+		}
 
 		//// why it can't start a stopped task?
 		//err :=  tasks.Start(ctx)

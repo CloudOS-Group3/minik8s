@@ -2,13 +2,12 @@ package pod
 
 import (
 	"minik8s/pkg/api"
-	"minik8s/pkg/kubelet/pod"
 	"testing"
 )
 
 func TestCreatePod(t *testing.T) {
 	// create pod manager
-	pm := pod.NewPodManager()
+	pm := NewPodManager()
 
 	// create pod
 	newPod := &api.Pod{

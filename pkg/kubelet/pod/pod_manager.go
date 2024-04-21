@@ -1,7 +1,9 @@
 package pod
 
 import (
+	"context"
 	"github.com/containerd/containerd"
+	"github.com/containerd/containerd/namespaces"
 	"log"
 	"minik8s/pkg/api"
 	"minik8s/pkg/kubelet/container"
@@ -31,7 +33,8 @@ func (pm *PodManager) CreatePod(pod *api.Pod) bool {
 		log.Printf("Failed to create pause container for pod %s", pod.Metadata.Name)
 		return false
 	}
-	if pm.ContainerManager.StartContainerById(pause_container.ID(), pod.Metadata.NameSpace) == false {
+	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
+	if pm.ContainerManager.StartContainer(pause_container, ctx) == false {
 		return false
 	}
 
@@ -41,7 +44,7 @@ func (pm *PodManager) CreatePod(pod *api.Pod) bool {
 		if container_ == nil {
 			log.Printf("Failed to create container %s", container_.ID())
 		}
-		if pm.ContainerManager.StartContainerById(container_.ID(), pod.Metadata.NameSpace) == false {
+		if pm.ContainerManager.StartContainer(container_, ctx) == false {
 			return false
 		}
 	}
