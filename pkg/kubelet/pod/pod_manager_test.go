@@ -35,4 +35,9 @@ func TestCreatePod(t *testing.T) {
 		t.Fatalf("Failed to create pod")
 	}
 	pm.ShowPodInfo("test-pod")
+
+	// remove pod
+	if pm.DeletePodByName("test-pod") == false {
+		t.Fatalf("Failed to remove pod")
+	}
 }
