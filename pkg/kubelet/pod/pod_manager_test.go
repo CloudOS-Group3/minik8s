@@ -2,13 +2,12 @@ package pod
 
 import (
 	"minik8s/pkg/api"
-	"minik8s/pkg/kubelet/pod"
 	"testing"
 )
 
 func TestCreatePod(t *testing.T) {
 	// create pod manager
-	pm := pod.NewPodManager()
+	pm := NewPodManager()
 
 	// create pod
 	newPod := &api.Pod{
@@ -36,4 +35,9 @@ func TestCreatePod(t *testing.T) {
 		t.Fatalf("Failed to create pod")
 	}
 	pm.ShowPodInfo("test-pod")
+
+	// remove pod
+	if pm.DeletePodByName("test-pod") == false {
+		t.Fatalf("Failed to remove pod")
+	}
 }

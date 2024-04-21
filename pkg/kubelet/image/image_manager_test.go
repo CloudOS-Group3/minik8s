@@ -2,13 +2,12 @@ package image
 
 import (
 	"minik8s/pkg/api"
-	"minik8s/pkg/kubelet/image"
 	"minik8s/pkg/util"
 	"testing"
 )
 
 func TestImageManager(t *testing.T) {
-	im := image.ImageManager{}
+	im := ImageManager{}
 	client, _ := util.CreateClient()
 	if client == nil {
 		t.Fatalf("Failed to create containerd client")
