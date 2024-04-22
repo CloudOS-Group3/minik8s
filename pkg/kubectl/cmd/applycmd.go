@@ -51,7 +51,7 @@ func parseYamlFileToResource(file *os.File) *Resource {
 
 	err := decoder.Decode(resource)
 	if err != nil {
-		log.Error("Error decoding yaml:", err)
+		log.Error("Error decoding yaml: %s", err.Error())
 		return nil
 	}
 	log.Debug("Decode yaml successfully, resource:%+v\n", resource)
