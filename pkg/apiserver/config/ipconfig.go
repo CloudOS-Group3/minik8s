@@ -1,5 +1,7 @@
 package config
 
+import "strconv"
+
 const (
 	local      = true
 	localhost  = "localhost"
@@ -10,8 +12,16 @@ const (
 
 func GetUrlPrefix() string {
 	if local {
-		return protocol + localhost + ":" + string(port)
+		return protocol + localhost + ":" + strconv.Itoa(port)
 	} else {
-		return protocol + remotehost + ":" + string(port)
+		return protocol + remotehost + ":" + strconv.Itoa(port)
+	}
+}
+
+func GetHostAndPort() (string, int) {
+	if local {
+		return localhost, port
+	} else {
+		return remotehost, port
 	}
 }
