@@ -33,9 +33,15 @@ func (server *apiServer) Run() {
 func (server *apiServer) bind() {
 
 	server.router.GET(config.NodesURL, handlers.GetNodes)
-	server.router.POST(config.NodesURL, handlers.PostNodes)
+	server.router.POST(config.NodesURL, handlers.AddNode)
 
 	server.router.GET(config.NodeURL, handlers.GetNode)
 	server.router.DELETE(config.NodeURL, handlers.DeleteNode)
 	server.router.PUT(config.NodeURL, handlers.PutNode)
+
+	server.router.GET(config.PodsURL, handlers.GetPods)
+	server.router.GET(config.PodURL, handlers.GetPod)
+	server.router.POST(config.PodsURL, handlers.AddPod)
+	server.router.PUT(config.PodURL, handlers.UpdatePod)
+	server.router.DELETE(config.PodURL, handlers.DeletePod)
 }

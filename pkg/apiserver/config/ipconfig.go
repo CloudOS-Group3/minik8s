@@ -4,13 +4,14 @@ const (
 	local      = true
 	localhost  = "localhost"
 	remotehost = "192.168.1.1"
-	port       = 8080
+	port       = 6443
+	protocol   = "http://"
 )
 
-func GetHostAndPort() (string, int) {
+func GetUrlPrefix() string {
 	if local {
-		return localhost, port
+		return protocol + localhost + ":" + string(port)
 	} else {
-		return remotehost, port
+		return protocol + remotehost + ":" + string(port)
 	}
 }

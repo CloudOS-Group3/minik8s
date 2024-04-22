@@ -18,6 +18,12 @@ var (
 	red    = color.New(color.FgRed).SprintFunc()
 )
 
+// set this value to output all log.Debug()
+const isDebug = true
+
+// usage; you can use these log functions the same way you use fmt.Printf
+// the differece is that all the functions below will add a new line at the end
+
 func Info(format string, args ...interface{}) {
 
 	t := time.Now().Format("2006-01-02 15:04:05")
@@ -40,6 +46,10 @@ func Info(format string, args ...interface{}) {
 }
 
 func Debug(format string, args ...interface{}) {
+
+	if !isDebug {
+		return
+	}
 
 	t := time.Now().Format("2006-01-02 15:04:05")
 	pc, targetPath, line, _ := runtime.Caller(1)

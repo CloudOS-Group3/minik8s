@@ -1,8 +1,16 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"minik8s/pkg/api"
+	"minik8s/pkg/apiserver/config"
+	"minik8s/util/log"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -43,10 +51,10 @@ func parseYamlFileToResource(file *os.File) *Resource {
 
 	err := decoder.Decode(resource)
 	if err != nil {
-		fmt.Println("Error decoding yaml:", err)
+		log.Error("Error decoding yaml:", err)
 		return nil
 	}
-	fmt.Printf("Decode yaml successfully, resource:%+v\n", resource)
+	log.Debug("Decode yaml successfully, resource:%+v\n", resource)
 	return resource
 }
 
@@ -67,39 +75,78 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 
 	resource := parseYamlFileToResource(file)
 
+	fd, err := os.Open(path)
+
+	if err != nil {
+		log.Error("error open file")
+		return
+	}
+
+	defer fd.Close()
+
+	data, err := io.ReadAll(fd)
+
+	if err != nil {
+		log.Error("error read all data")
+	}
+
 	switch resource.Kind {
 	case "Pod":
-		applyPodHandler(resource)
+		applyPodHandler(data)
 	case "Service":
-		applyServiceHandler(resource)
+		applyServiceHandler(data)
 	case "Deployment":
-		applyDeploymentHandler(resource)
+		applyDeploymentHandler(data)
 	case "ReplicaSet":
-		applyReplicaSetHandler(resource)
+		applyReplicaSetHandler(data)
 	case "StatefulSet":
-		applyStatefulSetHandler(resource)
+		applyStatefulSetHandler(data)
 	default:
 		fmt.Println("Unknown resource kind")
 	}
 
 }
 
-func applyPodHandler(resource *Resource) {
-	fmt.Println("creating or updating pod")
+func applyPodHandler(data []byte) {
+	log.Info("Creating or updating pod")
+	log.Debug("data is %v", data)
+	pod := &api.Pod{}
+	err := yaml.Unmarshal(data, pod)
+	if err != nil {
+		log.Error("error marshal yaml")
+		return
+	}
+	log.Debug("%+v\n", pod)
+
+	URL := strings.Replace(config.PodsURL, config.NamespacePlaceholder, "default", -1)
+	json, err := json.Marshal(pod)
+	log.Debug("URL = %v", URL)
+	response, err := http.Post(config.GetUrlPrefix()+URL, "application/json", bytes.NewBuffer(json))
+	if err != nil {
+		log.Error("error http post")
+		return
+	}
+
+	if response.StatusCode != http.StatusOK {
+		log.Warn("post may have failed, because the status code is not ok")
+		return
+	}
+
+	log.Info("apply pod ok")
 }
 
-func applyServiceHandler(resource *Resource) {
+func applyServiceHandler(data []byte) {
 	fmt.Println("creating or updating service")
 }
 
-func applyDeploymentHandler(resource *Resource) {
+func applyDeploymentHandler(date []byte) {
 	fmt.Println("creating or updating deployment")
 }
 
-func applyReplicaSetHandler(resource *Resource) {
+func applyReplicaSetHandler(data []byte) {
 	fmt.Println("creating or updating replicaset")
 }
 
-func applyStatefulSetHandler(resource *Resource) {
+func applyStatefulSetHandler(data []byte) {
 	fmt.Println("creating or updating statefulset")
 }
