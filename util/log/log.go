@@ -27,7 +27,7 @@ const isDebug = true
 func Info(format string, args ...interface{}) {
 
 	t := time.Now().Format("2006-01-02 15:04:05")
-	pc, targetPath, line, _ := runtime.Caller(1)
+	_, targetPath, line, _ := runtime.Caller(1)
 
 	absPath, err := os.Getwd()
 	if err != nil {
@@ -39,7 +39,7 @@ func Info(format string, args ...interface{}) {
 		return
 	}
 
-	prefix := fmt.Sprintf("%s %s:%s:%d:", t, relPath, runtime.FuncForPC(pc).Name(), line)
+	prefix := fmt.Sprintf("%s %s:%d:", t, relPath, line)
 	content := fmt.Sprintf(format, args...)
 
 	fmt.Println(blue(prefix), white(content))
@@ -52,7 +52,7 @@ func Debug(format string, args ...interface{}) {
 	}
 
 	t := time.Now().Format("2006-01-02 15:04:05")
-	pc, targetPath, line, _ := runtime.Caller(1)
+	_, targetPath, line, _ := runtime.Caller(1)
 
 	absPath, err := os.Getwd()
 	if err != nil {
@@ -64,7 +64,7 @@ func Debug(format string, args ...interface{}) {
 		return
 	}
 
-	prefix := fmt.Sprintf("%s %s:%s:%d:", t, relPath, runtime.FuncForPC(pc).Name(), line)
+	prefix := fmt.Sprintf("%s %s:%d:", t, relPath, line)
 	content := fmt.Sprintf(format, args...)
 
 	fmt.Println(green(prefix), white(content))
@@ -73,7 +73,7 @@ func Debug(format string, args ...interface{}) {
 func Warn(format string, args ...interface{}) {
 
 	t := time.Now().Format("2006-01-02 15:04:05")
-	pc, targetPath, line, _ := runtime.Caller(1)
+	_, targetPath, line, _ := runtime.Caller(1)
 
 	absPath, err := os.Getwd()
 	if err != nil {
@@ -85,7 +85,7 @@ func Warn(format string, args ...interface{}) {
 		return
 	}
 
-	prefix := fmt.Sprintf("%s %s:%s:%d:", t, relPath, runtime.FuncForPC(pc).Name(), line)
+	prefix := fmt.Sprintf("%s %s:%d:", t, relPath, line)
 	content := fmt.Sprintf(format, args...)
 
 	fmt.Println(yellow(prefix), white(content))
@@ -94,7 +94,7 @@ func Warn(format string, args ...interface{}) {
 func Error(format string, args ...interface{}) {
 
 	t := time.Now().Format("2006-01-02 15:04:05")
-	pc, targetPath, line, _ := runtime.Caller(1)
+	_, targetPath, line, _ := runtime.Caller(1)
 
 	absPath, err := os.Getwd()
 	if err != nil {
@@ -106,7 +106,7 @@ func Error(format string, args ...interface{}) {
 		return
 	}
 
-	prefix := fmt.Sprintf("%s %s:%s:%d:", t, relPath, runtime.FuncForPC(pc).Name(), line)
+	prefix := fmt.Sprintf("%s %s:%d:", t, relPath, line)
 	content := fmt.Sprintf(format, args...)
 
 	fmt.Println(red(prefix), white(content))
@@ -115,7 +115,7 @@ func Error(format string, args ...interface{}) {
 func Fatal(format string, args ...interface{}) {
 
 	t := time.Now().Format("2006-01-02 15:04:05")
-	pc, targetPath, line, _ := runtime.Caller(1)
+	_, targetPath, line, _ := runtime.Caller(1)
 
 	absPath, err := os.Getwd()
 	if err != nil {
@@ -127,7 +127,7 @@ func Fatal(format string, args ...interface{}) {
 		return
 	}
 
-	prefix := fmt.Sprintf("%s %s:%s:%d:", t, relPath, runtime.FuncForPC(pc).Name(), line)
+	prefix := fmt.Sprintf("%s %s:%d:", t, relPath, line)
 	content := fmt.Sprintf(format, args...)
 
 	fmt.Println(red(prefix), white(content))

@@ -73,9 +73,10 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 			log.Error("error http get, %s", err.Error())
 			return
 		}
-		var pod api.Pod
+		pod := &api.Pod{}
+		log.Info("%+v", response)
 		decoder := json.NewDecoder(response.Body)
-		err = decoder.Decode(&pod)
+		err = decoder.Decode(pod)
 		if err != nil {
 			log.Error("error decode response body")
 			return
