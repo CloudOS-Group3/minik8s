@@ -7,8 +7,13 @@ import (
 )
 
 func (store Store) PutPod(value api.Pod) bool {
-	// get name of the pod
-	key := value.Metadata.Name
+	// generate key
+	key := ""
+	if value.Metadata.NameSpace == "" {
+		key = "/registry/pods/default/" + value.Metadata.Name
+	} else {
+		key = "/registry/pods/" + value.Metadata.NameSpace + "/" + value.Metadata.Name
+	}
 
 	// check whether the name is already exist
 	res := store.GetEtcdPair(key)
@@ -28,9 +33,14 @@ func (store Store) PutPod(value api.Pod) bool {
 	return store.PutEtcdPair(key, string(jsonValue))
 }
 
-func (store Store) GetPod(name string) (api.Pod, bool) {
-	// we use name as key
-	key := name
+func (store Store) GetPod(namespace, name string) (api.Pod, bool) {
+	// generate key
+	key := ""
+	if namespace == "" {
+		key = "/registry/pods/default/" + name
+	} else {
+		key = "/registry/pods/" + namespace + "/" + name
+	}
 
 	// get json in etcd
 	res := store.GetEtcdPair(key)
@@ -51,8 +61,14 @@ func (store Store) GetPod(name string) (api.Pod, bool) {
 	return pod, true
 }
 
-func (store Store) DeletePod(name string) bool {
-	key := name
+func (store Store) DeletePod(namespace, name string) bool {
+	// generate key
+	key := ""
+	if namespace == "" {
+		key = "/registry/pods/default/" + name
+	} else {
+		key = "/registry/pods/" + namespace + "/" + name
+	}
 
 	// check whether key is exist
 	res := store.GetEtcdPair(key)

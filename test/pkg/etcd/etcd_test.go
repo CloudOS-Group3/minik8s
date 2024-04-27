@@ -33,15 +33,15 @@ func TestEtcd(t *testing.T) {
 		t.Errorf("etcd put pod fail")
 	}
 
-	pod, res := etcd.EtcdStore.GetPod("test-pod")
+	pod, res := etcd.EtcdStore.GetPod("default", "test-pod")
 	if res != true {
 		t.Errorf("etcd get pod fail")
 	}
-	if pod.Metadata.Name != "test-pod" {
+	if pod.Metadata.Name != "test-pod" && pod.Metadata.NameSpace != "default" {
 		t.Errorf("etcd get pod fail")
 	}
 
-	res = etcd.EtcdStore.DeletePod("test-pod")
+	res = etcd.EtcdStore.DeletePod("default", "test-pod")
 	if res != true {
 		t.Errorf("etcd delete pod fail")
 	}
