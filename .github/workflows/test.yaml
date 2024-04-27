@@ -1,4 +1,4 @@
-name: test all cases and build
+name: test all cases
 
 on:
     push:
@@ -22,6 +22,3 @@ jobs:
 
             - name: Run tests
               run: sudo go test ./...
-
-            - name: Build kubectl
-              run: sudo go build -o ./build/kubectl ./cmd
