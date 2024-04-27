@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"minik8s/pkg/api"
+	"minik8s/pkg/apiserver/config"
 	"minik8s/util/log"
 	"net/http"
 
@@ -11,31 +12,40 @@ import (
 // all of the following handlers need to call etcd
 
 func GetNodes(context *gin.Context) {
-	// get info of all nodes
+	log.Info("received get nodes request")
 }
 
 func AddNode(context *gin.Context) {
-	// add a new node into etcd
+	log.Info("received add node request")
 }
 
 func GetNode(context *gin.Context) {
-	// get info of a node
+	log.Info("received get node request")
+	name := context.Param(config.NameParam)
+
+	if name == "" {
+		log.Error("node name empty")
+		return
+	}
+
+	// todo: should query from etcd here
+	// and we dont have node object yet...
+
+	context.JSON(http.StatusOK, gin.H{
+		"data": "",
+	})
 }
 
 func DeleteNode(context *gin.Context) {
-	// delete a node
+	log.Info("received delete node request")
 }
 
-func PutNode(context *gin.Context) {
-	// change the data of a node
+func UpdateNode(context *gin.Context) {
+	log.Info("received udpate node request")
 }
 
 func GetPods(context *gin.Context) {
 	log.Info("received get pods request")
-}
-
-func GetPod(context *gin.Context) {
-	log.Info("received get pod request")
 }
 
 func AddPod(context *gin.Context) {
@@ -51,9 +61,33 @@ func AddPod(context *gin.Context) {
 		})
 	}
 	log.Debug("new pod is: %+v", newPod)
-	
+
 	// need to interact with etcd
 
+}
+
+func GetPod(context *gin.Context) {
+	log.Info("received get pod request")
+
+	name := context.Param(config.NameParam)
+	namespace := context.Param(config.NamespaceParam)
+
+	if name == "" {
+		log.Error("pod name empty")
+		return
+	}
+
+	if namespace == "" {
+		log.Error("namespace empty")
+		return
+	}
+
+	pod := &api.Pod{}
+	// todo: should query from etcd here
+
+	context.JSON(http.StatusOK, gin.H{
+		"data": *pod,
+	})
 }
 
 func UpdatePod(context *gin.Context) {
