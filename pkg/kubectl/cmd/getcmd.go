@@ -1,7 +1,12 @@
 package cmd
 
 import (
-	"fmt"
+	"encoding/json"
+	"minik8s/pkg/api"
+	"minik8s/pkg/apiserver/config"
+	"minik8s/util/log"
+	"net/http"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -57,33 +62,56 @@ func GetCmd() *cobra.Command {
 
 // all the handlers below should be replaced by real k8s logic later
 func getPodCmdHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("getting pod")
-	all, _ := cmd.Flags().GetBool("all")
-	if all {
-		fmt.Println("getting all pod")
+
+	for _, podName := range args {
+		log.Debug("%v", podName)
+		URL := config.PodURL
+		URL = strings.Replace(URL, config.NamePlaceholder, podName, -1)
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		response, err := http.Get(config.GetUrlPrefix() + URL)
+		if err != nil {
+			log.Error("error http get, %s", err.Error())
+			return
+		}
+		pod := &api.Pod{}
+		log.Debug("%+v", response.Body)
+		decoder := json.NewDecoder(response.Body)
+		err = decoder.Decode(pod)
+		if err != nil {
+			log.Error("error decode response body")
+			return
+		}
+		log.Debug("%v", pod)
 	}
 }
 
 func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("getting deployment")
-	all, _ := cmd.Flags().GetBool("all")
-	if all {
-		fmt.Println("getting all deployment")
-	}
+
 }
 
 func getServiceCmdHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("getting service")
-	all, _ := cmd.Flags().GetBool("all")
-	if all {
-		fmt.Println("getting all service")
-	}
+
 }
 
 func getNodeCmdHandler(cmd *cobra.Command, args []string) {
-	fmt.Println("getting node")
-	all, _ := cmd.Flags().GetBool("all")
-	if all {
-		fmt.Println("getting all node")
+	for _, nodeName := range args {
+		log.Debug("%v", nodeName)
+		URL := config.NodeURL
+		URL = strings.Replace(URL, config.NamePlaceholder, nodeName, -1)
+		response, err := http.Get(config.GetUrlPrefix() + URL)
+		if err != nil {
+			log.Error("error http get, %s", err.Error())
+			return
+		}
+		// todo replace with node object
+		pod := &api.Pod{}
+		log.Debug("%+v", response.Body)
+		decoder := json.NewDecoder(response.Body)
+		err = decoder.Decode(pod)
+		if err != nil {
+			log.Error("error decode response body")
+			return
+		}
+		log.Debug("%v", pod)
 	}
 }
