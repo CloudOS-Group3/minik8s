@@ -1,10 +1,25 @@
 package kafka
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"github.com/IBM/sarama"
 	"testing"
 )
+
+type TestConsumerGroupHandler struct{}
+
+func (TestConsumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
+func (TestConsumerGroupHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
+func (h TestConsumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for msg := range claim.Messages() {
+		if msg.Value == nil || len(msg.Value) == 0 || string(msg.Value) != "hello world" {
+			return errors.New("failed to consume message")
+		}
+		sess.MarkMessage(msg, "")
+	}
+	return nil
+}
 
 func TestKafka(t *testing.T) {
 	brokers := []string{"127.0.0.1:9092"}
@@ -15,7 +30,7 @@ func TestKafka(t *testing.T) {
 		t.Errorf("kafka producer init fail: %s", err)
 	}
 	defer producer.Close()
-	consumer, err := NewSubscriber(brokers, consumer_group, topics)
+	consumer, err := NewSubscriber(brokers, consumer_group)
 	if err != nil {
 		t.Errorf("kafka consumer init fail: %s", err)
 	}
@@ -28,15 +43,10 @@ func TestKafka(t *testing.T) {
 	if err != nil {
 		t.Errorf("kafka send fail: %s", err)
 	}
-	select {
-	case msg, ok := <-consumer.Messages():
-		if ok {
-			if string(msg.Value) != "hello world" {
-				t.Errorf("kafka receive wrong message: %s", string(msg.Value))
-			}
-			consumer.MarkOffset(msg, "") // 上报offset
-		} else {
-			fmt.Println("监听服务失败")
-		}
+	ctx := context.Background()
+	handler := TestConsumerGroupHandler{}
+	err = consumer.Consume(ctx, topics, handler)
+	if err != nil {
+		t.Errorf("kafka consumer fail: %s", err)
 	}
 }

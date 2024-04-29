@@ -2,13 +2,12 @@ package kafka
 
 import (
 	"github.com/IBM/sarama"
-	cluster "github.com/bsm/sarama-cluster"
 )
 
-func NewSubscriber(brokers []string, group string, topics []string) (*cluster.Consumer, error) {
-	config := cluster.NewConfig()
+func NewSubscriber(brokers []string, group string) (sarama.ConsumerGroup, error) {
+	config := sarama.NewConfig()
+	config.Version = sarama.V3_6_0_0
 	config.Consumer.Return.Errors = true
-	config.Consumer.Offsets.Initial = sarama.OffsetNewest
-	config.Group.Return.Notifications = true
-	return cluster.NewConsumer(brokers, group, topics, config)
+
+	return sarama.NewConsumerGroup(brokers, group, config)
 }

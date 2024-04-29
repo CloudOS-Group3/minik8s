@@ -4,7 +4,6 @@ go 1.22.2
 
 require (
 	github.com/IBM/sarama v1.43.2
-	github.com/bsm/sarama-cluster v2.1.15+incompatible
 	github.com/containerd/containerd v1.7.15
 	github.com/fatih/color v1.16.0
 	github.com/spf13/cobra v1.8.0
@@ -13,7 +12,6 @@ require (
 )
 
 require (
-	github.com/Shopify/sarama v1.38.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
