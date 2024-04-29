@@ -2,7 +2,6 @@ package etcd
 
 import (
 	"minik8s/pkg/api"
-	"minik8s/pkg/etcd"
 	"testing"
 )
 
@@ -28,12 +27,12 @@ func TestEtcd(t *testing.T) {
 		},
 	}
 
-	res := etcd.EtcdStore.PutPod(*newPod)
+	res := EtcdStore.PutPod(*newPod)
 	if res != true {
 		t.Errorf("etcd put pod fail")
 	}
 
-	pod, res := etcd.EtcdStore.GetPod("default", "test-pod")
+	pod, res := EtcdStore.GetPod("default", "test-pod")
 	if res != true {
 		t.Errorf("etcd get pod fail")
 	}
@@ -41,7 +40,7 @@ func TestEtcd(t *testing.T) {
 		t.Errorf("etcd get pod fail")
 	}
 
-	res = etcd.EtcdStore.DeletePod("default", "test-pod")
+	res = EtcdStore.DeletePod("default", "test-pod")
 	if res != true {
 		t.Errorf("etcd delete pod fail")
 	}
