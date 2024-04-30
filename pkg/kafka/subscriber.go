@@ -38,6 +38,7 @@ func (s *Subscriber) Subscribe(wg *sync.WaitGroup, ctx context.Context, topics [
 	cancel()
 	*/
 	// use go func() to run it async
+	// maybe we should wait for consumer setup and give a way to terminate it
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

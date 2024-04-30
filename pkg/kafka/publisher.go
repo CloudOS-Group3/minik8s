@@ -27,7 +27,7 @@ func NewPublisher(addr []string) *Publisher {
 	return &Publisher{producer: producer}
 }
 
-func (p *Publisher) SendMessage(topic string, value string) error {
+func (p *Publisher) Publish(topic string, value string) error {
 	msg := &sarama.ProducerMessage{
 		Topic: topic,
 		Value: sarama.ByteEncoder(value),

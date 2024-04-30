@@ -98,6 +98,7 @@ func TestKafka(t *testing.T) {
 			}
 		}
 	}()
+	time.Sleep(3 * time.Second) // just wait for consumer setup (need to fix)
 	msg := &sarama.ProducerMessage{
 		Topic: "test-topic",
 		Value: sarama.ByteEncoder("hello world"),
