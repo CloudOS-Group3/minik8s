@@ -27,5 +27,16 @@ jobs:
                 cd etcd-v3.5.13-linux-amd64
                 ./etcd &
 
+            - name: Download Kafka
+              run: |
+                sudo apt-get update
+                sudo apt-get install openjdk-8-jdk
+                wget https://archive.apache.org/dist/kafka/3.6.0/kafka_2.13-3.6.0.tgz
+                tar -zxvf kafka_2.13-3.6.0.tgz
+                cd kafka_2.13-3.6.0
+                KAFKA_CLUSTER_ID="$(bin/kafka-storage.sh random-uuid)"
+                bin/kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c config/kraft/server.properties
+                bin/kafka-server-start.sh config/kraft/server.properties &
+
             - name: Run tests
               run: sudo go test ./...
