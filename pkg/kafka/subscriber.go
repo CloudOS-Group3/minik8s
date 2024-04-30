@@ -44,19 +44,24 @@ func (s *Subscriber) Subscribe(wg *sync.WaitGroup, ctx context.Context, topics [
 	go func() {
 		defer wg.Done()
 		for {
-			err := s.consumerGroup.Consume(ctx, topics, handler)
-			if err != nil {
-				switch err {
-				case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
-					// kafka consumer quit
-					fmt.Printf("quit: kafka consumer\n")
-					return
-				case sarama.ErrOutOfBrokers:
-					fmt.Printf("kafka crash\n")
-				default:
-					fmt.Printf("kafka exception: %s\n", err.Error())
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				err := s.consumerGroup.Consume(ctx, topics, handler)
+				if err != nil {
+					switch err {
+					case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
+						// kafka consumer quit
+						fmt.Printf("quit: kafka consumer\n")
+						return
+					case sarama.ErrOutOfBrokers:
+						fmt.Printf("kafka crash\n")
+					default:
+						fmt.Printf("kafka exception: %s\n", err.Error())
+					}
+					time.Sleep(1 * time.Second)
 				}
-				time.Sleep(1 * time.Second)
 			}
 		}
 	}()
