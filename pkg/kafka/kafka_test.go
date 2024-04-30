@@ -12,6 +12,7 @@ import (
 
 type TestConsumerGroupHandler struct {
 	ready chan bool
+	done  chan bool
 }
 
 func (h TestConsumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error {
@@ -29,6 +30,7 @@ func (h TestConsumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession,
 		if msg.Value == nil || len(msg.Value) == 0 || string(msg.Value) != "hello world" {
 			return errors.New("failed to consume message")
 		}
+		close(h.done)
 		sess.MarkMessage(msg, "")
 		break
 	}
@@ -56,6 +58,12 @@ func TestKafka(t *testing.T) {
 	defer consumerGroup_another.consumerGroup.Close()
 	handler := TestConsumerGroupHandler{
 		ready: make(chan bool),
+		done:  make(chan bool),
+	}
+
+	handler2 := TestConsumerGroupHandler{
+		ready: make(chan bool),
+		done:  make(chan bool),
 	}
 	fmt.Println("start consume")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -65,69 +73,86 @@ func TestKafka(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for {
-			fmt.Printf("consuming\n")
-			err := consumerGroup.consumerGroup.Consume(ctx, topics, handler)
-			if err != nil {
-				switch err {
-				case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
-					fmt.Printf("quit: kafka consumer")
-					return
-				case sarama.ErrOutOfBrokers:
-					t.Errorf("kafka crash")
-				default:
-					t.Errorf("kafka exception: %s", err.Error())
-				}
-				time.Sleep(1 * time.Second)
-			} else {
+			select {
+			case <-handler.done:
 				return
+			default:
+				fmt.Printf("consuming\n")
+				err := consumerGroup.consumerGroup.Consume(ctx, topics, handler)
+				if err != nil {
+					switch err {
+					case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
+						fmt.Printf("quit: kafka consumer")
+						return
+					case sarama.ErrOutOfBrokers:
+						t.Errorf("kafka crash")
+					default:
+						t.Errorf("kafka exception: %s", err.Error())
+					}
+					time.Sleep(1 * time.Second)
+				} else {
+					return
+				}
 			}
+
 		}
 	}()
 	// wait for consumer setup
 	<-handler.ready
 
-	handler.ready = make(chan bool)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
-			fmt.Printf("consuming\n")
-			err := consumerGroup_another.consumerGroup.Consume(ctx2, topics, handler)
-			handler.ready = make(chan bool)
-			if err != nil {
-				switch err {
-				case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
-					fmt.Printf("quit: kafka consumer")
-					return
-				case sarama.ErrOutOfBrokers:
-					t.Errorf("kafka crash")
-				default:
-					t.Errorf("kafka exception: %s", err.Error())
-				}
-				time.Sleep(1 * time.Second)
-			} else {
+			select {
+			case <-handler2.done:
 				return
+			default:
+				fmt.Printf("consuming\n")
+				err := consumerGroup_another.consumerGroup.Consume(ctx2, topics, handler2)
+				if err != nil {
+					switch err {
+					case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
+						fmt.Printf("quit: kafka consumer")
+						return
+					case sarama.ErrOutOfBrokers:
+						t.Errorf("kafka crash")
+					default:
+						t.Errorf("kafka exception: %s", err.Error())
+					}
+					time.Sleep(1 * time.Second)
+				} else {
+					return
+				}
 			}
 		}
 	}()
-	<-handler.ready
-
-	msg := &sarama.ProducerMessage{
-		Topic: "test-topic-r",
-		Value: sarama.ByteEncoder("hello world"),
+	<-handler2.ready
+	for {
+		select {
+		case <-handler.done:
+			select {
+			case <-handler2.done:
+				cancel()
+				cancel2()
+				wg.Wait()
+				return
+			}
+		default:
+			msg := &sarama.ProducerMessage{
+				Topic: "test-topic-r",
+				Value: sarama.ByteEncoder("hello world"),
+			}
+			fmt.Println("msg delivered")
+			partition, offset, err := publisher.producer.SendMessage(msg)
+			fmt.Printf("partition: %d, offset: %d\n", partition, offset)
+			if err != nil {
+				t.Errorf("kafka send fail: %s", err)
+			}
+			if err != nil {
+				t.Errorf("kafka consumer fail: %s", err)
+			}
+			time.Sleep(3 * time.Second)
+		}
 	}
-	fmt.Println("msg delivered")
-	partition, offset, err := publisher.producer.SendMessage(msg)
-	fmt.Printf("partition: %d, offset: %d\n", partition, offset)
-	if err != nil {
-		t.Errorf("kafka send fail: %s", err)
-	}
-	if err != nil {
-		t.Errorf("kafka consumer fail: %s", err)
-	}
-	fmt.Println("start waiting")
-	wg.Wait()
-	cancel()
-	cancel2()
-	fmt.Println("stop consume")
 }
