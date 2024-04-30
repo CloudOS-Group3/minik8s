@@ -5,6 +5,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"minik8s/pkg/util"
 	"minik8s/util/log"
+	"sync"
 )
 
 type Store struct {
@@ -62,4 +63,36 @@ func (store Store) DeleteEtcdPair(key string) bool {
 	}
 
 	return true
+}
+
+func (store Store) PrefixWatch(wg *sync.WaitGroup, ctx context.Context, prefix string, handler func(key string, value string)) {
+	/* usage (not pretty sure):
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	PrefixWatch(...)
+	...
+	cancel() (when you want to terminate it)
+	wg.Wait()
+	*/
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				rch := store.etcdClient.Watch(ctx, prefix, clientv3.WithPrefix())
+				for resp := range rch {
+					err := resp.Err()
+					if err != nil {
+						log.Fatal("Failed to watch prefix-watch: %s", err.Error())
+					}
+					for _, ev := range resp.Events {
+						handler(string(ev.Kv.Key), string(ev.Kv.Value))
+					}
+				}
+			}
+		}
+	}()
 }
