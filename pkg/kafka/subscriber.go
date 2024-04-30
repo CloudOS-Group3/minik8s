@@ -34,11 +34,12 @@ func (s *Subscriber) Subscribe(wg *sync.WaitGroup, ctx context.Context, topics [
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	Subscribe(...)
+	<- handler.ready (handler.setup should close ready)
 	wg.Wait()
 	cancel()
 	*/
 	// use go func() to run it async
-	// maybe we should wait for consumer setup and give a way to terminate it
+	// maybe we should give a way to terminate it
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

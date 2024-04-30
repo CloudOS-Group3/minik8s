@@ -10,9 +10,15 @@ import (
 	"time"
 )
 
-type TestConsumerGroupHandler struct{}
+type TestConsumerGroupHandler struct {
+	ready chan bool
+}
 
-func (TestConsumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
+func (h TestConsumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error {
+	// mark consumer setup
+	close(h.ready)
+	return nil
+}
 func (TestConsumerGroupHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
 func (h TestConsumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
@@ -33,7 +39,7 @@ func TestKafka(t *testing.T) {
 	brokers := []string{"127.0.0.1:9092"}
 	consumer_group := "test-group"
 	consumer_group_2 := "test-group-2"
-	topics := []string{"test-topic"}
+	topics := []string{"test-topic-r"}
 	publisher := NewPublisher(brokers)
 	if publisher == nil {
 		t.Errorf("kafka producer init fail")
@@ -48,7 +54,9 @@ func TestKafka(t *testing.T) {
 	}
 	defer consumerGroup.consumerGroup.Close()
 	defer consumerGroup_another.consumerGroup.Close()
-	handler := TestConsumerGroupHandler{}
+	handler := TestConsumerGroupHandler{
+		ready: make(chan bool),
+	}
 	fmt.Println("start consume")
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx2, cancel2 := context.WithCancel(context.Background())
@@ -75,13 +83,17 @@ func TestKafka(t *testing.T) {
 			}
 		}
 	}()
+	// wait for consumer setup
+	<-handler.ready
 
+	handler.ready = make(chan bool)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
 			fmt.Printf("consuming\n")
 			err := consumerGroup_another.consumerGroup.Consume(ctx2, topics, handler)
+			handler.ready = make(chan bool)
 			if err != nil {
 				switch err {
 				case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
@@ -98,9 +110,10 @@ func TestKafka(t *testing.T) {
 			}
 		}
 	}()
-	time.Sleep(3 * time.Second) // just wait for consumer setup (need to fix)
+	<-handler.ready
+
 	msg := &sarama.ProducerMessage{
-		Topic: "test-topic",
+		Topic: "test-topic-r",
 		Value: sarama.ByteEncoder("hello world"),
 	}
 	fmt.Println("msg delivered")
