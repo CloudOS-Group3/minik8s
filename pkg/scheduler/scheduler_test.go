@@ -47,8 +47,11 @@ func TestScheduler(t *testing.T) {
 	if err != nil {
 		t.Errorf("kafka send message error: %s", err.Error())
 	}
-	if s.count >= 1 {
-		close(s.done)
+	for {
+		if s.count >= 1 {
+			close(s.done)
+			break
+		}
 	}
 	wg.Wait()
 }

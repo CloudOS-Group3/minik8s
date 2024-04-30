@@ -27,6 +27,7 @@ func NewScheduler() *Scheduler {
 		nodes:      nodeList,
 		ready:      make(chan bool),
 		done:       make(chan bool),
+		count:      0,
 		subscriber: kafka.NewSubscriber(brokers, group),
 	}
 }
