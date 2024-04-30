@@ -34,18 +34,20 @@ func TestKafka(t *testing.T) {
 	consumer_group := "test-group"
 	consumer_group_2 := "test-group-2"
 	topics := []string{"test-topic"}
-	producer, err := NewPublisher(brokers)
-	if err != nil {
-		t.Errorf("kafka producer init fail: %s", err)
+	publisher := NewPublisher(brokers)
+	if publisher == nil {
+		t.Errorf("kafka producer init fail")
+		return
 	}
-	defer producer.Close()
-	consumer, err := NewSubscriber(brokers, consumer_group)
-	consumer_2, err := NewSubscriber(brokers, consumer_group_2)
-	if err != nil {
-		t.Errorf("kafka consumer init fail: %s", err)
+	defer publisher.producer.Close()
+	consumerGroup := NewSubscriber(brokers, consumer_group)
+	consumerGroup_another := NewSubscriber(brokers, consumer_group_2)
+	if consumerGroup == nil || consumerGroup_another == nil {
+		t.Errorf("kafka consumer init fail")
+		return
 	}
-	defer consumer_2.Close()
-	defer consumer.Close()
+	defer consumerGroup.consumerGroup.Close()
+	defer consumerGroup_another.consumerGroup.Close()
 	handler := TestConsumerGroupHandler{}
 	fmt.Println("start consume")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -56,15 +58,14 @@ func TestKafka(t *testing.T) {
 		defer wg.Done()
 		for {
 			fmt.Printf("consuming\n")
-			err := consumer.Consume(ctx, topics, handler)
+			err := consumerGroup.consumerGroup.Consume(ctx, topics, handler)
 			if err != nil {
 				switch err {
 				case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
-					// 退出
 					fmt.Printf("quit: kafka consumer")
 					return
 				case sarama.ErrOutOfBrokers:
-					t.Errorf("kafka 崩溃了~")
+					t.Errorf("kafka crash")
 				default:
 					t.Errorf("kafka exception: %s", err.Error())
 				}
@@ -80,15 +81,14 @@ func TestKafka(t *testing.T) {
 		defer wg.Done()
 		for {
 			fmt.Printf("consuming\n")
-			err := consumer_2.Consume(ctx2, topics, handler)
+			err := consumerGroup_another.consumerGroup.Consume(ctx2, topics, handler)
 			if err != nil {
 				switch err {
 				case sarama.ErrClosedClient, sarama.ErrClosedConsumerGroup:
-					// 退出
 					fmt.Printf("quit: kafka consumer")
 					return
 				case sarama.ErrOutOfBrokers:
-					t.Errorf("kafka 崩溃了~")
+					t.Errorf("kafka crash")
 				default:
 					t.Errorf("kafka exception: %s", err.Error())
 				}
@@ -103,7 +103,7 @@ func TestKafka(t *testing.T) {
 		Value: sarama.ByteEncoder("hello world"),
 	}
 	fmt.Println("msg delivered")
-	partition, offset, err := producer.SendMessage(msg)
+	partition, offset, err := publisher.producer.SendMessage(msg)
 	fmt.Printf("partition: %d, offset: %d\n", partition, offset)
 	if err != nil {
 		t.Errorf("kafka send fail: %s", err)
