@@ -35,8 +35,8 @@ func (s *Subscriber) Subscribe(wg *sync.WaitGroup, ctx context.Context, topics [
 	wg := &sync.WaitGroup{}
 	Subscribe(...)
 	<- handler.ready (handler.setup should close ready)
+	cancel() (when you want to terminate it)
 	wg.Wait()
-	cancel()
 	*/
 	// use go func() to run it async
 	// maybe we should give a way to terminate it
