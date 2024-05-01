@@ -2,10 +2,11 @@ package etcd
 
 import (
 	"context"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"minik8s/pkg/util"
 	"minik8s/util/log"
 	"sync"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type Store struct {
@@ -63,6 +64,20 @@ func (store Store) DeleteEtcdPair(key string) bool {
 	}
 
 	return true
+}
+
+func (store Store) PrefixGet(prefix string) (map[string]string) {
+	response, err := store.etcdClient.Get(context.TODO(), prefix, clientv3.WithPrefix())
+	if err != nil {
+		log.Error("error get prefix %s", prefix)
+		return nil
+	}
+	ret := map[string]string{}
+	for _, kv := range response.Kvs {
+		ret[string(kv.Key)] = string(kv.Value)
+	}
+
+	return ret
 }
 
 func (store Store) PrefixWatch(wg *sync.WaitGroup, ctx context.Context, prefix string, handler func(key string, value string)) {

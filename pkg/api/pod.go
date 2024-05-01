@@ -1,5 +1,9 @@
 package api
 
+import (
+	"time"
+)
+
 // Pod is a collection of containers, created by clients and scheduled onto hosts.
 /*
 	This file defines the Pod struct and its associated types.
@@ -20,6 +24,8 @@ type Pod struct {
 
 	// Spec is the specification of the desired behavior of the pod.
 	Spec PodSpec `json:"spec,omitempty" yaml:"spec,omitempty"`
+
+	Status PodStatus `json:"status" yaml:"status"`
 }
 
 type PodSpec struct {
@@ -34,6 +40,33 @@ type PodSpec struct {
 
 	// Volumes is a list of volumes mounted by containers.
 	Volumes []Volume `json:"volumes,omitempty" yaml:"volumes,omitempty"`
+}
+
+type PodStatus struct {
+	Conditions        []PodCondition    `json:"conditions" yaml:"conditions"`
+	ContainerStatuses []ContainerStatus `json:"containerStatuses" yaml:"containerStatuses"`
+	HostIP            string            `json:"hostIP" yaml:"hostIP"`
+	Message           string            `json:"message" yaml:"message"`
+	Phase             string            `json:"phase" yaml:"phase"`
+	PodIP             string            `json:"podIP" yaml:"podIP"`
+	StartTime         time.Time         `json:"startTime" yaml:"startTime"`
+}
+
+type PodCondition struct {
+	LastProbeTime      time.Time `json:"lastProbeTime" yaml:"lastProbeTime"`
+	LastTransitionTime time.Time `json:"lastTransitionTime" yaml:"lastTransitionTime"`
+	Message            string    `json:"message" yaml:"message"`
+	Reason             string    `json:"reason" yaml:"reason"`
+	Status             string    `json:"status" yaml:"status"`
+	Type               string    `json:"type" yaml:"type"`
+}
+
+type ContainerStatus struct {
+	ContainerID string `json:"containerID" yaml:"containerID"`
+	Image       string `json:"image" yaml:"image"`
+	ImageID     string `json:"imageID" yaml:"imageID"`
+	Name        string `json:"name" yaml:"name"`
+	Ready       bool   `json:"ready" yaml:"ready"`
 }
 
 // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#container-v1-core

@@ -25,12 +25,21 @@ func init() {
 
 func GetNodes(context *gin.Context) {
 	log.Info("received get nodes request")
+
+	URL := serverconfig.EtcdNodePath
+	nodes := etcdClient.PrefixGet(URL)
+
+	log.Debug("get all nodes are: %+v", nodes)
+	context.JSON(http.StatusOK, gin.H{
+		"data": nodes,
+	})
 }
 
 func AddNode(context *gin.Context) {
 	log.Info("received add node request")
-	newNode := &api.Node{}
-	if err := context.ShouldBind(newNode); err != nil {
+
+	var newNode api.Node
+	if err := context.ShouldBind(&newNode); err != nil {
 		log.Error("decode node failed")
 		context.JSON(http.StatusOK, gin.H{
 			"status": "wrong",
@@ -45,7 +54,7 @@ func AddNode(context *gin.Context) {
 		return
 	}
 
-	URL := serverconfig.EtcdNodePath + newNode.Name
+	URL := serverconfig.EtcdNodePath + newNode.Metadata.Name
 	etcdClient.PutEtcdPair(URL, string(nodeByteArray))
 
 	context.JSON(http.StatusOK, gin.H{
@@ -83,7 +92,7 @@ func DeleteNode(context *gin.Context) {
 		log.Error("node name empty")
 		return
 	}
-	
+
 	URL := serverconfig.EtcdNodePath + name
 	etcdClient.DeleteEtcdPair(URL)
 }
@@ -91,8 +100,8 @@ func DeleteNode(context *gin.Context) {
 func UpdateNode(context *gin.Context) {
 	log.Info("received udpate node request")
 
-	newNode := &api.Node{}
-	if err := context.ShouldBind(newNode); err != nil {
+	var newNode api.Node
+	if err := context.ShouldBind(&newNode); err != nil {
 		log.Error("decode node failed")
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
@@ -106,7 +115,7 @@ func UpdateNode(context *gin.Context) {
 		log.Error("error marshal newNode to json string")
 	}
 
-	URL := serverconfig.EtcdNodePath + newNode.Name
+	URL := serverconfig.EtcdNodePath + newNode.Metadata.Name
 	etcdClient.PutEtcdPair(URL, string(nodeByteArray))
 
 	context.JSON(http.StatusOK, gin.H{
@@ -116,13 +125,21 @@ func UpdateNode(context *gin.Context) {
 
 func GetPods(context *gin.Context) {
 	log.Info("received get pods request")
+
+	URL := serverconfig.EtcdPodPath
+	pods := etcdClient.PrefixGet(URL)
+
+	log.Debug("get all pods are: %+v", pods)
+	context.JSON(http.StatusOK, gin.H{
+		"data": pods,
+	})
 }
 
 func AddPod(context *gin.Context) {
 	log.Info("received add pod request")
 
-	newPod := &api.Pod{}
-	if err := context.ShouldBind(newPod); err != nil {
+	var newPod api.Pod
+	if err := context.ShouldBind(&newPod); err != nil {
 		log.Error("decode pod failed")
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
@@ -131,7 +148,7 @@ func AddPod(context *gin.Context) {
 	log.Debug("new pod is: %+v", newPod)
 
 	// need to interact with etcd
-	etcdClient.PutPod(*newPod)
+	etcdClient.PutPod(newPod)
 
 	podByteArray, err := json.Marshal(newPod)
 
@@ -160,25 +177,29 @@ func GetPod(context *gin.Context) {
 		return
 	}
 
-	pod := &api.Pod{}
-	// todo: should query from etcd here
+	pod, ok := etcdClient.GetPod(namespace, name)
+
+	if !ok {
+		log.Error("get pod not ok")
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{
-		"data": *pod,
+		"data": pod,
 	})
 }
 
 func UpdatePod(context *gin.Context) {
 	log.Info("received update pod request")
 
-	newPod := &api.Pod{}
-	if err := context.ShouldBind(newPod); err != nil {
+	var newPod api.Pod
+	if err := context.ShouldBind(&newPod); err != nil {
 		log.Error("error decode new pod")
 		return
 	}
 
 	// todo: should use update pod
-	etcdClient.PutPod(*newPod)
+	etcdClient.UpdatePod(newPod)
 
 }
 

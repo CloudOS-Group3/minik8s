@@ -61,6 +61,24 @@ func (store Store) GetPod(namespace, name string) (api.Pod, bool) {
 	return pod, true
 }
 
+func (store Store) UpdatePod(pod api.Pod) bool {
+
+	name := pod.Metadata.Name
+	namespace := pod.Metadata.NameSpace
+	res, ok := store.GetPod(namespace, name)
+	if !ok {
+		log.Error("error get pod")
+		return false
+	}
+	if res.Metadata.Name == "" {
+		log.Error("%s pod doesn't exist", res.Metadata.Name)
+		return false
+	}
+	store.PutPod(pod)
+
+	return false
+}
+
 func (store Store) DeletePod(namespace, name string) bool {
 	// generate key
 	key := ""

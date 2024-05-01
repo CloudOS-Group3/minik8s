@@ -20,7 +20,10 @@ type Scheduler struct {
 
 func NewScheduler() *Scheduler {
 	// TODO: require node list from apiserver
-	nodeList := []api.Node{{Name: "node1"}, {Name: "node2"}}
+	nodeList := make([]api.Node, 2)
+	nodeList[0].Metadata.Name = "node1"
+	nodeList[1].Metadata.Name = "node2"
+
 	brokers := []string{"127.0.0.1:9092"}
 	group := "scheduler"
 	return &Scheduler{
@@ -65,7 +68,7 @@ func (s *Scheduler) PodHandler(msg []byte) {
 	} else {
 		index := s.count % len(s.nodes)
 		s.count = s.count + 1
-		pod.Spec.NodeName = s.nodes[index].Name
+		pod.Spec.NodeName = s.nodes[index].Metadata.Name
 	}
 	fmt.Printf("pod %s has assigned to node %s\n", pod.Metadata.Name, pod.Spec.NodeName)
 	// TODO: send new node to apiserver
@@ -79,7 +82,7 @@ func (s *Scheduler) NodeHandler(msg []byte) {
 	}
 	exist := false
 	for _, nodeInList := range s.nodes {
-		if nodeInList.Name == node.Name {
+		if nodeInList.Metadata.Name == node.Metadata.Name {
 			nodeInList = node
 			exist = true
 		}
