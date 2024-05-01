@@ -8,7 +8,7 @@ const (
 	NodesURL = "/api/v1/nodes"
 	NodeURL  = "/api/v1/nodes/:name"
 
-	// Pod(s) API
+	// Pods API
 	PodsURL = "/api/v1/namespaces/:namespace/pods"
 	PodURL  = "/api/v1/namespaces/:namespace/pods/:name"
 

@@ -24,7 +24,6 @@ func NewApiserver(host string, port int) *apiServer {
 
 func (server *apiServer) Run() {
 	server.bind()
-
 	URL := fmt.Sprintf("%s:%d", server.host, server.port)
 	server.router.Run(URL)
 }

@@ -7,8 +7,8 @@ type ObjectMeta struct {
 	// NameSpace defines the space where name must be unique.
 	NameSpace string `json:"namespace,omitempty" yaml:"nameSpace,omitempty"`
 
-	// UID is unique in time and space.
-	UID string `json:"uid,omitempty" yaml:"uid,omitempty"`
+	// UUID is unique in time and space.
+	UUID string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 
 	// ResourceVersion is used by clients to determine when objects have changed.
 	ResourceVersion string `json:"resourceVersion,omitempty" yaml:"resourceVersion,omitempty"`
