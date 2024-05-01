@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"minik8s/pkg/api"
 	"minik8s/pkg/apiserver/config"
+	"minik8s/pkg/etcd"
+	"minik8s/pkg/kafka"
 	"minik8s/util/log"
 	"net/http"
 
@@ -10,6 +13,13 @@ import (
 )
 
 // all of the following handlers need to call etcd
+
+
+var publisher kafka.Publisher
+
+func init() {
+	publisher = *kafka.NewPublisher([]string{"localhost:9092"})
+}
 
 func GetNodes(context *gin.Context) {
 	log.Info("received get nodes request")
@@ -31,9 +41,6 @@ func GetNode(context *gin.Context) {
 	// todo: should query from etcd here
 	// and we dont have node object yet...
 
-	context.JSON(http.StatusOK, gin.H{
-		"data": "",
-	})
 }
 
 func DeleteNode(context *gin.Context) {
@@ -63,7 +70,18 @@ func AddPod(context *gin.Context) {
 	log.Debug("new pod is: %+v", newPod)
 
 	// need to interact with etcd
+	etcd.EtcdStore.PutPod(*newPod)
 
+
+	podByteArray, err := json.Marshal(newPod)
+
+	if err != nil {
+		log.Error("Error: json marshal failed")
+		return
+	}
+	
+	publisher.Publish("pod", string(podByteArray))
+	
 }
 
 func GetPod(context *gin.Context) {
