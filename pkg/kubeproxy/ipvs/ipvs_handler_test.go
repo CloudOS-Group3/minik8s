@@ -3,6 +3,7 @@ package ipvs
 import (
 	"minik8s/pkg/api"
 	"minik8s/util/log"
+	"net"
 	"os/exec"
 	"strings"
 	"testing"
@@ -33,7 +34,7 @@ func TestIpvsHandler_AddService(t *testing.T) {
 		t.Errorf("AddService() error = %v", err)
 	}
 
-	// 检查 IPVS 是否包含添加的 TCP 服务
+	// check if service is added
 	output, err := exec.Command("ipvsadm", "-Ln").CombinedOutput()
 	if err != nil {
 		err := exec.Command("apt", "install", "ipvsadm").Run()
@@ -42,7 +43,8 @@ func TestIpvsHandler_AddService(t *testing.T) {
 		}
 	}
 
-	if !strings.Contains(string(output), "TCP  0.0.0.0:81 rr") {
-		t.Error("Expected TCP 0.0.0.0:81 rr in ipvsadm output, but not found")
+	var targetOutput = "TCP  " + net.ParseIP(service.Spec.Type).String() + ":81 rr"
+	if !strings.Contains(string(output), targetOutput) {
+		t.Error("Expected "+targetOutput+" in ipvsadm output, but is %v", string(output))
 	}
 }
