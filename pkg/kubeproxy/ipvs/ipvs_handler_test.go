@@ -21,7 +21,7 @@ func TestIpvsHandler_AddService(t *testing.T) {
 			Type: "ClusterIP",
 			Ports: []api.ServicePort{
 				{
-					Port:       81,
+					Port:       80,
 					TargetPort: 8080,
 					Protocol:   "TCP",
 					Name:       "http",
@@ -43,8 +43,13 @@ func TestIpvsHandler_AddService(t *testing.T) {
 		}
 	}
 
-	var targetOutput = "TCP  " + net.ParseIP(service.Spec.Type).String() + ":81 rr"
+	log.Info("ipvsadm output: %s", string(output))
+	var ip = net.ParseIP(service.Spec.Type).String()
+	if ip == "<nil>" {
+		ip = "0.0.0.0"
+	}
+	var targetOutput = "TCP  " + ip + ":80 rr"
 	if !strings.Contains(string(output), targetOutput) {
-		t.Error("Expected "+targetOutput+" in ipvsadm output, but is %v", string(output))
+		t.Error("Expected "+targetOutput+" in ipvsadm output, but is %s", string(output))
 	}
 }

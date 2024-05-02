@@ -41,7 +41,7 @@ func (i *IpvsHandler) AddService(service *api.Service) error {
 		// check if service already exists
 		var is_existed bool = false
 		for _, existed_svc := range services {
-			if existed_svc.Address.String() == svc.Address.String() && existed_svc.Port == svc.Port {
+			if existed_svc.Port == svc.Port && (existed_svc.Address.String() == svc.Address.String() || (svc.Address == nil && existed_svc.Address.String() == "0.0.0.0")) {
 				is_existed = true
 				break
 			}
