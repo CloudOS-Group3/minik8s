@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"minik8s/pkg/api"
-	"minik8s/pkg/apiserver/config"
+	"minik8s/pkg/config"
 	"minik8s/util/log"
 	"net/http"
 	"strings"

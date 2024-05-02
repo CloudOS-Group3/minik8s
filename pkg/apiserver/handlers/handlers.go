@@ -3,8 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"minik8s/pkg/api"
-	"minik8s/pkg/apiserver/config"
-	"minik8s/pkg/apiserver/serverconfig"
+	"minik8s/pkg/config"
 	"minik8s/pkg/etcd"
 	"minik8s/pkg/kafka"
 	"minik8s/util/log"
@@ -26,7 +25,7 @@ func init() {
 func GetNodes(context *gin.Context) {
 	log.Info("received get nodes request")
 
-	URL := serverconfig.EtcdNodePath
+	URL := config.EtcdNodePath
 	nodes := etcdClient.PrefixGet(URL)
 
 	log.Debug("get all nodes are: %+v", nodes)
@@ -54,7 +53,7 @@ func AddNode(context *gin.Context) {
 		return
 	}
 
-	URL := serverconfig.EtcdNodePath + newNode.Metadata.Name
+	URL := config.EtcdNodePath + newNode.Metadata.Name
 	etcdClient.PutEtcdPair(URL, string(nodeByteArray))
 
 	context.JSON(http.StatusOK, gin.H{
@@ -93,7 +92,7 @@ func DeleteNode(context *gin.Context) {
 		return
 	}
 
-	URL := serverconfig.EtcdNodePath + name
+	URL := config.EtcdNodePath + name
 	etcdClient.DeleteEtcdPair(URL)
 }
 
@@ -115,7 +114,7 @@ func UpdateNode(context *gin.Context) {
 		log.Error("error marshal newNode to json string")
 	}
 
-	URL := serverconfig.EtcdNodePath + newNode.Metadata.Name
+	URL := config.EtcdNodePath + newNode.Metadata.Name
 	etcdClient.PutEtcdPair(URL, string(nodeByteArray))
 
 	context.JSON(http.StatusOK, gin.H{
@@ -126,7 +125,7 @@ func UpdateNode(context *gin.Context) {
 func GetPods(context *gin.Context) {
 	log.Info("received get pods request")
 
-	URL := serverconfig.EtcdPodPath
+	URL := config.EtcdPodPath
 	pods := etcdClient.PrefixGet(URL)
 
 	log.Debug("get all pods are: %+v", pods)

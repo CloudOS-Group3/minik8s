@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"minik8s/pkg/apiserver/config"
+	"minik8s/pkg/config"
 	"minik8s/pkg/apiserver/handlers"
 
 	"github.com/gin-gonic/gin"

@@ -17,6 +17,12 @@ type NodeSpec struct {
 
 type NodeCondition = string
 
+const (
+	Ready   NodeCondition = "Ready"
+	Failed  NodeCondition = "Failed"
+	Unknown NodeCondition = "Unknown"
+)
+
 type NodeStatus struct {
 	Hostname   string        `yaml:"hostname" json:"hostname"`
 	Condition  NodeCondition `yaml:"condition" json:"condition"`
