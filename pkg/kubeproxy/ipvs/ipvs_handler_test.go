@@ -2,6 +2,7 @@ package ipvs
 
 import (
 	"minik8s/pkg/api"
+	"minik8s/util/log"
 	"os/exec"
 	"strings"
 	"testing"
@@ -35,7 +36,10 @@ func TestIpvsHandler_AddService(t *testing.T) {
 	// 检查 IPVS 是否包含添加的 TCP 服务
 	output, err := exec.Command("ipvsadm", "-Ln").CombinedOutput()
 	if err != nil {
-		t.Fatalf("Failed to run ipvsadm: %v", err)
+		err := exec.Command("apt", "install", "ipvsadm").Run()
+		if err != nil {
+			log.Fatal("Failed to install ipvsadm: %v", err)
+		}
 	}
 
 	if !strings.Contains(string(output), "TCP  0.0.0.0:81 rr") {
