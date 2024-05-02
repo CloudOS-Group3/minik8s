@@ -60,9 +60,39 @@ func (i *IpvsHandler) AddService(service *api.Service) error {
 }
 
 func (i *IpvsHandler) UpdateService(service *api.Service) error {
-	return nil
+	return i.AddService(service)
 }
 
 func (i *IpvsHandler) DeleteService(service *api.Service) error {
+	handle, err := libipvs.New("")
+	if err != nil {
+		return err
+	}
+	services, err := handle.GetServices()
+	if err != nil {
+		return err
+	}
+	defer handle.Close()
+	// add service
+	for _, port := range service.Spec.Ports {
+		svc := &libipvs.Service{
+			// BUG : net.ParseIP("ClusterIP") is <nil>
+			Address:       net.ParseIP(service.Spec.Type),
+			Port:          uint16(port.Port),
+			Protocol:      unix.IPPROTO_TCP,
+			AddressFamily: unix.AF_INET, //nl.FAMILY_V4
+			SchedName:     libipvs.RoundRobin,
+		}
+
+		for _, existed_svc := range services {
+			if existed_svc.Port == svc.Port && (existed_svc.Address.String() == svc.Address.String() || (svc.Address == nil && existed_svc.Address.String() == "0.0.0.0")) {
+				if err := handle.DelService(existed_svc); err != nil {
+					log.Fatal("Failed to delete service: %v", err.Error())
+					return err
+				}
+			}
+		}
+	}
+
 	return nil
 }

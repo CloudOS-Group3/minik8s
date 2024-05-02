@@ -49,3 +49,30 @@ func TestIpvsHandler_AddService(t *testing.T) {
 	//	t.Error("Expected "+targetOutput+" in ipvsadm output, but is %s", string(output))
 	//}
 }
+
+func TestIpvsHandler_DeleteService(t *testing.T) {
+	ipvsHandler := IpvsHandler{}
+	service := api.Service{
+		APIVersion: "v1",
+		Kind:       "Service",
+		Metadata: api.ObjectMeta{
+			Name: "nginx",
+		},
+		Spec: api.ServiceSpec{
+			Type: "ClusterIP",
+			Ports: []api.ServicePort{
+				{
+					Port:       80,
+					TargetPort: 8080,
+					Protocol:   "TCP",
+					Name:       "http",
+				},
+			},
+		},
+	}
+	err := ipvsHandler.DeleteService(&service)
+	if err != nil {
+		t.Errorf("DeleteService() error = %v", err.Error())
+	}
+
+}
