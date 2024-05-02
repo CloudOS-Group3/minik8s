@@ -10,6 +10,10 @@ const (
 	protocol   = "http://"
 )
 
+const (
+	EtcdDefaultPort = 9092
+)
+
 func GetUrlPrefix() string {
 	if local {
 		return protocol + localhost + ":" + strconv.Itoa(port)

@@ -60,3 +60,7 @@ const (
 	NameParam            = "name"
 	NamespaceParam       = "namespace"
 )
+
+const (
+	JsonContent = "application/json"
+)
