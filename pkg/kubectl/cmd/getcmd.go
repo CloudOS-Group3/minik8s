@@ -12,47 +12,56 @@ import (
 
 func GetCmd() *cobra.Command {
 
-	var getCmd, getPodCmd, getDeploymentCmd, getServiceCmd, getNodeCmd *cobra.Command
-
 	// getCmd is the root of the other four commands
-	getCmd = &cobra.Command{
+	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "get the infomation of resource",
 		Run:   nil,
 	}
 
-	getPodCmd = &cobra.Command{
+	getPodCmd := &cobra.Command{
 		Use:   "pod",
 		Short: "get pod",
 		Run:   getPodCmdHandler,
 	}
 
-	getDeploymentCmd = &cobra.Command{
-		Use:   "deployment",
-		Short: "get deployment",
-		Run:   getDeploymentCmdHandler,
-	}
-
-	getServiceCmd = &cobra.Command{
-		Use:   "service",
-		Short: "get service",
-		Run:   getServiceCmdHandler,
-	}
-
-	getNodeCmd = &cobra.Command{
+	getNodeCmd := &cobra.Command{
 		Use:   "node",
 		Short: "get node",
 		Run:   getNodeCmdHandler,
 	}
 
+	getServiceCmd := &cobra.Command{
+		Use:   "service",
+		Short: "get service",
+		Run:   getServiceCmdHandler,
+	}
+
+	getDeploymentCmd := &cobra.Command{
+		Use:   "deployment",
+		Short: "get deployment",
+		Run:   getDeploymentCmdHandler,
+	}
+
+	getHPACmd := &cobra.Command{
+		Use:   "hpa",
+		Short: "get hpa",
+		Run:   getHPACmdHandler,
+	}
+
+	getPodCmd.Aliases = []string{"po", "pods"}
+	getNodeCmd.Aliases = []string{"no", "nodes"}
+	getServiceCmd.Aliases = []string{"svc", "service"}
+	getDeploymentCmd.Aliases = []string{"deployments"}
+	getHPACmd.Aliases = []string{"hpas"}
+
 	getCmd.AddCommand(getPodCmd)
+	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
 	getCmd.AddCommand(getServiceCmd)
-	getCmd.AddCommand(getNodeCmd)
 
 	return getCmd
 }
-
 
 // TODO: all of these handlers have got the data, but they dont show it in the terminal
 func getPodCmdHandler(cmd *cobra.Command, args []string) {
@@ -152,4 +161,40 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 			matchNodes = append(matchNodes, *node)
 		}
 	}
+}
+
+func getHPACmdHandler(cmd *cobra.Command, args []string) {
+	log.Debug("the length of args is: %v", len(args))
+
+	matchHPAs := []api.HPA{}
+	if len(args) == 0 {
+		log.Debug("getting all HPAs")
+		URL := config.GetUrlPrefix() + config.HPAsURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		err := httputil.Get(URL, matchHPAs, "data")
+		if err != nil {
+			log.Error("Error http get hpa: %s", err.Error())
+			return
+		}
+	} else {
+		for _, hpaName := range args {
+			log.Debug("getting hpa: %s", hpaName)
+
+			hpa := &api.HPA{}
+			URL := config.GetUrlPrefix() + config.HPAURL
+			URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+			URL = strings.Replace(URL, config.NamePlaceholder, hpaName, -1)
+
+			err := httputil.Get(URL, hpa, "data")
+			
+			if err != nil {
+				log.Error("Error http get hpa: %s", err.Error())
+				return
+			}
+
+			log.Debug("hpa is: %+v", hpa)
+			matchHPAs = append(matchHPAs, *hpa)
+		}
+	}
+
 }

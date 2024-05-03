@@ -14,15 +14,15 @@ type HPASpec struct {
 	Behavior       HPABehavior                 `json:"behavior" yaml:"behavior"`
 	MaxReplica     int                         `json:"maxReplica" yaml:"maxReplica"`
 	MinReplica     int                         `json:"minReplica" yaml:"minReplica"`
-	Metrics        []MetricsSpec                 `json:"metrics" yaml:"metrics"`
+	Metrics        []MetricsSpec               `json:"metrics" yaml:"metrics"`
 	ScaleTargetRef CrossVersionObjectReference `json:"scaleTargetRef" yaml:"scaleTargetRef"`
 }
 
 type HPAStatus struct {
 	Conditions      []HPACondition `json:"conditions" yaml:"conditions"`
-	CurrentReplicas int          `json:"currentReplicas" yaml:"currentReplicas"`
-	DesiredReplicas int          `json:"desiredReplicas" yaml:"desiredReplicas"`
-	LastScaleTime   time.Time    `json:"lastScaleTime" yaml:"lastScaleTime"`
+	CurrentReplicas int            `json:"currentReplicas" yaml:"currentReplicas"`
+	DesiredReplicas int            `json:"desiredReplicas" yaml:"desiredReplicas"`
+	LastScaleTime   time.Time      `json:"lastScaleTime" yaml:"lastScaleTime"`
 }
 
 type HPABehavior struct {

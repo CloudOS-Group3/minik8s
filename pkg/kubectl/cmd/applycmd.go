@@ -75,16 +75,13 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyServiceHandler(content)
 	case "Deployment":
 		applyDeploymentHandler(content)
-	case "ReplicaSet":
-		applyReplicaSetHandler(content)
-	case "StatefulSet":
-		applyStatefulSetHandler(content)
+	case "HorizontalPodAutoscaler":
+		applyHPAHandler(content)
 	default:
 		fmt.Println("Unknown resource kind")
 	}
 
 }
-
 func applyPodHandler(content []byte) {
 	log.Info("Creating or updating pod")
 	log.Debug("data is %v", content)
@@ -96,8 +93,8 @@ func applyPodHandler(content []byte) {
 	}
 	log.Debug("%+v\n", pod)
 
-	path := strings.Replace(config.PodsURL, config.NamespacePlaceholder, "default", -1)
-	byteArr, err := json.Marshal(pod)
+	path := strings.Replace(config.PodsURL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
+	byteArr, err := json.Marshal(*pod)
 	log.Debug("path = %v", path)
 	URL := config.GetUrlPrefix() + path
 	
@@ -125,11 +122,16 @@ func applyDeploymentHandler(content []byte) {
 		return
 	}
 	log.Debug("deployment is %+v", *deployment)
-	path := strings.Replace(config.DeploymentsURL, config.NamespacePlaceholder, "default", -1)
+	
+	byteArr, err := json.Marshal(*deployment)
 
-	byteArr, err := json.Marshal(deployment)
-	log.Debug("path = %+v", path)
-	URL := config.GetUrlPrefix() + path
+	if err != nil {
+		log.Error("Error json marshal deployment")
+		return
+	}
+
+	URL := config.GetUrlPrefix() + config.DeploymentsURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, deployment.Metadata.NameSpace, -1)
 
 	err = httputil.Post(URL, byteArr)
 	if err != nil {
@@ -139,10 +141,30 @@ func applyDeploymentHandler(content []byte) {
 	log.Info("apply deployment successed")
 }
 
-func applyReplicaSetHandler(content []byte) {
-	log.Info("creating or updating replicaset")
-}
 
-func applyStatefulSetHandler(content []byte) {
-	log.Info("creating or updating statefulset")
+func applyHPAHandler(content []byte) {
+	log.Info("creating or updating HPA")
+
+	hpa := &api.HPA{}
+	err := yaml.Unmarshal(content, hpa)
+	if err != nil {
+		log.Error("Error yaml unmarshal hpa")
+		return
+	}
+	
+	byteArr, err := json.Marshal(*hpa)
+	if err != nil {
+		log.Error("Error json marshal hpa")
+		return
+	}
+
+	URL := config.GetUrlPrefix() + config.HPAsURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, hpa.Metadata.NameSpace, -1)
+	err = httputil.Post(URL, byteArr)
+
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply hpa successed")
 }
