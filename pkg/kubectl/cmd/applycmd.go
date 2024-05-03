@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
-	"net/http"
 	"os"
 	"strings"
 
@@ -101,14 +100,11 @@ func applyPodHandler(content []byte) {
 	byteArr, err := json.Marshal(pod)
 	log.Debug("path = %v", path)
 	URL := config.GetUrlPrefix() + path
-	response, err := http.Post(URL, config.JsonContent, bytes.NewBuffer(byteArr))
-	if err != nil {
-		log.Error("error http post")
-		return
-	}
+	
+	httputil.Post(URL, byteArr)
 
-	if response.StatusCode != http.StatusOK {
-		log.Warn("status code not ok")
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
 		return
 	}
 
@@ -135,13 +131,9 @@ func applyDeploymentHandler(content []byte) {
 	log.Debug("path = %+v", path)
 	URL := config.GetUrlPrefix() + path
 
-	response, err := http.Post(URL, config.JsonContent, bytes.NewBuffer(byteArr))
+	err = httputil.Post(URL, byteArr)
 	if err != nil {
-		log.Error("error http post deployment")
-		return
-	}
-	if response.StatusCode != http.StatusOK {
-		log.Warn("status code not ok")
+		log.Error("error http post deployment: %s", err.Error())
 		return
 	}
 	log.Info("apply deployment successed")

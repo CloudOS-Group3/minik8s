@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
-	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -46,12 +45,6 @@ func GetCmd() *cobra.Command {
 		Run:   getNodeCmdHandler,
 	}
 
-	// support -a flag, but the implementation could be troublesome
-	getPodCmd.Flags().BoolP("all", "a", false, "get all pod")
-	getDeploymentCmd.Flags().BoolP("all", "a", false, "get all deployment")
-	getServiceCmd.Flags().BoolP("all", "a", false, "get all service")
-	getNodeCmd.Flags().BoolP("all", "a", false, "get all node")
-
 	getCmd.AddCommand(getPodCmd)
 	getCmd.AddCommand(getDeploymentCmd)
 	getCmd.AddCommand(getServiceCmd)
@@ -60,33 +53,71 @@ func GetCmd() *cobra.Command {
 	return getCmd
 }
 
-// all the handlers below should be replaced by real k8s logic later
+
+// TODO: all of these handlers have got the data, but they dont show it in the terminal
 func getPodCmdHandler(cmd *cobra.Command, args []string) {
 
-	for _, podName := range args {
-		log.Debug("%v", podName)
-		URL := config.PodURL
-		URL = strings.Replace(URL, config.NamePlaceholder, podName, -1)
+	log.Debug("the length of args is: %v", len(args))
+
+	matchPods := []api.Pod{}
+	if len(args) == 0 {
+		log.Info("getting all pods")
+		URL := config.GetUrlPrefix() + config.PodsURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
-		response, err := http.Get(config.GetUrlPrefix() + URL)
+
+		err := httputil.Get(URL, matchPods)
 		if err != nil {
-			log.Error("error http get, %s", err.Error())
+			log.Error("error get app pods: %s", err.Error())
 			return
 		}
-		pod := &api.Pod{}
-		log.Debug("%+v", response.Body)
-		decoder := json.NewDecoder(response.Body)
-		err = decoder.Decode(pod)
-		if err != nil {
-			log.Error("error decode response body")
-			return
+	} else {
+		for _, podName := range args {
+			pod := &api.Pod{}
+
+			log.Debug("getting pod: %v", podName)
+			URL := config.GetUrlPrefix() + config.PodURL
+			URL = strings.Replace(URL, config.NamePlaceholder, podName, -1)
+			URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+
+			err := httputil.Get(URL, pod)
+
+			if err != nil {
+				log.Error("error get pod: %s", err.Error())
+				return
+			}
+
+			log.Debug("%+v", pod)
+			matchPods = append(matchPods, *pod)
 		}
-		log.Debug("%v", pod)
 	}
 }
 
 func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
+	log.Info("the length of the args is: %v", len(args))
+	matchDeployments := []api.Deployment{}
 
+	if len(args) == 0 {
+		log.Info("getting all deployments")
+		URL := config.GetUrlPrefix() + config.DeploymentsURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		err := httputil.Get(URL, matchDeployments)
+		if err != nil {
+			log.Error("error getting all deployments: %s", err.Error())
+			return
+		}
+	} else {
+		for _, deploymentName := range args {
+			deployment := &api.Deployment{}
+
+			URL := config.GetUrlPrefix() + config.DeploymentURL
+			URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+			URL = strings.Replace(URL, config.NamePlaceholder, deploymentName, -1)
+
+			httputil.Get(URL, deployment)
+
+			matchDeployments = append(matchDeployments, *deployment)
+		}
+	}
 }
 
 func getServiceCmdHandler(cmd *cobra.Command, args []string) {
@@ -94,24 +125,31 @@ func getServiceCmdHandler(cmd *cobra.Command, args []string) {
 }
 
 func getNodeCmdHandler(cmd *cobra.Command, args []string) {
-	for _, nodeName := range args {
-		log.Debug("%v", nodeName)
-		URL := config.NodeURL
-		URL = strings.Replace(URL, config.NamePlaceholder, nodeName, -1)
-		response, err := http.Get(config.GetUrlPrefix() + URL)
+	log.Debug("the length of args is: %v", len(args))
+
+	matchNodes := []api.Node{}
+
+	if len(args) == 0 {
+		log.Debug("getting all nodes")
+		URL := config.GetUrlPrefix() + config.NodesURL
+		err := httputil.Get(URL, matchNodes)
 		if err != nil {
-			log.Error("error http get, %s", err.Error())
+			log.Error("error getting all nodes: %s", err.Error())
 			return
 		}
-		// todo replace with node object
-		pod := &api.Pod{}
-		log.Debug("%+v", response.Body)
-		decoder := json.NewDecoder(response.Body)
-		err = decoder.Decode(pod)
-		if err != nil {
-			log.Error("error decode response body")
-			return
+	} else {
+		for _, nodeName := range args {
+			log.Debug("%v", nodeName)
+			node := &api.Node{}
+			URL := config.GetUrlPrefix() + config.NodeURL
+			URL = strings.Replace(URL, config.NamePlaceholder, nodeName, -1)
+			err := httputil.Get(URL, node)
+			if err != nil {
+				log.Error("error get node: %s", err.Error())
+				return
+			}
+			log.Debug("%+v", node)
+			matchNodes = append(matchNodes, *node)
 		}
-		log.Debug("%v", pod)
 	}
 }
