@@ -40,7 +40,6 @@ func (s *ServiceManager) AddService(service *api.Service) error {
 	service.Status.ClusterIP = s.GenerateClusterIP(service)
 
 	// podList
-	//service.Spec.
 
 	// Add service
 	s.serviceList[name] = service
