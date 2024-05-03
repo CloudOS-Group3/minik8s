@@ -1,4 +1,4 @@
-package serverconfig
+package config
 
 const (
 

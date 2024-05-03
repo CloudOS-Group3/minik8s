@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"minik8s/pkg/apiserver/config"
+	"minik8s/pkg/config"
 	"minik8s/pkg/apiserver/handlers"
 
 	"github.com/gin-gonic/gin"
@@ -42,4 +42,10 @@ func (server *apiServer) bind() {
 	server.router.GET(config.PodURL, handlers.GetPod)
 	server.router.PUT(config.PodURL, handlers.UpdatePod)
 	server.router.DELETE(config.PodURL, handlers.DeletePod)
+
+	server.router.GET(config.DeploymentsURL, handlers.GetDeployments)
+	server.router.POST(config.DeploymentsURL, handlers.AddDeployments)
+	server.router.GET(config.DeploymentURL, handlers.GetDeployment)
+	server.router.PUT(config.DeploymentURL, handlers.UpdateDeployment)
+	server.router.DELETE(config.DeploymentURL, handlers.DeleteDeployment)
 }

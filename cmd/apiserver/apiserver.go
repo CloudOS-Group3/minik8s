@@ -2,7 +2,7 @@ package main
 
 import (
 	"minik8s/pkg/apiserver/server"
-	"minik8s/pkg/apiserver/config"
+	"minik8s/pkg/config"
 )
 
 
