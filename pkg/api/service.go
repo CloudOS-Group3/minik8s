@@ -1,11 +1,11 @@
 package api
 
 type Service struct {
-	APIVersion string      `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-	Kind       string      `json:"kind,omitempty" yaml:"kind,omitempty"`
-	Metadata   ObjectMeta  `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-	Spec       ServiceSpec `json:"spec,omitempty" yaml:"spec,omitempty"`
-	//Status     ServiceStatus `json:"status" yaml:"status"`
+	APIVersion string        `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
+	Kind       string        `json:"kind,omitempty" yaml:"kind,omitempty"`
+	Metadata   ObjectMeta    `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Spec       ServiceSpec   `json:"spec,omitempty" yaml:"spec,omitempty"`
+	Status     ServiceStatus `json:"status" yaml:"status"`
 }
 
 type ServiceSpec struct {
@@ -31,4 +31,8 @@ type ServicePort struct {
 
 	// The name of this port within the service.
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+}
+
+type ServiceStatus struct {
+	ClusterIP string `json:"clusterIP,omitempty" yaml:"clusterIP,omitempty"`
 }
