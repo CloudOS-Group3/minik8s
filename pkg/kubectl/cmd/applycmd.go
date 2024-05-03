@@ -30,7 +30,7 @@ func ApplyCmd() *cobra.Command {
 
 func getKindFromYaml(content []byte) string {
 	var resource map[string]interface{}
-	yaml.Unmarshal(content, resource)
+	yaml.Unmarshal(content, &resource)
 	if resource["kind"] == "" {
 		log.Error("kind field is empty")
 		return ""
@@ -41,13 +41,13 @@ func getKindFromYaml(content []byte) string {
 func applyCmdHandler(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("file")
 	if err != nil {
-		fmt.Println("Error getting flags:", err)
+		log.Error("Error getting flags: %s", err)
 		return
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		log.Error("Error opening file: %s", err)
 		return
 	}
 
@@ -101,7 +101,7 @@ func applyPodHandler(content []byte) {
 	log.Debug("path = %v", path)
 	URL := config.GetUrlPrefix() + path
 	
-	httputil.Post(URL, byteArr)
+	err = httputil.Post(URL, byteArr)
 
 	if err != nil {
 		log.Error("error http post: %s", err.Error())

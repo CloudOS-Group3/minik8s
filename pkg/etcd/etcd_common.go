@@ -67,6 +67,7 @@ func (store Store) DeleteEtcdPair(key string) bool {
 }
 
 func (store Store) PrefixGet(prefix string) (map[string]string) {
+	log.Debug("before etcd get")
 	response, err := store.etcdClient.Get(context.TODO(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		log.Error("error get prefix %s", prefix)

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
@@ -14,6 +14,7 @@ func GetPods(context *gin.Context) {
 	log.Info("received get pods request")
 
 	URL := config.EtcdPodPath
+	log.Debug("before prefix get")
 	pods := etcdClient.PrefixGet(URL)
 
 	log.Debug("get all pods are: %+v", pods)
@@ -35,16 +36,16 @@ func AddPod(context *gin.Context) {
 	log.Debug("new pod is: %+v", newPod)
 
 	// need to interact with etcd
-	etcdClient.PutPod(newPod)
+	// etcdClient.PutPod(newPod)
 
-	podByteArray, err := json.Marshal(newPod)
+	// podByteArray, err := json.Marshal(newPod)
 
-	if err != nil {
-		log.Error("Error: json marshal failed")
-		return
-	}
+	// if err != nil {
+	// 	log.Error("Error: json marshal failed")
+	// 	return
+	// }
 
-	publisher.Publish("pod", string(podByteArray))
+	// publisher.Publish("pod", string(podByteArray))
 
 }
 

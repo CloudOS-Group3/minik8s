@@ -80,7 +80,7 @@ func (DC *DeploymentController) getAllPods() ([]api.Pod, error) {
 
 	pods := []api.Pod{}
 
-	err := httputil.Get(URL, pods)
+	err := httputil.Get(URL, pods, "data")
 	if err != nil {
 		log.Error("error get all pods")
 		return nil, err
@@ -94,7 +94,7 @@ func (DC *DeploymentController) getAllDeployments() ([]api.Deployment, error) {
 	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 	deployments := []api.Deployment{}
 
-	err := httputil.Get(URL, deployments)
+	err := httputil.Get(URL, deployments, "data")
 	if err != nil {
 		log.Error("error get all deployments")
 		return nil, err

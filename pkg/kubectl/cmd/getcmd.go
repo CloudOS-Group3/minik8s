@@ -65,7 +65,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 		URL := config.GetUrlPrefix() + config.PodsURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
-		err := httputil.Get(URL, matchPods)
+		err := httputil.Get(URL, &matchPods, "data")
 		if err != nil {
 			log.Error("error get app pods: %s", err.Error())
 			return
@@ -79,7 +79,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 			URL = strings.Replace(URL, config.NamePlaceholder, podName, -1)
 			URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
-			err := httputil.Get(URL, pod)
+			err := httputil.Get(URL, pod, "data")
 
 			if err != nil {
 				log.Error("error get pod: %s", err.Error())
@@ -100,7 +100,7 @@ func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 		log.Info("getting all deployments")
 		URL := config.GetUrlPrefix() + config.DeploymentsURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
-		err := httputil.Get(URL, matchDeployments)
+		err := httputil.Get(URL, matchDeployments, "data")
 		if err != nil {
 			log.Error("error getting all deployments: %s", err.Error())
 			return
@@ -113,7 +113,7 @@ func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 			URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 			URL = strings.Replace(URL, config.NamePlaceholder, deploymentName, -1)
 
-			httputil.Get(URL, deployment)
+			httputil.Get(URL, deployment, "data")
 
 			matchDeployments = append(matchDeployments, *deployment)
 		}
@@ -132,7 +132,7 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		log.Debug("getting all nodes")
 		URL := config.GetUrlPrefix() + config.NodesURL
-		err := httputil.Get(URL, matchNodes)
+		err := httputil.Get(URL, matchNodes, "data")
 		if err != nil {
 			log.Error("error getting all nodes: %s", err.Error())
 			return
@@ -143,7 +143,7 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 			node := &api.Node{}
 			URL := config.GetUrlPrefix() + config.NodeURL
 			URL = strings.Replace(URL, config.NamePlaceholder, nodeName, -1)
-			err := httputil.Get(URL, node)
+			err := httputil.Get(URL, node, "data")
 			if err != nil {
 				log.Error("error get node: %s", err.Error())
 				return
