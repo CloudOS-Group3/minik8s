@@ -44,6 +44,6 @@ type EndPoint struct {
 	IP        string `json:"ip,omitempty" yaml:"ip,omitempty"`
 	Ports     []int  `json:"ports,omitempty" yaml:"ports,omitempty"`
 	// EndPoint is a two-way mapping between service and pod, all by label.
-	PodName     string `json:"podName,omitempty" yaml:"podName,omitempty"`
-	ServiceName string `json:"serviceName,omitempty" yaml:"serviceName,omitempty"`
+	PodName     []string `json:"podName,omitempty" yaml:"podName,omitempty"`
+	ServiceName []string `json:"serviceName,omitempty" yaml:"serviceName,omitempty"`
 }

@@ -51,6 +51,9 @@ const (
 	// CronJobs API
 	CronJobsURL = "/apis/batch/v1/namespaces/:namespace/cronjobs"
 	CronJobURL  = "/apis/batch/v1/namespaces/:namespace/cronjobs/:name"
+
+	//Endpoints API
+	EndpointURL = "/api/v1/namespaces/:namespace/endpoints/:label"
 )
 
 // const used to send and parse url
@@ -59,6 +62,7 @@ const (
 	NamespacePlaceholder = ":namespace"
 	NameParam            = "name"
 	NamespaceParam       = "namespace"
+	LabelParam           = "label"
 )
 
 const (

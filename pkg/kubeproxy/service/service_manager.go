@@ -66,3 +66,7 @@ func (s *ServiceManager) GenerateClusterIP(service *api.Service) string {
 	s.Etcd.PutEtcdPair(etcdURL, string(rune(i+1)))
 	return "172.16.0." + maxIP
 }
+
+func (s *ServiceManager) GetService(namespace, name string) *api.Service {
+	return s.serviceList[namespace+":"+name]
+}
