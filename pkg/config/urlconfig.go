@@ -10,8 +10,10 @@ const (
 	PodsURL = "/api/v1/namespaces/:namespace/pods"
 	PodURL  = "/api/v1/namespaces/:namespace/pods/:name"
 
-	ServicesURL = "/api/v1/namespaces/:namespace/services"
-	ServiceURL  = "/api/v1/namespaces/:namespace/services/:name"
+	// Services API
+	ServicesAllURL = "/api/v1/services"
+	ServicesURL    = "/api/v1/namespaces/:namespace/services"
+	ServiceURL     = "/api/v1/namespaces/:namespace/services/:name"
 
 	NamespacesURL = "/api/v1/namespaces"
 	NamespaceURL  = "/api/v1/namespaces/:namespace"
@@ -43,6 +45,11 @@ const (
 	HPAsURL = "/apis/v1/namespaces/:namespace/hpa"
 	HPAURL = "/apis/v1/namespaces/:namespace/hpa/:name"
 
+	//Endpoints API
+	EndpointURL = "/api/v1/namespaces/:namespace/endpoints/:label"
+
+	//LabelIndex API
+	LabelIndexURL = "/api/v1/labelIndex/:label"
 )
 
 // const used to send and parse url
@@ -51,6 +58,7 @@ const (
 	NamespacePlaceholder = ":namespace"
 	NameParam            = "name"
 	NamespaceParam       = "namespace"
+	LabelParam           = "label"
 )
 
 const (

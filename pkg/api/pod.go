@@ -13,6 +13,7 @@ type Pod struct {
 }
 
 type PodSpec struct {
+	// NodeSelector: a map of labels.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty" yaml:"nodeSelector,omitempty"`
 	NodeName     string            `json:"nodeName,omitempty" yaml:"nodeName,omitempty"`
 	Containers   []Container       `json:"containers,omitempty" yaml:"containers,omitempty"`
