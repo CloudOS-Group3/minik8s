@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"minik8s/pkg/config"
 	"minik8s/pkg/apiserver/handlers"
+	"minik8s/pkg/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,4 +48,14 @@ func (server *apiServer) bind() {
 	server.router.GET(config.DeploymentURL, handlers.GetDeployment)
 	server.router.PUT(config.DeploymentURL, handlers.UpdateDeployment)
 	server.router.DELETE(config.DeploymentURL, handlers.DeleteDeployment)
+
+	server.router.GET(config.LabelIndexURL, handlers.GetLabelIndex)
+	server.router.POST(config.LabelIndexURL, handlers.AddLabelIndex)
+	server.router.DELETE(config.LabelIndexURL, handlers.DeleteLabelIndex)
+
+	server.router.GET(config.ServicesURL, handlers.GetServicesByNamespace)
+	server.router.GET(config.ServicesAllURL, handlers.GetAllServices)
+	server.router.GET(config.ServiceURL, handlers.GetService)
+	server.router.POST(config.ServiceURL, handlers.AddService)
+	server.router.DELETE(config.ServiceURL, handlers.DeleteService)
 }

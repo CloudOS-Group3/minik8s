@@ -5,6 +5,8 @@ import (
 	"minik8s/pkg/util"
 )
 
+var svc_manager *ServiceManager = NewServiceManager()
+
 func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) *api.EndPoint {
 	label := util.ConvertLabelToString(pod.Spec.NodeSelector)
 	endpoint := GetEndpoint(label)
@@ -20,9 +22,14 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) *api.EndPoint {
 		// update endpoint
 		endpoint.PodName = append(endpoint.PodName, pod.Metadata.Name)
 		// need to update service
-		//for _, serviceName := range endpoint.ServiceName {
-		//	// update service
-		//}
+		for _, serviceName := range endpoint.ServiceName {
+			svc := svc_manager.GetService(endpoint.NameSpace, serviceName)
+			if svc != nil {
+				// update service
+				svc.
+					svc_manager.UpdateService(svc)
+			}
+		}
 
 	}
 	if oldLabel != nil {

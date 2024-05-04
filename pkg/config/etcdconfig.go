@@ -19,4 +19,10 @@ const (
 
 	// usage: /registry/jobs/<namespace>/<job-name>
 	EtcdJobPath = "/registry/jobs/"
+
+	// usage: /registry/labelIndex/<label>
+	LabelIndexPath = "/registry/labelIndex/"
+
+	// usage: /registry/services/<namespace>/<svc-name>
+	ServicePath = "/registry/services/"
 )

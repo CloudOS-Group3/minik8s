@@ -13,8 +13,9 @@ const (
 	PodURL  = "/api/v1/namespaces/:namespace/pods/:name"
 
 	// Services API
-	ServicesURL = "/api/v1/namespaces/:namespace/services"
-	ServiceURL  = "/api/v1/namespaces/:namespace/services/:name"
+	ServicesAllURL = "/api/v1/services"
+	ServicesURL    = "/api/v1/namespaces/:namespace/services"
+	ServiceURL     = "/api/v1/namespaces/:namespace/services/:name"
 
 	// Namespaces API
 	NamespacesURL = "/api/v1/namespaces"
@@ -54,6 +55,9 @@ const (
 
 	//Endpoints API
 	EndpointURL = "/api/v1/namespaces/:namespace/endpoints/:label"
+
+	//LabelIndex API
+	LabelIndexURL = "/api/v1/labelIndex/:label"
 )
 
 // const used to send and parse url

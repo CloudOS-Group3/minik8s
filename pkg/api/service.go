@@ -38,12 +38,10 @@ type ServiceStatus struct {
 	EndPoints []EndPoint `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
 }
 
+// EndPoint : match a pod by label
 type EndPoint struct {
-	// Don't support cross namespace search.
-	NameSpace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	IP        string `json:"ip,omitempty" yaml:"ip,omitempty"`
-	Ports     []int  `json:"ports,omitempty" yaml:"ports,omitempty"`
-	// EndPoint is a two-way mapping between service and pod, all by label.
-	PodName     []string `json:"podName,omitempty" yaml:"podName,omitempty"`
-	ServiceName []string `json:"serviceName,omitempty" yaml:"serviceName,omitempty"`
+	// IP is the IP address of the pod
+	IP string `json:"ip,omitempty" yaml:"ip,omitempty"`
+	// Ports is a list of ports that are exposed.
+	Ports []ContainerPort `json:"ports,omitempty" yaml:"ports,omitempty"`
 }
