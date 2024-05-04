@@ -7,6 +7,10 @@ import (
 )
 
 func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
+	if util.IsLabelEqual(pod.Spec.NodeSelector, oldLabel) {
+		// no need to update
+		return
+	}
 	labelIndex, _ := GetLabelIndex(pod.Spec.NodeSelector)
 
 	// Step 1: Deal with new label
