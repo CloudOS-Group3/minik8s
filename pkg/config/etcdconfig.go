@@ -14,9 +14,15 @@ const (
 	// usgae: /registry/svclabels/<label-key>/<label-value>/<svc-uuid>
 	EtcdServiceSelectorPath = "/registry/svclabels/"
 
-	// usage: /registry/endpoints/<label-key>/<label-value>/<pod-uuid>
+	// usage: /registry/endpoints/namespace/<label-key>
 	EndpointPath = "/registry/endpoints/"
 
 	// usage: /registry/jobs/<namespace>/<job-name>
 	EtcdJobPath = "/registry/jobs/"
+
+	// usage: /registry/labelIndex/<label>
+	LabelIndexPath = "/registry/labelIndex/"
+
+	// usage: /registry/services/<namespace>/<svc-name>
+	ServicePath = "/registry/services/"
 )
