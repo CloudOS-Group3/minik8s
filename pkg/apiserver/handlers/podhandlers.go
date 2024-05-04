@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	// "encoding/json"
+	"encoding/json"
+	"fmt"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,8 +20,16 @@ func GetPods(context *gin.Context) {
 	pods := etcdClient.PrefixGet(URL)
 
 	log.Debug("get all pods are: %+v", pods)
+
+	var podString []string
+	for _, pod := range pods {
+		podString = append(podString, pod.Value)
+	}
+	jsonValue := strings.Join(podString, ",")
+	jsonValue = fmt.Sprint("[", jsonValue ,"]")
+
 	context.JSON(http.StatusOK, gin.H{
-		"data": pods,
+		"data": jsonValue,
 	})
 }
 
@@ -35,15 +45,15 @@ func AddPod(context *gin.Context) {
 	}
 	log.Debug("new pod is: %+v", newPod)
 
-	// need to interact with etcd
-	// etcdClient.PutPod(newPod)
+	etcdClient.PutPod(newPod)
 
-	// podByteArray, err := json.Marshal(newPod)
+	podByteArray, err := json.Marshal(newPod)
 
-	// if err != nil {
-	// 	log.Error("Error: json marshal failed")
-	// 	return
-	// }
+	log.Debug("pod byte array is: %+v", podByteArray)
+	if err != nil {
+		log.Error("Error: json marshal failed")
+		return
+	}
 
 	// publisher.Publish("pod", string(podByteArray))
 

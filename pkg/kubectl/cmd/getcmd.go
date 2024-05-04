@@ -79,6 +79,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 			log.Error("error get app pods: %s", err.Error())
 			return
 		}
+		log.Debug("match pods are: %+v", matchPods)
 	} else {
 		for _, podName := range args {
 			pod := &api.Pod{}

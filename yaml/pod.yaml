@@ -3,3 +3,11 @@ kind: Pod
 metadata:
   name: my-pod
   namespace: default
+  labels:
+    app: my-app
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+    ports:
+    - containerPort: 80

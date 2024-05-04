@@ -23,7 +23,6 @@ func Get(URL string, result interface{}, key string) error {
 		return err
 	}
 	var resMap map[string]interface{}
-
 	err = json.NewDecoder(res.Body).Decode(&resMap)
 
 	if err != nil {
@@ -31,13 +30,14 @@ func Get(URL string, result interface{}, key string) error {
 		return err
 	}
 	log.Debug("the resMap is: %+v", resMap)
-	data, ok := resMap[key]
-
+	value, ok := resMap[key]
 	if !ok {
 		log.Warn("Empty data with key: %s", key)
 		return nil
 	}
-	dataStr := fmt.Sprint(data)
+	log.Debug("value type is: %T", value)
+	log.Debug("data is: %+v", value)
+	dataStr := fmt.Sprint(value)
 	err = json.Unmarshal([]byte(dataStr), result)
 	if err != nil {
 		log.Error("Error json unmarshal: %s", err.Error())

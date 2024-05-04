@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -84,16 +85,22 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 }
 func applyPodHandler(content []byte) {
 	log.Info("Creating or updating pod")
-	log.Debug("data is %v", content)
 	pod := &api.Pod{}
 	err := yaml.Unmarshal(content, pod)
 	if err != nil {
 		log.Error("error marshal yaml")
 		return
 	}
+	pod.Metadata.UUID = uuid.NewString()
 	log.Debug("%+v\n", pod)
 
-	path := strings.Replace(config.PodsURL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
+	var namespace string
+	if pod.Metadata.NameSpace != "" {
+		namespace = pod.Metadata.NameSpace
+	} else {
+		namespace = "default"
+	}
+	path := strings.Replace(config.PodsURL, config.NamespacePlaceholder, namespace, -1)
 	byteArr, err := json.Marshal(*pod)
 	log.Debug("path = %v", path)
 	URL := config.GetUrlPrefix() + path
