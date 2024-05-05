@@ -50,6 +50,27 @@ func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 				OnPodUpdate(&podMsg.NewPod, nil)
 				break
 			}
+		} else if msg.Topic == msg_type.ServiceTopic {
+			session.MarkMessage(msg, "")
+			serviceMsg := &msg_type.ServiceMsg{}
+			err := json.Unmarshal(msg.Value, serviceMsg)
+			if err != nil {
+				log.Error("unmarshal service error")
+				continue
+			}
+			switch serviceMsg.Opt {
+			case msg_type.Update:
+				if !util.IsLabelEqual(serviceMsg.NewService.Metadata.Labels, serviceMsg.OldService.Metadata.Labels) {
+					OnServiceUpdate(&serviceMsg.NewService, serviceMsg.OldService.Metadata.Labels)
+				}
+				break
+			case msg_type.Delete:
+				OnServiceDelete(&serviceMsg.NewService)
+				break
+			case msg_type.Add:
+				OnServiceUpdate(&serviceMsg.NewService, nil)
+				break
+			}
 		}
 	}
 	return nil
