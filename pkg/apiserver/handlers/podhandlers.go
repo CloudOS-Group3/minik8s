@@ -60,7 +60,7 @@ func AddPod(context *gin.Context) {
 	if err != nil {
 		log.Error("Error: json marshal failed")
 		return
-
+	}
 	// check if the pod already exists
 	oldPod, exited := etcdClient.GetPod(newPod.Metadata.NameSpace, newPod.Metadata.Name)
 
