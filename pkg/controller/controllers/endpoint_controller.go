@@ -29,6 +29,7 @@ func (e EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
 
 func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
+		log.Info("Watch msg: %s\n", string(msg.Value))
 		if msg.Topic == msg_type.PodTopic {
 			session.MarkMessage(msg, "")
 			podMsg := &msg_type.PodMsg{}
@@ -84,13 +85,6 @@ func NewEndPointController() *EndPointController {
 	endpointController := &EndPointController{
 		subscriber: subscriber,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	wg := &sync.WaitGroup{}
-	subscriber.Subscribe(wg, ctx, []string{msg_type.PodTopic}, endpointController)
-	<-endpointController.ready
-	<-endpointController.done
-	cancel()
-	wg.Wait()
 	return endpointController
 }
 
@@ -340,4 +334,15 @@ func OnServiceDelete(svc *api.Service) {
 	if err != nil {
 		log.Fatal("add label index error")
 	}
+}
+
+func (e *EndPointController) Run() {
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	topics := []string{"pod", "node"}
+	e.subscriber.Subscribe(wg, ctx, topics, e)
+	<-e.ready
+	<-e.done
+	cancel()
+	wg.Wait()
 }

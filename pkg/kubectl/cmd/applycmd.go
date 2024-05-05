@@ -104,7 +104,7 @@ func applyPodHandler(content []byte) {
 	byteArr, err := json.Marshal(*pod)
 	log.Debug("path = %v", path)
 	URL := config.GetUrlPrefix() + path
-	
+
 	err = httputil.Post(URL, byteArr)
 
 	if err != nil {
@@ -129,7 +129,7 @@ func applyDeploymentHandler(content []byte) {
 		return
 	}
 	log.Debug("deployment is %+v", *deployment)
-	
+
 	byteArr, err := json.Marshal(*deployment)
 
 	if err != nil {
@@ -148,7 +148,6 @@ func applyDeploymentHandler(content []byte) {
 	log.Info("apply deployment successed")
 }
 
-
 func applyHPAHandler(content []byte) {
 	log.Info("creating or updating HPA")
 
@@ -158,7 +157,7 @@ func applyHPAHandler(content []byte) {
 		log.Error("Error yaml unmarshal hpa")
 		return
 	}
-	
+
 	byteArr, err := json.Marshal(*hpa)
 	if err != nil {
 		log.Error("Error json marshal hpa")

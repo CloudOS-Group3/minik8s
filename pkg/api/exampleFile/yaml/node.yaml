@@ -1,9 +1,22 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: my-pod
-  namespace: my-namespace
+  name: file-download-pod
   labels:
-      app: my-app
-      version: v1
-      release: stable
+    app: file-download
+spec:
+  containers:
+    - name: sharer
+      image: 7143192/fileserver:latest
+      ports:
+        - containerPort: 8080
+      volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/files
+    - name: downloader
+      image: 7143192/downloader:latest
+      ports:
+        - containerPort: 3000
+      volumeMounts:
+        - name: shared-data
+          mountPath: /data

@@ -55,6 +55,7 @@ func Post(URL string, body []byte) error {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
+		log.Error("res is %v", res)
 		err = errors.New("Http post response not ok")
 		return err
 	}
