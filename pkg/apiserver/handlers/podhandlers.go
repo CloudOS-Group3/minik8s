@@ -8,8 +8,10 @@ import (
 	"minik8s/util/log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func GetPods(context *gin.Context) {
@@ -44,6 +46,9 @@ func AddPod(context *gin.Context) {
 		})
 	}
 	log.Debug("new pod is: %+v", newPod)
+	
+	newPod.Status.StartTime = time.Now()
+	newPod.Metadata.UUID = uuid.NewString()
 
 	etcdClient.PutPod(newPod)
 

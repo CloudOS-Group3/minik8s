@@ -5,7 +5,9 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
+	"minik8s/util/prettyprint"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -100,6 +102,18 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 			matchPods = append(matchPods, *pod)
 		}
 	}
+
+	header := []string{"name", "status", "age"}
+	data := [][]string{}
+
+	for _, matchPod := range matchPods {
+		log.Debug("%s", time.Now().String())
+		log.Debug("%s", matchPod.Status.StartTime)
+		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
+		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age})
+	}
+
+	prettyprint.PrintTable(header, data)
 }
 
 func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
