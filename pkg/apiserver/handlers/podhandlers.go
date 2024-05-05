@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"minik8s/pkg/api"
+	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
 	"net/http"
@@ -34,17 +35,29 @@ func AddPod(context *gin.Context) {
 	}
 	log.Debug("new pod is: %+v", newPod)
 
+	// check if the pod already exists
+	oldPod, exited := etcdClient.GetPod(newPod.Metadata.NameSpace, newPod.Metadata.Name)
+
 	// need to interact with etcd
 	etcdClient.PutPod(newPod)
 
-	podByteArray, err := json.Marshal(newPod)
-
-	if err != nil {
-		log.Error("Error: json marshal failed")
-		return
+	// construct message
+	var message msg.PodMsg
+	if exited {
+		message = msg.PodMsg{
+			Opt:    msg.Update,
+			OldPod: oldPod,
+			NewPod: newPod,
+		}
+	} else {
+		message = msg.PodMsg{
+			Opt:    msg.Add,
+			NewPod: newPod,
+		}
 	}
+	msg_json, _ := json.Marshal(message)
 
-	publisher.Publish("pod", string(podByteArray))
+	publisher.Publish(msg.PodTopic, string(msg_json))
 
 }
 
@@ -84,9 +97,28 @@ func UpdatePod(context *gin.Context) {
 		log.Error("error decode new pod")
 		return
 	}
+	// check if the pod already exists
+	oldPod, exited := etcdClient.GetPod(newPod.Metadata.NameSpace, newPod.Metadata.Name)
 
 	// todo: should use update pod
 	etcdClient.UpdatePod(newPod)
+
+	// construct message
+	var message msg.PodMsg
+	if exited {
+		message = msg.PodMsg{
+			Opt:    msg.Update,
+			OldPod: oldPod,
+			NewPod: newPod,
+		}
+	} else {
+		message = msg.PodMsg{
+			Opt:    msg.Add,
+			NewPod: newPod,
+		}
+	}
+	msg_json, _ := json.Marshal(message)
+	publisher.Publish(msg.PodTopic, string(msg_json))
 
 }
 
@@ -95,5 +127,20 @@ func DeletePod(context *gin.Context) {
 
 	name := context.Param(config.NameParam)
 	namespace := context.Param(config.NamespaceParam)
+
+	// check if the pod already exists
+	oldPod, exited := etcdClient.GetPod(namespace, name)
+	if !exited {
+		log.Error("pod not exist")
+		return
+	}
 	etcdClient.DeletePod(namespace, name)
+
+	// construct message
+	message := msg.PodMsg{
+		Opt:    msg.Delete,
+		OldPod: oldPod,
+	}
+	msg_json, _ := json.Marshal(message)
+	publisher.Publish(msg.PodTopic, string(msg_json))
 }
