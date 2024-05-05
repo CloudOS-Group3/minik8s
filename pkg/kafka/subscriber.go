@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+const (
+	//broker
+	DefaultBroker = "127.0.0.1:9092"
+	//group
+	ControllerGroup = "controller-group"
+)
+
 type Subscriber struct {
 	consumerGroup sarama.ConsumerGroup
 }
