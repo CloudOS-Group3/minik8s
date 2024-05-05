@@ -6,6 +6,7 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/containerd/containerd v1.7.15
 	github.com/fatih/color v1.16.0
+	github.com/google/cadvisor v0.49.1
 	github.com/moby/ipvs v1.1.0
 	github.com/spf13/cobra v1.8.0
 	go.etcd.io/etcd/client/v3 v3.5.13
@@ -49,6 +50,7 @@ require (
 	github.com/vishvananda/netns v0.0.2 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
+	k8s.io/klog/v2 v2.100.1 // indirect
 )
 
 require (
