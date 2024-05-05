@@ -18,9 +18,9 @@ type NodeSpec struct {
 type NodeCondition = string
 
 const (
-	Ready   NodeCondition = "Ready"
-	Failed  NodeCondition = "Failed"
-	Unknown NodeCondition = "Unknown"
+	NodeReady   NodeCondition = "Ready"
+	NodeFailed  NodeCondition = "Failed"
+	NodeUnknown NodeCondition = "Unknown"
 )
 
 type NodeStatus struct {

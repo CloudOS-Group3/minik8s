@@ -96,3 +96,13 @@ const (
 	PullPolicyIfNotPresent = "IfNotPresent"
 	PullPolicyNever        = "Never"
 )
+
+type PodPhase string
+
+const (
+	PodPending   PodPhase = "Pending"
+	PodRunning   PodPhase = "Running"
+	PodSucceeded PodPhase = "Succeeded"
+	PodFailed    PodPhase = "Failed"
+	PodUnknown   PodPhase = "Unknown"
+)

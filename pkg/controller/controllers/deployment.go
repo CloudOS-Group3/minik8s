@@ -1,26 +1,41 @@
 package controllers
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
-	"net/http"
 	"strings"
+	"time"
 )
 
-func update() {
+type DeploymentController struct{}
 
-	allPods, err := getAllPods()
+const (
+	initialDelay   time.Duration = 10
+	updateInterval time.Duration = 30
+)
+
+func (DC *DeploymentController) Run() {
+	<-time.After(initialDelay)
+
+	for {
+		DC.update()
+		<-time.After(updateInterval)
+	}
+}
+
+func (DC *DeploymentController) update() {
+
+	allPods, err := DC.getAllPods()
 	if err != nil {
 		log.Error("get all pods error")
 		return
 	}
 
-	deployments, err := getAllDeployments()
+	deployments, err := DC.getAllDeployments()
 	if err != nil {
 		log.Error("get all deployments error")
 		return
@@ -33,18 +48,18 @@ func update() {
 	for _, deployment := range deployments {
 		targetPods := []api.Pod{}
 		for _, pod := range allPods {
-			if checkLabel(pod, deployment) {
+			if DC.checkLabel(pod, deployment) {
 				targetPods = append(targetPods, pod)
 				allPodsWithDeployment[pod.Metadata.UUID] = true
 			}
 		}
 		if len(targetPods) < deployment.Spec.Replicas {
-			addPod(deployment.Spec.Template, deployment.Metadata, deployment.Spec.Replicas-len(targetPods))
+			DC.addPod(deployment.Spec.Template, deployment.Metadata, deployment.Spec.Replicas-len(targetPods))
 		} else if len(targetPods) > deployment.Spec.Replicas {
-			deletePod(targetPods, len(targetPods)-deployment.Spec.Replicas)
+			DC.deletePod(targetPods, len(targetPods)-deployment.Spec.Replicas)
 		}
 
-		updateDeploymentStatus(targetPods, deployment)
+		DC.updateDeploymentStatus(targetPods, deployment)
 	}
 
 	for _, pod := range allPods {
@@ -52,72 +67,54 @@ func update() {
 			continue
 		}
 		if _, ok := allPodsWithDeployment[pod.Metadata.UUID]; !ok {
-			deletePod([]api.Pod{pod}, 1)
+			DC.deletePod([]api.Pod{pod}, 1)
 		}
 	}
 
 }
 
-func getAllPods() ([]api.Pod, error) {
+func (DC *DeploymentController) getAllPods() ([]api.Pod, error) {
 
 	URL := config.GetUrlPrefix() + config.PodsURL
 	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
-	res, err := http.Get(URL)
-	if err != nil {
-		log.Error("err get all pods")
-		return nil, err
-	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-
 	pods := []api.Pod{}
-	err = json.Unmarshal(body, &pods)
+
+	err := httputil.Get(URL, pods, "data")
 	if err != nil {
-		log.Error("error unmarshal into all pods")
+		log.Error("error get all pods")
 		return nil, err
 	}
 
 	return pods, nil
 }
 
-func getAllDeployments() ([]api.Deployment, error) {
+func (DC *DeploymentController) getAllDeployments() ([]api.Deployment, error) {
 	URL := config.GetUrlPrefix() + config.DeploymentsURL
 	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
-
-	res, err := http.Get(URL)
-	if err != nil {
-		log.Error("err get all deployments")
-		return nil, err
-	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-
 	deployments := []api.Deployment{}
-	err = json.Unmarshal(body, &deployments)
+
+	err := httputil.Get(URL, deployments, "data")
 	if err != nil {
-		log.Error("error unmarshal into all deployments")
+		log.Error("error get all deployments")
 		return nil, err
 	}
+
 
 	return deployments, nil
 }
 
 // to return true, just need to match one label
-func checkLabel(pod api.Pod, deployment api.Deployment) bool {
-	for _, label := range deployment.Spec.Selector.MatchLabels {
-		if pod.Metadata.Labels[label] != "" {
+func (DC *DeploymentController) checkLabel(targetPod api.Pod, targetDeployment api.Deployment) bool {
+	for _, label := range targetDeployment.Spec.Selector.MatchLabels {
+		if targetPod.Metadata.Labels[label] != "" {
 			return true
 		}
 	}
 	return false
 }
 
-func addPod(template api.PodTemplateSpec, deploymentMetadata api.ObjectMeta, number int) {
+func (DC *DeploymentController) addPod(template api.PodTemplateSpec, deploymentMetadata api.ObjectMeta, number int) {
 	log.Info("automatically adding pod in deployment")
 
 	var newPod api.Pod
@@ -146,38 +143,60 @@ func addPod(template api.PodTemplateSpec, deploymentMetadata api.ObjectMeta, num
 		byteArr, err := json.Marshal(newPod)
 		if err != nil {
 			log.Error("error marshal newpod")
+			return
 		}
 
-		_, err = http.Post(URL, config.JsonContent, bytes.NewBuffer(byteArr))
+		err = httputil.Post(URL, byteArr)
 		if err != nil {
 			log.Error("error automatically add pod in deployment")
+			return
 		}
 	}
 }
 
-func deletePod(targetPods []api.Pod, number int) {
+func (DC *DeploymentController) deletePod(targetPods []api.Pod, number int) {
 
-	httpClient := &http.Client{}
 	for i := 0; i < number; i++ {
 		pod := targetPods[i]
-		
+
 		URL := config.GetUrlPrefix() + config.PodURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
 		URL = strings.Replace(URL, config.NamePlaceholder, pod.Metadata.Name, -1)
-		
-		req, err := http.NewRequest("DELETE", URL, nil)
-		if err != nil {
-			log.Error("create new request error")
-		}
 
-		res, err := httpClient.Do(req)
+		err := httputil.Delete(URL)
 		if err != nil {
-			log.Error("error in delete request")
+			log.Error("error deleting pod")
+			return
 		}
-		res.Body.Close()
 	}
 }
 
-func updateDeploymentStatus(targetPods []api.Pod, deployment api.Deployment) {
-	
+func (DC *DeploymentController) updateDeploymentStatus(targetPods []api.Pod, targetDeployment api.Deployment) {
+
+	readyPodNum := 0
+	for _, pod := range targetPods {
+		if pod.Status.Phase == string(api.PodRunning) {
+			readyPodNum++
+		}
+	}
+
+	targetDeployment.Status.ReadyReplicas = readyPodNum
+
+	URL := config.GetUrlPrefix() + config.DeploymentURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, targetDeployment.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, targetDeployment.Metadata.Name, -1)
+
+	byteArr, err := json.Marshal(targetDeployment)
+	if err != nil {
+		log.Error("error marshal targetdeployment")
+		return
+	}
+
+	err = httputil.Put(URL, byteArr)
+
+	if err != nil {
+		log.Error("error creating deployment")
+		return
+	}
+
 }
