@@ -7,6 +7,7 @@ import (
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/kubelet/pod"
+	"minik8s/util/log"
 	"sync"
 )
 
@@ -39,6 +40,7 @@ func (k *KubeletSubscriber) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (k *KubeletSubscriber) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
+		log.Info("Message claimed: value %s", string(msg.Value))
 		if msg.Topic == "pod" {
 			sess.MarkMessage(msg, "")
 			k.PodHandler(msg.Value)
@@ -51,6 +53,7 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 	var podMsg msg_type.PodMsg
 	err := json.Unmarshal(msg, &podMsg)
 	if err != nil {
+		log.Error("unmarshal pod message failed, error: %s", err.Error())
 		panic(err)
 	}
 	switch podMsg.Opt {
@@ -58,10 +61,10 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 		k.pm.CreatePod(&podMsg.NewPod)
 		break
 	case msg_type.Delete:
-		k.pm.DeletePodByName(podMsg.OldPod.Metadata.Name)
+		k.pm.DeletePod(&podMsg.OldPod)
 		break
 	case msg_type.Update:
-		k.pm.DeletePodByName(podMsg.OldPod.Metadata.Name)
+		k.pm.DeletePod(&podMsg.OldPod)
 		k.pm.CreatePod(&podMsg.NewPod)
 		break
 	}

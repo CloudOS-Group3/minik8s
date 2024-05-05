@@ -1,12 +1,12 @@
 package pod
 
 import (
-	"minik8s/util/log"
 	"context"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 	"minik8s/pkg/api"
 	"minik8s/pkg/kubelet/container"
+	"minik8s/util/log"
 )
 
 type PodManager struct {
@@ -64,7 +64,7 @@ func (pm *PodManager) CreatePod(pod *api.Pod) bool {
 func (pm *PodManager) CreatePauseContainer(pod *api.Pod) containerd.Container {
 	config := api.Container{
 		Name:            pod.Metadata.Name + "-pause",
-		Image:           "registry.aliyuncs.com/google_containers/pause:3.2",
+		Image:           "registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9",
 		ImagePullPolicy: api.PullPolicyIfNotPresent,
 	}
 
@@ -120,8 +120,7 @@ func (pm *PodManager) AddPod(pod *api.Pod) {
 	pm.podByName[pod.Metadata.Name] = pod
 }
 
-func (pm *PodManager) DeletePodByName(name string) bool {
-	pod := pm.GetPodByName(name)
+func (pm *PodManager) DeletePod(pod *api.Pod) bool {
 	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
 
 	// delete containers
@@ -149,6 +148,5 @@ func (pm *PodManager) DeletePodByName(name string) bool {
 	}
 
 	// delete pod
-	delete(pm.podByName, name)
 	return true
 }

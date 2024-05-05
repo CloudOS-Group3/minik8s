@@ -1,4 +1,4 @@
-package kubelet
+package main
 
 import (
 	"minik8s/pkg/kubelet/subscriber"
