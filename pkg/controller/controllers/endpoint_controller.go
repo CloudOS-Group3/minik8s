@@ -1,12 +1,104 @@
 package controllers
 
 import (
+	"context"
+	"encoding/json"
+	"github.com/IBM/sarama"
 	"minik8s/pkg/api"
+	msg_type "minik8s/pkg/api/msg_type"
+	"minik8s/pkg/kafka"
 	"minik8s/pkg/util"
 	"minik8s/util/log"
+	"sync"
 )
 
+type EndPointController struct {
+	subscriber *kafka.Subscriber
+	ready      chan bool
+	done       chan bool
+}
+
+func (e EndPointController) Setup(session sarama.ConsumerGroupSession) error {
+	close(e.ready)
+	return nil
+}
+
+func (e EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
+	return nil
+}
+
+func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for msg := range claim.Messages() {
+		if msg.Topic == msg_type.PodTopic {
+			session.MarkMessage(msg, "")
+			podMsg := &msg_type.PodMsg{}
+			err := json.Unmarshal(msg.Value, podMsg)
+			if err != nil {
+				log.Error("unmarshal pod error")
+				continue
+			}
+			switch podMsg.Opt {
+			case msg_type.Update:
+				if !util.IsLabelEqual(podMsg.NewPod.Spec.NodeSelector, podMsg.OldPod.Spec.NodeSelector) {
+					OnPodUpdate(&podMsg.NewPod, podMsg.OldPod.Spec.NodeSelector)
+				}
+				break
+			case msg_type.Delete:
+				OnPodDelete(&podMsg.NewPod)
+				break
+			case msg_type.Add:
+				OnPodUpdate(&podMsg.NewPod, nil)
+				break
+			}
+		} else if msg.Topic == msg_type.ServiceTopic {
+			session.MarkMessage(msg, "")
+			serviceMsg := &msg_type.ServiceMsg{}
+			err := json.Unmarshal(msg.Value, serviceMsg)
+			if err != nil {
+				log.Error("unmarshal service error")
+				continue
+			}
+			switch serviceMsg.Opt {
+			case msg_type.Update:
+				if !util.IsLabelEqual(serviceMsg.NewService.Metadata.Labels, serviceMsg.OldService.Metadata.Labels) {
+					OnServiceUpdate(&serviceMsg.NewService, serviceMsg.OldService.Metadata.Labels)
+				}
+				break
+			case msg_type.Delete:
+				OnServiceDelete(&serviceMsg.NewService)
+				break
+			case msg_type.Add:
+				OnServiceUpdate(&serviceMsg.NewService, nil)
+				break
+			}
+		}
+	}
+	return nil
+}
+
+func NewEndPointController() *EndPointController {
+	var subscriber = kafka.NewSubscriber(
+		[]string{kafka.DefaultBroker},
+		kafka.ControllerGroup,
+	)
+	endpointController := &EndPointController{
+		subscriber: subscriber,
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	subscriber.Subscribe(wg, ctx, []string{msg_type.PodTopic}, endpointController)
+	<-endpointController.ready
+	<-endpointController.done
+	cancel()
+	wg.Wait()
+	return endpointController
+}
+
 func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
+	if util.IsLabelEqual(pod.Spec.NodeSelector, oldLabel) {
+		// no need to update
+		return
+	}
 	labelIndex, _ := GetLabelIndex(pod.Spec.NodeSelector)
 
 	// Step 1: Deal with new label
