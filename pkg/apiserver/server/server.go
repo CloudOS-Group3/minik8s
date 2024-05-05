@@ -44,10 +44,17 @@ func (server *apiServer) bind() {
 	server.router.DELETE(config.PodURL, handlers.DeletePod)
 
 	server.router.GET(config.DeploymentsURL, handlers.GetDeployments)
-	server.router.POST(config.DeploymentsURL, handlers.AddDeployments)
+	server.router.POST(config.DeploymentsURL, handlers.AddDeployment)
 	server.router.GET(config.DeploymentURL, handlers.GetDeployment)
 	server.router.PUT(config.DeploymentURL, handlers.UpdateDeployment)
 	server.router.DELETE(config.DeploymentURL, handlers.DeleteDeployment)
+
+	server.router.GET(config.HPAsURL, handlers.GetHPAs)
+	server.router.POST(config.HPAsURL, handlers.AddHPA)
+	server.router.GET(config.HPAURL, handlers.GetHPA)
+	server.router.PUT(config.HPAURL, handlers.UpdateHPA)
+	server.router.DELETE(config.HPAURL, handlers.DeleteHPA)
+
 
 	server.router.GET(config.LabelIndexURL, handlers.GetLabelIndex)
 	server.router.POST(config.LabelIndexURL, handlers.AddLabelIndex)

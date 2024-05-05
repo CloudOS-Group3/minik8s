@@ -16,7 +16,7 @@ func GetDeployments(context *gin.Context) {
 
 }
 
-func AddDeployments(context *gin.Context) {
+func AddDeployment(context *gin.Context) {
 
 }
 

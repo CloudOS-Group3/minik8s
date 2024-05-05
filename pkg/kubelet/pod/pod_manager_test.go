@@ -13,7 +13,7 @@ func TestCreatePod(t *testing.T) {
 	newPod := &api.Pod{
 		Metadata: api.ObjectMeta{
 			Name:      "test-pod",
-			NameSpace: "default",
+			NameSpace: "default",	
 		},
 		Spec: api.PodSpec{
 			Containers: []api.Container{

@@ -2,24 +2,37 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"minik8s/pkg/api"
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func GetPods(context *gin.Context) {
 	log.Info("received get pods request")
 
 	URL := config.EtcdPodPath
+	log.Debug("before prefix get")
 	pods := etcdClient.PrefixGet(URL)
 
 	log.Debug("get all pods are: %+v", pods)
+
+	var podString []string
+	for _, pod := range pods {
+		podString = append(podString, pod.Value)
+	}
+	jsonValue := strings.Join(podString, ",")
+	jsonValue = fmt.Sprint("[", jsonValue ,"]")
+
 	context.JSON(http.StatusOK, gin.H{
-		"data": pods,
+		"data": jsonValue,
 	})
 }
 
@@ -34,6 +47,19 @@ func AddPod(context *gin.Context) {
 		})
 	}
 	log.Debug("new pod is: %+v", newPod)
+	
+	newPod.Status.StartTime = time.Now()
+	newPod.Metadata.UUID = uuid.NewString()
+
+
+	etcdClient.PutPod(newPod)
+
+	podByteArray, err := json.Marshal(newPod)
+
+	log.Debug("pod byte array is: %+v", podByteArray)
+	if err != nil {
+		log.Error("Error: json marshal failed")
+		return
 
 	// check if the pod already exists
 	oldPod, exited := etcdClient.GetPod(newPod.Metadata.NameSpace, newPod.Metadata.Name)
@@ -54,10 +80,12 @@ func AddPod(context *gin.Context) {
 			Opt:    msg.Add,
 			NewPod: newPod,
 		}
+
 	}
 	msg_json, _ := json.Marshal(message)
-
+  
 	publisher.Publish(msg.PodTopic, string(msg_json))
+
 
 }
 

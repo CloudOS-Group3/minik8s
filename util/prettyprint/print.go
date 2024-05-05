@@ -2,7 +2,6 @@ package prettyprint
 
 import (
 	"math/rand"
-	"minik8s/util/log"
 	"os"
 	"time"
 
@@ -29,7 +28,6 @@ func PrintTable(header []string, data [][]string) {
 	for _, _ = range header {
 		columnNum++
 		randomInt := rand.Intn(len(colors))
-		log.Info("%d", randomInt)
 		randomColor := colors[randomInt]
 		headerColors = append(headerColors, randomColor)
 		dataColors = append(dataColors, randomColor)
