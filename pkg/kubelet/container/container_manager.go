@@ -267,7 +267,7 @@ func GetContainerMetrics(name string, space string) (*ContainerMetrics, error) {
 	// Reference: https://github.com/IPADSIntern-MiniK8s/MiniK8s/blob/master/pkg/kubelet/container/container.go#L209
 	v := reflect.New(reflect.TypeOf(v1.Metrics{})).Interface()
 	err = proto.Unmarshal(metrics.Data.Value, v.(proto.Message))
-	log.Error("v: %v", v)
+	log.Debug("v: %v", v)
 	if err != nil {
 		log.Error("Failed to unmarshal metrics for container %s: %v", name, err.Error())
 		return nil, err
