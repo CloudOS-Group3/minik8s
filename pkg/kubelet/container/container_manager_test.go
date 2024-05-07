@@ -9,8 +9,7 @@ import (
 )
 
 func TestContainerManager(t *testing.T) {
-	cm := NewContainerManager()
-	container_ := cm.CreateContainer(api.Container{
+	container_ := CreateContainer(api.Container{
 		Name:            "test-container",
 		Image:           "docker.io/library/nginx:latest",
 		ImagePullPolicy: api.PullPolicyIfNotPresent,
@@ -26,7 +25,7 @@ func TestContainerManager(t *testing.T) {
 	// start container
 	go func() {
 		ctx := namespaces.WithNamespace(context.Background(), "test")
-		if cm.StartContainer(container_, ctx) {
+		if StartContainer(container_, ctx) {
 			done <- true
 		} else {
 			done <- false
@@ -48,7 +47,7 @@ func TestContainerManager(t *testing.T) {
 	// stop container
 	go func() {
 		ctx := namespaces.WithNamespace(context.Background(), "test")
-		if cm.StopContainer(container_, ctx) {
+		if StopContainer(container_, ctx) {
 			done <- true
 		} else {
 			done <- false
@@ -70,7 +69,7 @@ func TestContainerManager(t *testing.T) {
 	// delete container
 	go func() {
 		ctx := namespaces.WithNamespace(context.Background(), "test")
-		if cm.RemoveContainer(container_, ctx) {
+		if RemoveContainer(container_, ctx) {
 			done <- true
 		} else {
 			done <- false
