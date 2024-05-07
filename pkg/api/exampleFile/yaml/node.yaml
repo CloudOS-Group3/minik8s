@@ -1,20 +1,21 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: my-pod
+  name: test-pod
+  namespace: test
   labels:
     app: file
 spec:
   containers:
     - name: sharer
-      image: 7143192/fileserver:latest
+      image: docker.io/library/golang:1.20
       ports:
         - containerPort: 8080
       volumeMounts:
         - name: shared-data
           mountPath: /usr/share/files
     - name: downloader
-      image: 7143192/downloader:latest
+      image: docker.io/library/golang:1.20
       ports:
         - containerPort: 3000
       volumeMounts:

@@ -13,7 +13,6 @@ import (
 
 type KubeletSubscriber struct {
 	subscriber *kafka.Subscriber
-	pm         *pod.PodManager
 	ready      chan bool
 	done       chan bool
 }
@@ -24,7 +23,6 @@ func NewKubeletSubscriber() *KubeletSubscriber {
 	return &KubeletSubscriber{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		pm:         pod.NewPodManager(),
 		subscriber: kafka.NewSubscriber(brokers, group),
 	}
 }
@@ -58,14 +56,14 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 	}
 	switch podMsg.Opt {
 	case msg_type.Add:
-		k.pm.CreatePod(&podMsg.NewPod)
+		pod.CreatePod(&podMsg.NewPod)
 		break
 	case msg_type.Delete:
-		k.pm.DeletePod(&podMsg.OldPod)
+		pod.DeletePod(&podMsg.OldPod)
 		break
 	case msg_type.Update:
-		k.pm.DeletePod(&podMsg.OldPod)
-		k.pm.CreatePod(&podMsg.NewPod)
+		pod.DeletePod(&podMsg.OldPod)
+		pod.CreatePod(&podMsg.NewPod)
 		break
 	}
 }

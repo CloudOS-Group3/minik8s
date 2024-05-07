@@ -79,6 +79,10 @@ func GetPodMetrics(pod *api.Pod) (*PodMetrics, error) {
 	totalMemoryUsage := 0.0
 
 	for _, container_ := range pod.Spec.Containers {
+		// fix history bugs
+		if pod.Metadata.NameSpace == "" {
+			pod.Metadata.NameSpace = "default"
+		}
 		containerMetrics, err := container.GetContainerMetrics(container_.Name, pod.Metadata.NameSpace)
 		if err != nil {
 			log.Error("Failed to get metrics for container %s", container_.Name)

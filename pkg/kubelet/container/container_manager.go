@@ -65,7 +65,7 @@ func CreateContainer(config api.Container, namespace string) containerd.Containe
 	// check if exists
 	container_, err := client.LoadContainer(ctx, config.Name)
 	if err == nil {
-		log.Error("Container %s already exists", config.Name)
+		log.Info("Container %s already exists", config.Name)
 		return container_
 	}
 	container, err := client.NewContainer(
@@ -85,6 +85,9 @@ func CreateContainer(config api.Container, namespace string) containerd.Containe
 }
 
 func GetContainerById(container_id string, namespace string) containerd.Container {
+	if namespace == "" {
+		namespace = "default"
+	}
 	client, err := util.CreateClient()
 	if err != nil {
 		log.Error("Failed to create containerd client: %v", err.Error())
@@ -93,7 +96,7 @@ func GetContainerById(container_id string, namespace string) containerd.Containe
 	ctx := namespaces.WithNamespace(context.Background(), namespace)
 	container_, err := client.LoadContainer(ctx, container_id)
 	if err != nil {
-		log.Error("Failed to load container %s: %v", container_id, err.Error())
+		log.Info("Failed to load container %s: %v", container_id, err.Error())
 		return nil
 	}
 	return container_
@@ -106,7 +109,7 @@ func StartContainer(container containerd.Container, ctx context.Context) bool {
 		status, _ := tasks.Status(ctx)
 		//log.Printf("Container %s status: %v", container.ID(), status.Status)
 		if status.Status == containerd.Running {
-			log.Error("Container %s already started", container.ID())
+			log.Info("Container %s already started", container.ID())
 			return true
 		}
 		_, err := tasks.Delete(ctx, containerd.WithProcessKill)
@@ -133,7 +136,7 @@ func StartContainer(container containerd.Container, ctx context.Context) bool {
 		log.Error("Failed to start task for container %s: %v", container.ID(), err.Error())
 		return false
 	}
-	log.Error("Container %s started", container.ID())
+	log.Info("Container %s started", container.ID())
 	return true
 }
 

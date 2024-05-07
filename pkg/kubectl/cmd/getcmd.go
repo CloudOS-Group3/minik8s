@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	"minik8s/pkg/kubelet/pod"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/prettyprint"
@@ -88,8 +90,8 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 
 			log.Debug("getting pod: %v", podName)
 			URL := config.GetUrlPrefix() + config.PodURL
-			URL = strings.Replace(URL, config.NamePlaceholder, podName, -1)
 			URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+			URL = strings.Replace(URL, config.NamePlaceholder, podName, -1)
 
 			err := httputil.Get(URL, pod, "data")
 
@@ -109,8 +111,12 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 	for _, matchPod := range matchPods {
 		log.Debug("%s", time.Now().String())
 		log.Debug("%s", matchPod.Status.StartTime)
-		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
-		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age})
+		//age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
+		metric, _ := pod.GetPodMetrics(&matchPod)
+		log.Debug("metric is: %+v", metric)
+		log.Debug("pod is: %+v", matchPod)
+		metric_string := fmt.Sprintf("cpu: %v, memory: %v", metric.CpuUsage, metric.MemoryUsage)
+		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, metric_string})
 	}
 
 	prettyprint.PrintTable(header, data)
@@ -201,7 +207,7 @@ func getHPACmdHandler(cmd *cobra.Command, args []string) {
 			URL = strings.Replace(URL, config.NamePlaceholder, hpaName, -1)
 
 			err := httputil.Get(URL, hpa, "data")
-			
+
 			if err != nil {
 				log.Error("Error http get hpa: %s", err.Error())
 				return
