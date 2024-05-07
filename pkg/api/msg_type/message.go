@@ -13,9 +13,9 @@ const (
 
 const (
 	// pod topic
-	PodTopic = "pod"
+	PodTopic = "endpoint_pod"
 	// service topic
-	ServiceTopic = "service"
+	ServiceTopic = "endpoint_service"
 	// pod operation
 	PodOperation = "opt"
 	// pod new pod

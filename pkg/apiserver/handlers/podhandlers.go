@@ -29,7 +29,7 @@ func GetPods(context *gin.Context) {
 		podString = append(podString, pod.Value)
 	}
 	jsonValue := strings.Join(podString, ",")
-	jsonValue = fmt.Sprint("[", jsonValue ,"]")
+	jsonValue = fmt.Sprint("[", jsonValue, "]")
 
 	context.JSON(http.StatusOK, gin.H{
 		"data": jsonValue,
@@ -47,20 +47,10 @@ func AddPod(context *gin.Context) {
 		})
 	}
 	log.Debug("new pod is: %+v", newPod)
-	
+
 	newPod.Status.StartTime = time.Now()
 	newPod.Metadata.UUID = uuid.NewString()
 
-
-	etcdClient.PutPod(newPod)
-
-	podByteArray, err := json.Marshal(newPod)
-
-	log.Debug("pod byte array is: %+v", podByteArray)
-	if err != nil {
-		log.Error("Error: json marshal failed")
-		return
-	}
 	// check if the pod already exists
 	oldPod, exited := etcdClient.GetPod(newPod.Metadata.NameSpace, newPod.Metadata.Name)
 
@@ -83,9 +73,8 @@ func AddPod(context *gin.Context) {
 
 	}
 	msg_json, _ := json.Marshal(message)
-  
-	publisher.Publish(msg.PodTopic, string(msg_json))
 
+	publisher.Publish(msg.PodTopic, string(msg_json))
 
 }
 

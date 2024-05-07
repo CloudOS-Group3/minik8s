@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"net/http"
 	"strings"
@@ -57,4 +58,23 @@ func GetPodsByNamespace(namespace string) ([]api.Pod, error) {
 	}
 
 	return pods, nil
+}
+
+func ApplyPod(pod *api.Pod) error {
+	byteArr, err := json.Marshal(*pod)
+	if err != nil {
+		log.Error("error marshal pod")
+		return err
+	}
+
+	URL := config.GetUrlPrefix() + config.PodsURL
+	strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
+
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("error http post pod")
+		return err
+	}
+
+	return nil
 }

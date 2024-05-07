@@ -6,14 +6,12 @@ import (
 )
 
 func TestCreatePod(t *testing.T) {
-	// create pod manager
-	pm := NewPodManager()
 
 	// create pod
 	newPod := &api.Pod{
 		Metadata: api.ObjectMeta{
 			Name:      "test-pod",
-			NameSpace: "default",	
+			NameSpace: "default",
 		},
 		Spec: api.PodSpec{
 			Containers: []api.Container{
@@ -31,13 +29,17 @@ func TestCreatePod(t *testing.T) {
 		},
 	}
 
-	if pm.CreatePod(newPod) == false {
+	if CreatePod(newPod) == false {
 		t.Fatalf("Failed to create pod")
 	}
-	pm.ShowPodInfo("test-pod")
+	metric, err := GetPodMetrics(newPod)
+	if err != nil {
+		t.Fatalf("Failed to get pod metrics")
+	}
+	t.Logf("Pod metrics: %v", metric)
 
 	// remove pod
-	if pm.DeletePodByName("test-pod") == false {
+	if DeletePod(newPod) == false {
 		t.Fatalf("Failed to remove pod")
 	}
 }
