@@ -101,22 +101,25 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 			}
 
 			log.Debug("%+v", pod)
+			if pod.Metadata.Name == "" {
+				continue
+			}
 			matchPods = append(matchPods, *pod)
 		}
 	}
 
-	header := []string{"name", "status", "age"}
+	header := []string{"name", "status", "age", "status"}
 	data := [][]string{}
 
 	for _, matchPod := range matchPods {
 		log.Debug("%s", time.Now().String())
 		log.Debug("%s", matchPod.Status.StartTime)
-		//age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
+		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
 		metric, _ := pod.GetPodMetrics(&matchPod)
 		log.Debug("metric is: %+v", metric)
 		log.Debug("pod is: %+v", matchPod)
 		metric_string := fmt.Sprintf("cpu: %v, memory: %v", metric.CpuUsage, metric.MemoryUsage)
-		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, metric_string})
+		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age, metric_string})
 	}
 
 	prettyprint.PrintTable(header, data)
