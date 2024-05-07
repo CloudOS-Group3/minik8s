@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: file-download-pod
+  name: my-pod
   labels:
-    app: file-download
+    app: file
 spec:
   containers:
     - name: sharer
