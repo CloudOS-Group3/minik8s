@@ -13,7 +13,7 @@ type Store struct {
 	etcdClient *clientv3.Client
 }
 
-type resEntry struct {
+type ResEntry struct {
 	Key   string
 	Value string
 }
@@ -71,16 +71,16 @@ func (store Store) DeleteEtcdPair(key string) bool {
 	return true
 }
 
-func (store Store) PrefixGet(prefix string) []resEntry {
+func (store Store) PrefixGet(prefix string) []ResEntry {
 	log.Debug("before etcd get")
 	response, err := store.etcdClient.Get(context.TODO(), prefix, clientv3.WithPrefix())
 	if err != nil {
 		log.Error("error get prefix %s", prefix)
 		return nil
 	}
-	ret := []resEntry{}
+	ret := []ResEntry{}
 	for _, kv := range response.Kvs {
-		ret = append(ret, resEntry{
+		ret = append(ret, ResEntry{
 			Key:   string(kv.Key),
 			Value: string(kv.Value),
 		})

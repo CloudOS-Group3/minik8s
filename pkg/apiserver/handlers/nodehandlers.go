@@ -5,6 +5,7 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
+	"minik8s/util/stringutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,8 +18,9 @@ func GetNodes(context *gin.Context) {
 	nodes := etcdClient.PrefixGet(URL)
 
 	log.Debug("get all nodes are: %+v", nodes)
+	jsonString := stringutil.EtcdResEntryToJSON(nodes)
 	context.JSON(http.StatusOK, gin.H{
-		"data": nodes,
+		"data": jsonString,
 	})
 }
 
@@ -66,8 +68,15 @@ func GetNode(context *gin.Context) {
 
 	log.Info("node info: %+v", node)
 
+	byteArr, err := json.Marshal(node)
+
+	if err != nil {
+		log.Error("error json marshal node: %s", err.Error())
+		return
+	}
+
 	context.JSON(http.StatusOK, gin.H{
-		"data": node,
+		"data": string(byteArr),
 	})
 }
 

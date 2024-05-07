@@ -2,13 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"minik8s/pkg/api"
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
+	"minik8s/util/stringutil"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -24,15 +23,9 @@ func GetPods(context *gin.Context) {
 
 	log.Debug("get all pods are: %+v", pods)
 
-	var podString []string
-	for _, pod := range pods {
-		podString = append(podString, pod.Value)
-	}
-	jsonValue := strings.Join(podString, ",")
-	jsonValue = fmt.Sprint("[", jsonValue, "]")
-
+	jsonString := stringutil.EtcdResEntryToJSON(pods)
 	context.JSON(http.StatusOK, gin.H{
-		"data": jsonValue,
+		"data": jsonString,
 	})
 }
 
@@ -97,12 +90,19 @@ func GetPod(context *gin.Context) {
 	pod, ok := etcdClient.GetPod(namespace, name)
 
 	if !ok {
-		log.Error("get pod not ok")
+		log.Warn("pod %s doesn't exist", name)
+	}
+
+	log.Debug("get pod is: %+v", pod)
+
+	byteArr, err := json.Marshal(pod)
+	if err != nil {
+		log.Error("Error marshal pod: %s", err.Error())
 		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{
-		"data": pod,
+		"data": string(byteArr),
 	})
 }
 
