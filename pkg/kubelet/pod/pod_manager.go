@@ -2,7 +2,6 @@ package pod
 
 import (
 	"context"
-	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 	"minik8s/pkg/api"
 	"minik8s/pkg/kubelet/container"
@@ -18,26 +17,24 @@ type PodMetrics struct {
 func CreatePod(pod *api.Pod) bool {
 
 	// create pause container
-	pause_container := CreatePauseContainer(pod)
+	pause_container := container.CreatePauseContainer(pod)
 	if pause_container == nil {
 		log.Error("Failed to create pause container for pod %s", pod.Metadata.Name)
 		return false
 	}
-
-	//cAdvisorContainer := CreateCAdvisorContainer(pod)
-	//if cAdvisorContainer == nil {
-	//	log.Error("Failed to create cAdvisor container for pod %s", pod.Metadata.Name)
-	//	return false
-	//}
+	// Start pause container
 
 	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
 	if container.StartContainer(pause_container, ctx) == false {
 		return false
 	}
 
+	// get pause container pid
+	pause_container_pid := container.GetContainerPid(pause_container, pod.Metadata.NameSpace)
+
 	// create other containers
 	for _, container_ := range pod.Spec.Containers {
-		new_container := container.CreateContainer(container_, pod.Metadata.NameSpace)
+		new_container := container.CreateContainer(container_, pod.Metadata.NameSpace, pause_container_pid)
 		if new_container == nil {
 			log.Error("Failed to create container %s", container_.Name)
 		}
@@ -47,30 +44,6 @@ func CreatePod(pod *api.Pod) bool {
 	}
 
 	return true
-}
-
-func CreatePauseContainer(pod *api.Pod) containerd.Container {
-	config := api.Container{
-		Name:            pod.Metadata.Name + "-pause",
-		Image:           "registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9",
-		ImagePullPolicy: api.PullPolicyIfNotPresent,
-	}
-
-	return container.CreateContainer(config, pod.Metadata.NameSpace)
-}
-
-func CreateCAdvisorContainer(pod *api.Pod) containerd.Container {
-	config := api.Container{
-		Name:            "cAdvisor",
-		Image:           "gcr.io/google-containers/cadvisor:latest",
-		ImagePullPolicy: api.PullPolicyIfNotPresent,
-		Ports: []api.ContainerPort{
-			{
-				ContainerPort: 10000,
-			},
-		},
-	}
-	return container.CreateContainer(config, pod.Metadata.NameSpace)
 }
 
 func GetPodMetrics(pod *api.Pod) (*PodMetrics, error) {

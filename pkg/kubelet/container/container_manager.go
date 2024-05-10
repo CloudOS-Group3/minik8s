@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	v1 "github.com/containerd/cgroups/stats/v1"
 	"github.com/containerd/containerd"
@@ -9,10 +10,12 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
 	"github.com/gogo/protobuf/proto"
+	"github.com/opencontainers/runtime-spec/specs-go"
 	"minik8s/pkg/api"
 	"minik8s/pkg/kubelet/image"
 	"minik8s/pkg/util"
 	"minik8s/util/log"
+	"os/exec"
 	"reflect"
 	"syscall"
 	"time"
@@ -43,8 +46,59 @@ func (c *ContainerMetrics) String() string {
 func (c *ContainerMetrics) ProtoMessage() {
 
 }
+func CreatePauseContainer(pod *api.Pod) containerd.Container {
+	// get all ports that need to be exposed
+	ports := []api.ContainerPort{}
+	for _, container := range pod.Spec.Containers {
+		for _, port := range container.Ports {
+			ports = append(ports, port)
+		}
+	}
+	config := api.Container{
+		Name:            pod.Metadata.Name + "-pause",
+		Image:           "registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9",
+		ImagePullPolicy: api.PullPolicyIfNotPresent,
+		Command:         []string{"pause"},
+	}
 
-func CreateContainer(config api.Container, namespace string) containerd.Container {
+	client, err := util.CreateClient()
+	if err != nil {
+		log.Error("Failed to create containerd client: %v", err.Error())
+		return nil
+	}
+	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
+
+	// pull image
+
+	image_ := image.PullImage(config.Image, config.ImagePullPolicy, client, pod.Metadata.NameSpace)
+	if image_ == nil {
+		log.Error("Failed to pull image %s", config.Image)
+		return nil
+	}
+
+	// create container
+
+	// check if exists
+	container_, err := client.LoadContainer(ctx, config.Name)
+	if err == nil {
+		log.Info("Container %s already exists", config.Name)
+		return container_
+	}
+	container, err := client.NewContainer(
+		ctx,
+		config.Name,
+		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
+		containerd.WithNewSpec(oci.WithImageConfig(image_)),
+	)
+	if err != nil {
+		log.Error("Failed to create container %s: %v", config.Name, err.Error())
+		return nil
+	}
+	log.Info("Container %s created", container.ID())
+	return container
+}
+
+func CreateContainer(config api.Container, namespace string, pause_pid string) containerd.Container {
 	client, err := util.CreateClient()
 	if err != nil {
 		log.Error("Failed to create containerd client: %v", err.Error())
@@ -68,12 +122,20 @@ func CreateContainer(config api.Container, namespace string) containerd.Containe
 		log.Info("Container %s already exists", config.Name)
 		return container_
 	}
+	opt := []oci.SpecOpts{oci.WithImageConfig(image_)}
+	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "pid", Path: "/proc/" + pause_pid + "/ns/pid"}))
+	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "ipc", Path: "/proc/" + pause_pid + "/ns/ipc"}))
+	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "uts", Path: "/proc/" + pause_pid + "/ns/uts"}))
+	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "network", Path: "/proc/" + pause_pid + "/ns/net"}))
+	opt_ := []containerd.NewContainerOpts{
+		//containerd.WithImage(image_),
+		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
+		containerd.WithNewSpec(opt...),
+	}
 	container, err := client.NewContainer(
 		ctx,
 		config.Name,
-		containerd.WithImage(image_),
-		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
-		containerd.WithNewSpec(oci.WithImageConfig(image_)),
+		opt_...,
 	)
 	if err != nil {
 		log.Error("Failed to create container %s: %v", config.Name, err.Error())
@@ -279,4 +341,28 @@ func GetContainerMetrics(name string, space string) (*ContainerMetrics, error) {
 		ProcessStatus: string(status.Status),
 	}, nil
 
+}
+
+type ContainerInspect struct {
+	State struct {
+		Pid int `json:"Pid"`
+	} `json:"State"`
+}
+
+func GetContainerPid(container containerd.Container, namespace string) string {
+	cmd := exec.Command("nerdctl", "-n", namespace, "inspect", container.ID())
+	output, err := cmd.Output()
+	if err != nil {
+		log.Error("Failed to run nerdctl inspect: %s", err.Error())
+	}
+
+	// unmarshal JSON
+	var inspectData []ContainerInspect
+	err = json.Unmarshal(output, &inspectData)
+	if err != nil {
+		log.Error("Failed to parse JSON: %s", err.Error())
+	}
+
+	// get first container pid
+	return fmt.Sprintf("%d", inspectData[0].State.Pid)
 }

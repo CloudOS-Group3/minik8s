@@ -39,7 +39,7 @@ func (k *KubeletSubscriber) Cleanup(_ sarama.ConsumerGroupSession) error {
 func (k *KubeletSubscriber) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		log.Info("Message claimed: value %s", string(msg.Value))
-		if msg.Topic == "pod" {
+		if msg.Topic == msg_type.PodTopic {
 			sess.MarkMessage(msg, "")
 			k.PodHandler(msg.Value)
 		}
@@ -56,12 +56,15 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 	}
 	switch podMsg.Opt {
 	case msg_type.Add:
+		log.Info("create pod: %v", podMsg.NewPod)
 		pod.CreatePod(&podMsg.NewPod)
 		break
 	case msg_type.Delete:
+		log.Info("delete pod: %v", podMsg.OldPod)
 		pod.DeletePod(&podMsg.OldPod)
 		break
 	case msg_type.Update:
+		log.Info("update pod: %v", podMsg.NewPod)
 		pod.DeletePod(&podMsg.OldPod)
 		pod.CreatePod(&podMsg.NewPod)
 		break
@@ -71,7 +74,7 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 func (k *KubeletSubscriber) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{"pod"}
+	topics := []string{msg_type.PodTopic}
 	k.subscriber.Subscribe(wg, ctx, topics, k)
 	<-k.ready
 	<-k.done
