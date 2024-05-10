@@ -21,30 +21,30 @@ type PodSpec struct {
 }
 
 type PodStatus struct {
-	Conditions        []PodCondition    `json:"conditions" yaml:"conditions"`
-	ContainerStatuses []ContainerStatus `json:"containerStatuses" yaml:"containerStatuses"`
-	HostIP            string            `json:"hostIP" yaml:"hostIP"`
-	Message           string            `json:"message" yaml:"message"`
-	Phase             string            `json:"phase" yaml:"phase"`
-	PodIP             string            `json:"podIP" yaml:"podIP"`
-	StartTime         time.Time         `json:"startTime" yaml:"startTime"`
+	Conditions        []PodCondition    `json:"conditions,omitempty" yaml:"conditions,omitempty"`
+	ContainerStatuses []ContainerStatus `json:"containerStatuses,omitempty" yaml:"containerStatuses,omitempty"`
+	HostIP            string            `json:"hostIP,omitempty" yaml:"hostIP,omitempty"`
+	Message           string            `json:"message,omitempty" yaml:"message,omitempty"`
+	Phase             string            `json:"phase,omitempty" yaml:"phase,omitempty"`
+	PodIP             string            `json:"podIP,omitempty" yaml:"podIP,omitempty"`
+	StartTime         time.Time         `json:"startTime,omitempty" yaml:"startTime,omitempty"`
 }
 
 type PodCondition struct {
-	LastProbeTime      time.Time `json:"lastProbeTime" yaml:"lastProbeTime"`
-	LastTransitionTime time.Time `json:"lastTransitionTime" yaml:"lastTransitionTime"`
-	Message            string    `json:"message" yaml:"message"`
-	Reason             string    `json:"reason" yaml:"reason"`
-	Status             string    `json:"status" yaml:"status"`
-	Type               string    `json:"type" yaml:"type"`
+	LastProbeTime      time.Time `json:"lastProbeTime,omitempty" yaml:"lastProbeTime,omitempty"`
+	LastTransitionTime time.Time `json:"lastTransitionTime,omitempty" yaml:"lastTransitionTime,omitempty"`
+	Message            string    `json:"message,omitempty" yaml:"message,omitempty"`
+	Reason             string    `json:"reason,omitempty" yaml:"reason,omitempty"`
+	Status             string    `json:"status,omitempty" yaml:"status,omitempty"`
+	Type               string    `json:"type,omitempty" yaml:"type,omitempty"`
 }
 
 type ContainerStatus struct {
-	ContainerID string `json:"containerID" yaml:"containerID"`
-	Image       string `json:"image" yaml:"image"`
-	ImageID     string `json:"imageID" yaml:"imageID"`
-	Name        string `json:"name" yaml:"name"`
-	Ready       bool   `json:"ready" yaml:"ready"`
+	ContainerID string `json:"containerID,omitempty" yaml:"containerID,omitempty"`
+	Image       string `json:"image,omitempty" yaml:"image,omitempty"`
+	ImageID     string `json:"imageID,omitempty" yaml:"imageID,omitempty"`
+	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
+	Ready       bool   `json:"ready,omitempty" yaml:"ready,omitempty"`
 }
 
 type Container struct {
