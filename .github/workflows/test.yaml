@@ -27,6 +27,14 @@ jobs:
                 cd etcd-v3.5.13-linux-amd64
                 ./etcd &
 
+            - name: Download nerdctl
+              run: |
+                mkdir -p nerdctl
+                cd nerdctl
+                wget https://github.com/containerd/nerdctl/releases/download/v1.0.0/nerdctl-1.0.0-linux-amd64.tar.gz
+                tar -xf nerdctl-1.0.0-linux-amd64.tar.gz
+                cp nerdctl /usr/local/bin/
+
             - name: Download Kafka
               run: |
                 sudo apt-get update
