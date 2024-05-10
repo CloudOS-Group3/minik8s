@@ -9,11 +9,47 @@ import (
 )
 
 func TestContainerManager(t *testing.T) {
+	pod := api.Pod{
+		Spec: api.PodSpec{
+			Containers: []api.Container{
+				{
+					Name:            "test-networ1",
+					Image:           "docker.io/library/nginx:latest",
+					ImagePullPolicy: api.PullPolicyIfNotPresent,
+					Ports:           make([]api.ContainerPort, 8811),
+				},
+			},
+		},
+		Metadata: api.ObjectMeta{
+			Name:      "test",
+			NameSpace: "test",
+		},
+	}
+	pause_container := CreatePauseContainer(&pod)
+	if pause_container == nil {
+		t.Fatalf("Failed to create pause container")
+		return
+	}
+	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
+	if StartContainer(pause_container, ctx) == false {
+		t.Fatalf("Failed to start pause container")
+		return
+	}
+
+	pause_container_pid := GetContainerPid(pause_container, pod.Metadata.NameSpace)
+	if pause_container_pid == "" {
+		t.Fatalf("Failed to get pause container pid")
+		return
+	}
+	t.Logf("pause container pid: %s", pause_container_pid)
+
 	container_ := CreateContainer(api.Container{
-		Name:            "test-container",
+		Name:            "test-networ1",
 		Image:           "docker.io/library/nginx:latest",
 		ImagePullPolicy: api.PullPolicyIfNotPresent,
-	}, "test")
+		Ports:           make([]api.ContainerPort, 8811),
+	}, "test", pause_container_pid)
+
 	if container_ == nil {
 		t.Fatalf("Failed to create container")
 		return
@@ -44,7 +80,7 @@ func TestContainerManager(t *testing.T) {
 		return
 	}
 
-	// stop container
+	//stop container
 	go func() {
 		ctx := namespaces.WithNamespace(context.Background(), "test")
 		if StopContainer(container_, ctx) {
