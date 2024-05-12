@@ -47,8 +47,9 @@ jobs:
                 bin/kafka-server-start.sh config/kraft/server.properties &
 
             - name: Flannel Config
-              run: export ETCDCTL_API=2;etcdctl --endpoints http://127.0.0.1:2379 set /coreos.com/network/config \
-               '{"Network": "10.0.0.0/16", "SubnetLen": "24", "SubnetMin": "10.0.1.0","SubnetMax": "10.0.20.0", "Backend": {"Type": "vxlan"}}'
+              run: |
+                   export ETCDCTL_API=2
+                   etcdctl --endpoints http://127.0.0.1:2379 set /coreos.com/network/config '{"Network": "10.0.0.0/16", "SubnetLen": 24, "SubnetMin": "10.0.1.0","SubnetMax": "10.0.20.0", "Backend": {"Type": "vxlan"}}'
                    nerdctl run -d --privileged -v /run/flannel:/run/flannel --net host --name flannel registry.cn-hangzhou.aliyuncs.com/acs/flannel:v0.15.1.22-20a397e6-aliyun \
                    -etcd-prefix /coreos.com/network -iface eth0 -etcd-endpoints http://192.168.0.180:2379 -ip-masq
                    nerdctl network ls
