@@ -25,22 +25,12 @@ func TestContainerManager(t *testing.T) {
 			NameSpace: "test",
 		},
 	}
-	pause_container := CreatePauseContainer(&pod)
-	if pause_container == nil {
+	pause_container_pid, err := CreatePauseContainer(&pod)
+	if err != nil {
 		t.Fatalf("Failed to create pause container")
 		return
 	}
-	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
-	if StartContainer(pause_container, ctx) == false {
-		t.Fatalf("Failed to start pause container")
-		return
-	}
 
-	pause_container_pid := GetContainerPid(pause_container, pod.Metadata.NameSpace)
-	if pause_container_pid == "" {
-		t.Fatalf("Failed to get pause container pid")
-		return
-	}
 	t.Logf("pause container pid: %s", pause_container_pid)
 
 	container_ := CreateContainer(api.Container{

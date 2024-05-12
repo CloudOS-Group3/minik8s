@@ -17,6 +17,7 @@ import (
 	"minik8s/util/log"
 	"os/exec"
 	"reflect"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -46,56 +47,59 @@ func (c *ContainerMetrics) String() string {
 func (c *ContainerMetrics) ProtoMessage() {
 
 }
-func CreatePauseContainer(pod *api.Pod) containerd.Container {
+
+type ContainerInspect struct {
+	State struct {
+		Pid int `json:"Pid"`
+	} `json:"State"`
+	NetworkSettings struct {
+		IPAddress string `json:"IPAddress"`
+	} `json:"NetworkSettings"`
+}
+
+// retrun pause PID
+func CreatePauseContainer(pod *api.Pod) (string, error) {
 	// get all ports that need to be exposed
-	ports := []api.ContainerPort{}
-	for _, container := range pod.Spec.Containers {
-		for _, port := range container.Ports {
-			ports = append(ports, port)
-		}
-	}
-	config := api.Container{
-		Name:            pod.Metadata.Name + "-pause",
-		Image:           "registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9",
-		ImagePullPolicy: api.PullPolicyIfNotPresent,
-		Command:         []string{"pause"},
-	}
+	//ports := []api.ContainerPort{}
+	//for _, container := range pod.Spec.Containers {
+	//	for _, port := range container.Ports {
+	//		ports = append(ports, port)
+	//	}
+	//}
+	pause_name := pod.Metadata.Name + "-pause"
+	pause_image := "registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9"
 
-	client, err := util.CreateClient()
+	// Use nerdctl to create pause container
+	// network: cbr0, which is flannel network
+	// the cmd will output the container id
+	cmd := exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "run", "-d", "--name", pause_name, "--network", "cbr0", pause_image)
+	containerID, err := cmd.Output()
 	if err != nil {
-		log.Error("Failed to create containerd client: %v", err.Error())
-		return nil
+		log.Error("Failed to run nerdctl run: %s", err.Error())
+		return "", err
 	}
-	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
+	trimmedContainerID := strings.TrimSpace(string(containerID))
+	log.Info("Create pause: %s", trimmedContainerID)
 
-	// pull image
-
-	image_ := image.PullImage(config.Image, config.ImagePullPolicy, client, pod.Metadata.NameSpace)
-	if image_ == nil {
-		log.Error("Failed to pull image %s", config.Image)
-		return nil
-	}
-
-	// create container
-
-	// check if exists
-	container_, err := client.LoadContainer(ctx, config.Name)
-	if err == nil {
-		log.Info("Container %s already exists", config.Name)
-		return container_
-	}
-	container, err := client.NewContainer(
-		ctx,
-		config.Name,
-		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
-		containerd.WithNewSpec(oci.WithImageConfig(image_)),
-	)
+	// get pause container pid & ip
+	cmd = exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "inspect", trimmedContainerID)
+	output, err := cmd.Output()
+	// unmarshal JSON
+	var inspectData []ContainerInspect
+	err = json.Unmarshal(output, &inspectData)
 	if err != nil {
-		log.Error("Failed to create container %s: %v", config.Name, err.Error())
-		return nil
+		log.Error("Failed to parse JSON: %s", err.Error())
 	}
-	log.Info("Container %s created", container.ID())
-	return container
+
+	// get first container pid
+	pid := inspectData[0].State.Pid
+	ip := inspectData[0].NetworkSettings.IPAddress
+
+	// Set pod ip = pause container ip
+	pod.Status.PodIP = ip
+	log.Info("Pause container ip: %s", ip)
+
+	return fmt.Sprintf("%d", pid), nil
 }
 
 func CreateContainer(config api.Container, namespace string, pause_pid string) containerd.Container {
@@ -341,28 +345,4 @@ func GetContainerMetrics(name string, space string) (*ContainerMetrics, error) {
 		ProcessStatus: string(status.Status),
 	}, nil
 
-}
-
-type ContainerInspect struct {
-	State struct {
-		Pid int `json:"Pid"`
-	} `json:"State"`
-}
-
-func GetContainerPid(container containerd.Container, namespace string) string {
-	cmd := exec.Command("nerdctl", "-n", namespace, "inspect", container.ID())
-	output, err := cmd.Output()
-	if err != nil {
-		log.Error("Failed to run nerdctl inspect: %s", err.Error())
-	}
-
-	// unmarshal JSON
-	var inspectData []ContainerInspect
-	err = json.Unmarshal(output, &inspectData)
-	if err != nil {
-		log.Error("Failed to parse JSON: %s", err.Error())
-	}
-
-	// get first container pid
-	return fmt.Sprintf("%d", inspectData[0].State.Pid)
 }
