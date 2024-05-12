@@ -18,24 +18,24 @@ const (
 	updateInterval time.Duration = 30
 )
 
-func (DC *DeploymentController) Run() {
+func (this *DeploymentController) Run() {
 	<-time.After(initialDelay)
 
 	for {
-		DC.update()
+		this.update()
 		<-time.After(updateInterval)
 	}
 }
 
-func (DC *DeploymentController) update() {
+func (this *DeploymentController) update() {
 
-	allPods, err := DC.getAllPods()
+	allPods, err := this.getAllPods()
 	if err != nil {
 		log.Error("get all pods error")
 		return
 	}
 
-	deployments, err := DC.getAllDeployments()
+	deployments, err := this.getAllDeployments()
 	if err != nil {
 		log.Error("get all deployments error")
 		return
@@ -48,18 +48,18 @@ func (DC *DeploymentController) update() {
 	for _, deployment := range deployments {
 		targetPods := []api.Pod{}
 		for _, pod := range allPods {
-			if DC.checkLabel(pod, deployment) {
+			if this.checkLabel(pod, deployment) {
 				targetPods = append(targetPods, pod)
 				allPodsWithDeployment[pod.Metadata.UUID] = true
 			}
 		}
 		if len(targetPods) < deployment.Spec.Replicas {
-			DC.addPod(deployment.Spec.Template, deployment.Metadata, deployment.Spec.Replicas-len(targetPods))
+			this.addPod(deployment.Spec.Template, deployment.Metadata, deployment.Spec.Replicas-len(targetPods))
 		} else if len(targetPods) > deployment.Spec.Replicas {
-			DC.deletePod(targetPods, len(targetPods)-deployment.Spec.Replicas)
+			this.deletePod(targetPods, len(targetPods)-deployment.Spec.Replicas)
 		}
 
-		DC.updateDeploymentStatus(targetPods, deployment)
+		this.updateDeploymentStatus(targetPods, deployment)
 	}
 
 	for _, pod := range allPods {
@@ -67,13 +67,13 @@ func (DC *DeploymentController) update() {
 			continue
 		}
 		if _, ok := allPodsWithDeployment[pod.Metadata.UUID]; !ok {
-			DC.deletePod([]api.Pod{pod}, 1)
+			this.deletePod([]api.Pod{pod}, 1)
 		}
 	}
 
 }
 
-func (DC *DeploymentController) getAllPods() ([]api.Pod, error) {
+func (this *DeploymentController) getAllPods() ([]api.Pod, error) {
 
 	URL := config.GetUrlPrefix() + config.PodsURL
 	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
@@ -89,7 +89,7 @@ func (DC *DeploymentController) getAllPods() ([]api.Pod, error) {
 	return pods, nil
 }
 
-func (DC *DeploymentController) getAllDeployments() ([]api.Deployment, error) {
+func (this *DeploymentController) getAllDeployments() ([]api.Deployment, error) {
 	URL := config.GetUrlPrefix() + config.DeploymentsURL
 	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 	deployments := []api.Deployment{}
@@ -105,7 +105,7 @@ func (DC *DeploymentController) getAllDeployments() ([]api.Deployment, error) {
 }
 
 // to return true, just need to match one label
-func (DC *DeploymentController) checkLabel(targetPod api.Pod, targetDeployment api.Deployment) bool {
+func (this *DeploymentController) checkLabel(targetPod api.Pod, targetDeployment api.Deployment) bool {
 	for _, label := range targetDeployment.Spec.Selector.MatchLabels {
 		if targetPod.Metadata.Labels[label] != "" {
 			return true
@@ -114,7 +114,7 @@ func (DC *DeploymentController) checkLabel(targetPod api.Pod, targetDeployment a
 	return false
 }
 
-func (DC *DeploymentController) addPod(template api.PodTemplateSpec, deploymentMetadata api.ObjectMeta, number int) {
+func (this *DeploymentController) addPod(template api.PodTemplateSpec, deploymentMetadata api.ObjectMeta, number int) {
 	log.Info("automatically adding pod in deployment")
 
 	var newPod api.Pod
@@ -154,7 +154,7 @@ func (DC *DeploymentController) addPod(template api.PodTemplateSpec, deploymentM
 	}
 }
 
-func (DC *DeploymentController) deletePod(targetPods []api.Pod, number int) {
+func (this *DeploymentController) deletePod(targetPods []api.Pod, number int) {
 
 	for i := 0; i < number; i++ {
 		pod := targetPods[i]
@@ -171,7 +171,7 @@ func (DC *DeploymentController) deletePod(targetPods []api.Pod, number int) {
 	}
 }
 
-func (DC *DeploymentController) updateDeploymentStatus(targetPods []api.Pod, targetDeployment api.Deployment) {
+func (this *DeploymentController) updateDeploymentStatus(targetPods []api.Pod, targetDeployment api.Deployment) {
 
 	readyPodNum := 0
 	for _, pod := range targetPods {

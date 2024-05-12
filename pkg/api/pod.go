@@ -28,23 +28,25 @@ type PodStatus struct {
 	Phase             string            `json:"phase" yaml:"phase"`
 	PodIP             string            `json:"podIP" yaml:"podIP"`
 	StartTime         time.Time         `json:"startTime" yaml:"startTime"`
+	CPUPercentage     float64           `json:"cpuPercentage" yaml:"cpuPercentage"`
+	MemoryPercentage  float64           `json:"memoryPercentage" yaml:"memoryPercentage"`
 }
 
 type PodCondition struct {
-	LastProbeTime      time.Time `json:"lastProbeTime" yaml:"lastProbeTime"`
-	LastTransitionTime time.Time `json:"lastTransitionTime" yaml:"lastTransitionTime"`
-	Message            string    `json:"message" yaml:"message"`
-	Reason             string    `json:"reason" yaml:"reason"`
-	Status             string    `json:"status" yaml:"status"`
-	Type               string    `json:"type" yaml:"type"`
+	LastProbeTime      time.Time `json:"lastProbeTime,omitempty" yaml:"lastProbeTime,omitempty"`
+	LastTransitionTime time.Time `json:"lastTransitionTime,omitempty" yaml:"lastTransitionTime,omitempty"`
+	Message            string    `json:"message,omitempty" yaml:"message,omitempty"`
+	Reason             string    `json:"reason,omitempty" yaml:"reason,omitempty"`
+	Status             string    `json:"status,omitempty" yaml:"status,omitempty"`
+	Type               string    `json:"type,omitempty" yaml:"type,omitempty"`
 }
 
 type ContainerStatus struct {
-	ContainerID string `json:"containerID" yaml:"containerID"`
-	Image       string `json:"image" yaml:"image"`
-	ImageID     string `json:"imageID" yaml:"imageID"`
-	Name        string `json:"name" yaml:"name"`
-	Ready       bool   `json:"ready" yaml:"ready"`
+	ContainerID string `json:"containerID,omitempty" yaml:"containerID,omitempty"`
+	Image       string `json:"image,omitempty" yaml:"image,omitempty"`
+	ImageID     string `json:"imageID,omitempty" yaml:"imageID,omitempty"`
+	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
+	Ready       bool   `json:"ready,omitempty" yaml:"ready,omitempty"`
 }
 
 type Container struct {

@@ -14,8 +14,10 @@ type HPASpec struct {
 	Behavior       HPABehavior                 `json:"behavior" yaml:"behavior"`
 	MaxReplica     int                         `json:"maxReplica" yaml:"maxReplica"`
 	MinReplica     int                         `json:"minReplica" yaml:"minReplica"`
-	Metrics        []MetricsSpec               `json:"metrics" yaml:"metrics"`
+	Metrics        MetricsSpec                 `json:"metrics" yaml:"metrics"`
 	ScaleTargetRef CrossVersionObjectReference `json:"scaleTargetRef" yaml:"scaleTargetRef"`
+	Template       PodTemplateSpec             `json:"template" yaml:"template"`
+	Selector       LabelSelector               `json:"selector" yaml:"selector"`
 }
 
 type HPAStatus struct {
@@ -31,8 +33,8 @@ type HPABehavior struct {
 }
 
 type MetricsSpec struct {
-	Type     string               `json:"type" yaml:"type"`
-	Resource ResourceMetricSource `json:"resource" yaml:"resource"`
+	CPUPercentage    float64 `json:"cpuPercentage" yaml:"cpuPercentage"`
+	MemoryPercentage float64 `json:"memoryPercentage" yaml:"memoryPercentage"`
 }
 
 type CrossVersionObjectReference struct {

@@ -1,30 +1,35 @@
 package api
 
+import "time"
+
 type Node struct {
-	APIVersion string     `yaml:"apiVersion" json:"apiVersion"`
-	Kind       string     `yaml:"kind" json:"kind"`
-	Metadata   ObjectMeta `yaml:"metadata" json:"metadata"`
-	Spec       NodeSpec   `yaml:"spec" json:"spec"`
-	Status     NodeStatus `yaml:"status" json:"status"`
+	APIVersion string     `yaml:"apiVersion,omitempty" json:"apiVersion,omitempty"`
+	Kind       string     `yaml:"kind,omitempty" json:"kind,omitempty"`
+	Metadata   ObjectMeta `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+	Spec       NodeSpec   `yaml:"spec,omitempty" json:"spec,omitempty"`
+	Status     NodeStatus `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
 type NodeSpec struct {
-	ExternalID string   `yaml:"externalID" json:"externalID"`
-	PodCIDR    string   `yaml:"podCIDR" json:"podCIDR"`
-	PodCIDRs   []string `yaml:"podCIDRs" json:"podCIDRs"`
-	ProviderID string   `yaml:"providerID" json:"providerID"`
+	ExternalID string   `yaml:"externalID,omitempty" json:"externalID,omitempty"`
+	PodCIDR    string   `yaml:"podCIDR,omitempty" json:"podCIDR,omitempty"`
+	PodCIDRs   []string `yaml:"podCIDRs,omitempty" json:"podCIDRs,omitempty"`
+	ProviderID string   `yaml:"providerID,omitempty" json:"providerID,omitempty"`
 }
 
-type NodeCondition = string
+type NodeCondition struct {
+	Status            string    `yaml:"status,omitempty" json:"status,omitempty"`
+	LastHeartbeatTime time.Time `yaml:"lastHeartbeatTime,omitempty" json:"lastHeartbeatTime,omitempty"`
+}
 
 const (
-	NodeReady   NodeCondition = "Ready"
-	NodeFailed  NodeCondition = "Failed"
-	NodeUnknown NodeCondition = "Unknown"
+	NodeReady   string = "Ready"
+	NodeFailed  string = "Failed"
+	NodeUnknown string = "Unknown"
 )
 
 type NodeStatus struct {
-	Hostname   string        `yaml:"hostname" json:"hostname"`
-	Condition  NodeCondition `yaml:"condition" json:"condition"`
-	PodsNumber int           `yaml:"podsNumber" json:"podsNumber"`
+	Hostname   string        `yaml:"hostname,omitempty" json:"hostname,omitempty"`
+	Condition  NodeCondition `yaml:"condition,omitempty" json:"condition,omitempty"`
+	PodsNumber int           `yaml:"podsNumber,omitempty" json:"podsNumber,omitempty"`
 }
