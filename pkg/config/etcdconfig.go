@@ -6,7 +6,10 @@ const (
 	EtcdNodePath = "/registry/nodes/"
 
 	// usage: /registry/pods/<namespace>/<pod-name>
-	EtcdPodPath = "/registry/pods"
+	EtcdPodPath = "/registry/pods/"
+
+	// usage: /registry/deployments/<namespace>/<deployment-name>
+	EtcdDeploymentPath = "/registry/deployment/"
 
 	// usage: /registry/services/<namespace>/<svc-name>
 	EtcdServicePath = "/registry/services/"

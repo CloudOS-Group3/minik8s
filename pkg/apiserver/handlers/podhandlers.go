@@ -38,6 +38,7 @@ func AddPod(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
 		})
+		return
 	}
 	log.Debug("new pod is: %+v", newPod)
 

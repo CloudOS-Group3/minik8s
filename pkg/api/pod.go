@@ -28,6 +28,8 @@ type PodStatus struct {
 	Phase             string            `json:"phase" yaml:"phase"`
 	PodIP             string            `json:"podIP" yaml:"podIP"`
 	StartTime         time.Time         `json:"startTime" yaml:"startTime"`
+	CPUPercentage     float64           `json:"cpuPercentage" yaml:"cpuPercentage"`
+	MemoryPercentage  float64           `json:"memoryPercentage" yaml:"memoryPercentage"`
 }
 
 type PodCondition struct {
