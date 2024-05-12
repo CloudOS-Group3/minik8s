@@ -16,23 +16,15 @@ type PodMetrics struct {
 
 func CreatePod(pod *api.Pod) bool {
 
-	// create pause container
-	pause_container := container.CreatePauseContainer(pod)
-	if pause_container == nil {
+	// create pause container & start it
+	pause_container_pid, err := container.CreatePauseContainer(pod)
+	if err != nil {
 		log.Error("Failed to create pause container for pod %s", pod.Metadata.Name)
 		return false
 	}
-	// Start pause container
-
-	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
-	if container.StartContainer(pause_container, ctx) == false {
-		return false
-	}
-
-	// get pause container pid
-	pause_container_pid := container.GetContainerPid(pause_container, pod.Metadata.NameSpace)
 
 	// create other containers
+	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
 	for _, container_ := range pod.Spec.Containers {
 		new_container := container.CreateContainer(container_, pod.Metadata.NameSpace, pause_container_pid)
 		if new_container == nil {
