@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
-	"minik8s/pkg/kubelet/pod"
+	"minik8s/pkg/kubelet/node"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/prettyprint"
@@ -115,7 +115,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 		log.Debug("%s", time.Now().String())
 		log.Debug("%s", matchPod.Status.StartTime)
 		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
-		metric, _ := pod.GetPodMetrics(&matchPod)
+		metric, _ := node.GetPodMetrics(&matchPod)
 		log.Debug("metric is: %+v", metric)
 		log.Debug("pod is: %+v", matchPod)
 		metric_string := fmt.Sprintf("cpu: %v, memory: %v", metric.CpuUsage, metric.MemoryUsage)

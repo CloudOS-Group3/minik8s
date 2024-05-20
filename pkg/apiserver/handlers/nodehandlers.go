@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"minik8s/pkg/api"
+	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
@@ -104,7 +105,7 @@ func UpdateNode(context *gin.Context) {
 		})
 		return
 	}
-
+	log.Info("node info: %+v", newNode)
 	nodeByteArray, err := json.Marshal(newNode)
 
 	if err != nil {
@@ -112,9 +113,30 @@ func UpdateNode(context *gin.Context) {
 	}
 
 	URL := config.EtcdNodePath + newNode.Metadata.Name
+	oldNode := etcdClient.GetEtcdPair(URL)
 	etcdClient.PutEtcdPair(URL, string(nodeByteArray))
 
 	context.JSON(http.StatusOK, gin.H{
 		"status": "ok",
 	})
+
+	var message msg.NodeMsg
+	if oldNode == "" {
+		message = msg.NodeMsg{
+			Opt:     msg.Add,
+			NewNode: newNode,
+		}
+	} else {
+		var node api.Node
+		if err := json.Unmarshal([]byte(oldNode), &node); err != nil {
+			log.Error("error unmarshal old node")
+		}
+		message = msg.NodeMsg{
+			Opt:     msg.Update,
+			OldNode: node,
+			NewNode: newNode,
+		}
+	}
+	msg_json, _ := json.Marshal(message)
+	publisher.Publish(msg.NodeTopic, string(msg_json))
 }

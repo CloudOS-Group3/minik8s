@@ -16,6 +16,8 @@ const (
 	PodTopic = "endpoint_pod"
 	// service topic
 	ServiceTopic = "endpoint_service"
+	// node topic
+	NodeTopic = "node"
 	// pod operation
 	PodOperation = "opt"
 	// pod new pod
@@ -44,4 +46,10 @@ type ServiceMsg struct {
 	NewService api.Service `json:"new_service,omitempty"`
 	// old service
 	OldService api.Service `json:"old_service,omitempty"`
+}
+
+type NodeMsg struct {
+	Opt     string   `json:"opt"`
+	NewNode api.Node `json:"new_node,omitempty"`
+	OldNode api.Node `json:"old_node,omitempty"`
 }

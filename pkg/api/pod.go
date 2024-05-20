@@ -21,15 +21,34 @@ type PodSpec struct {
 }
 
 type PodStatus struct {
-	Conditions        []PodCondition    `json:"conditions" yaml:"conditions"`
-	ContainerStatuses []ContainerStatus `json:"containerStatuses" yaml:"containerStatuses"`
-	HostIP            string            `json:"hostIP" yaml:"hostIP"`
-	Message           string            `json:"message" yaml:"message"`
-	Phase             string            `json:"phase" yaml:"phase"`
-	PodIP             string            `json:"podIP" yaml:"podIP"`
-	StartTime         time.Time         `json:"startTime" yaml:"startTime"`
-	CPUPercentage     float64           `json:"cpuPercentage" yaml:"cpuPercentage"`
-	MemoryPercentage  float64           `json:"memoryPercentage" yaml:"memoryPercentage"`
+	Conditions        []PodCondition    `json:"conditions,omitempty" yaml:"conditions,omitempty"`
+	ContainerStatuses []ContainerStatus `json:"containerStatuses,omitempty" yaml:"containerStatuses,omitempty"`
+	HostIP            string            `json:"hostIP,omitempty" yaml:"hostIP,omitempty"`
+	Message           string            `json:"message,omitempty" yaml:"message,omitempty"`
+	Phase             string            `json:"phase,omitempty" yaml:"phase,omitempty"`
+	PodIP             string            `json:"podIP,omitempty" yaml:"podIP,omitempty"`
+	StartTime         time.Time         `json:"startTime,omitempty" yaml:"startTime,omitempty"`
+	Metrics           PodMetrics        `json:"metrics,omitempty" yaml:"metrics,omitempty"`
+	CPUPercentage     float64           `json:"cpuPercentage,omitempty" yaml:"cpuPercentage,omitempty"`
+	MemoryPercentage  float64           `json:"memoryPercentage,omitempty" yaml:"memoryPercentage,omitempty"`
+}
+
+type PodMetrics struct {
+	CpuUsage         float64
+	MemoryUsage      float64
+	ContainerMetrics []ContainerMetrics
+}
+
+type ContainerMetrics struct {
+	CpuUsage      float64 `protobuf:"fixed64,1"`
+	MemoryUsage   float64 `protobuf:"fixed64,2"`
+	ProcessStatus string  `protobuf:"bytes,3"`
+	//Running ProcessStatus = "running"
+	//Created ProcessStatus = "created"
+	//Stopped ProcessStatus = "stopped"
+	//Paused ProcessStatus = "paused"
+	//Pausing ProcessStatus = "pausing"
+	//Unknown ProcessStatus = "unknown"
 }
 
 type PodCondition struct {
