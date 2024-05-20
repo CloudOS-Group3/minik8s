@@ -12,9 +12,8 @@ import (
 
 func GetService(namespace string, name string) (*api.Service, error) {
 	URL := config.GetUrlPrefix() + config.ServiceURL
-	strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
-	strings.Replace(URL, config.NamePlaceholder, name, -1)
-
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
 	res, err := http.Get(URL)
 	if err != nil {
 		log.Error("err get service %s:%s", namespace, name)
@@ -60,7 +59,7 @@ func GetAllServices() ([]api.Service, error) {
 
 func GetServicesByNamespace(namespace string) ([]api.Service, error) {
 	URL := config.GetUrlPrefix() + config.ServicesURL
-	strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
 
 	res, err := http.Get(URL)
 	if err != nil {
@@ -89,8 +88,8 @@ func UpdateService(service *api.Service) error {
 	}
 
 	URL := config.GetUrlPrefix() + config.ServiceURL
-	strings.Replace(URL, config.NamespacePlaceholder, service.Metadata.NameSpace, -1)
-	strings.Replace(URL, config.NamePlaceholder, service.Metadata.Name, -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, service.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, service.Metadata.Name, -1)
 
 	req, err := http.NewRequest(http.MethodPost, URL, strings.NewReader(string(serviceByteArray)))
 	if err != nil {
@@ -111,8 +110,8 @@ func UpdateService(service *api.Service) error {
 
 func DeleteService(namespace string, name string) error {
 	URL := config.GetUrlPrefix() + config.ServiceURL
-	strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
-	strings.Replace(URL, config.NamePlaceholder, name, -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
 
 	req, err := http.NewRequest(http.MethodDelete, URL, nil)
 	if err != nil {
