@@ -15,8 +15,8 @@ import (
 type HPAController struct{}
 
 const (
-	hpaDelay    time.Duration = 10
-	hpaInterval time.Duration = 30
+	hpaDelay    time.Duration = 10 * time.Second
+	hpaInterval time.Duration = 30 * time.Second
 )
 
 func (this *HPAController) Run() {
@@ -72,7 +72,7 @@ func (this *HPAController) update() {
 func (this *HPAController) getAllPods() ([]api.Pod, error) {
 
 	URL := config.GetUrlPrefix() + config.PodsURL
-	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
 	pods := []api.Pod{}
 
@@ -89,7 +89,7 @@ func (this *HPAController) getAllHPAs() ([]api.HPA, error) {
 
 	URL := config.GetUrlPrefix() + config.HPAsURL
 
-	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
 	hpas := []api.HPA{}
 	err := httputil.Get(URL, hpas, "data")

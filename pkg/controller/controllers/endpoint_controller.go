@@ -84,6 +84,8 @@ func NewEndPointController() *EndPointController {
 	)
 	endpointController := &EndPointController{
 		subscriber: subscriber,
+		ready: make(chan bool),
+		done: make(chan bool),
 	}
 	return endpointController
 }
