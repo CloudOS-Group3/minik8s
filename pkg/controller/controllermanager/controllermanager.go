@@ -1,6 +1,9 @@
 package controllermanager
 
-import "minik8s/pkg/controller/controllers"
+import (
+	"minik8s/pkg/controller/controllers"
+	"minik8s/util/log"
+)
 
 type ControllerManager struct {
 	DeploymentController *controllers.DeploymentController
@@ -20,8 +23,14 @@ func NewControllerManager() *ControllerManager {
 	}
 }
 
-func (CM *ControllerManager) Run() {
+func (CM *ControllerManager) Run(stop chan bool) {
 	go CM.DeploymentController.Run()
 	go CM.EndpointController.Run()
 	go CM.HPACcntroller.Run()
+
+	_, ok := <-stop
+	if !ok {
+		log.Debug("stop chan closed")
+	}
+	log.Debug("received stop signal")
 }
