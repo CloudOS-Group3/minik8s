@@ -6,6 +6,7 @@ import (
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/kafka"
+	"minik8s/pkg/kubelet/node"
 	"minik8s/pkg/kubelet/pod"
 	"minik8s/util/log"
 	"sync"
@@ -64,14 +65,19 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 		pod.DeletePod(&podMsg.OldPod)
 		break
 	case msg_type.Update:
-		log.Info("update pod: %v", podMsg.NewPod)
-		pod.DeletePod(&podMsg.OldPod)
-		pod.CreatePod(&podMsg.NewPod)
+		OldSpec, _ := json.Marshal(podMsg.OldPod.Spec)
+		NewSpec, _ := json.Marshal(podMsg.NewPod.Spec)
+		if string(OldSpec) != string(NewSpec) {
+			log.Info("update pod: %v", podMsg.NewPod)
+			pod.DeletePod(&podMsg.OldPod)
+			pod.CreatePod(&podMsg.NewPod)
+		}
 		break
 	}
 }
 
 func (k *KubeletSubscriber) Run() {
+	go node.DoHeartBeat()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	topics := []string{msg_type.PodTopic}

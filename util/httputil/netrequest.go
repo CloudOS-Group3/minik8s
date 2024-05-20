@@ -68,6 +68,7 @@ func Put(URL string, body []byte) error {
 		log.Error("Error create put request")
 		return err
 	}
+	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {

@@ -5,14 +5,9 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"minik8s/pkg/api"
 	"minik8s/pkg/kubelet/container"
+	"minik8s/pkg/kubelet/node"
 	"minik8s/util/log"
 )
-
-type PodMetrics struct {
-	CpuUsage         float64
-	MemoryUsage      float64
-	ContainerMetrics []container.ContainerMetrics
-}
 
 func CreatePod(pod *api.Pod) bool {
 
@@ -35,32 +30,9 @@ func CreatePod(pod *api.Pod) bool {
 		}
 	}
 
+	node.AddPodToCheckList(pod)
+
 	return true
-}
-
-func GetPodMetrics(pod *api.Pod) (*PodMetrics, error) {
-	podMetrics := &PodMetrics{}
-	totalCpuUsage := 0.0
-	totalMemoryUsage := 0.0
-
-	for _, container_ := range pod.Spec.Containers {
-		// fix history bugs
-		if pod.Metadata.NameSpace == "" {
-			pod.Metadata.NameSpace = "default"
-		}
-		containerMetrics, err := container.GetContainerMetrics(container_.Name, pod.Metadata.NameSpace)
-		if err != nil {
-			log.Error("Failed to get metrics for container %s", container_.Name)
-			return nil, err
-		}
-		totalCpuUsage += containerMetrics.CpuUsage
-		totalMemoryUsage += containerMetrics.MemoryUsage
-		podMetrics.ContainerMetrics = append(podMetrics.ContainerMetrics, *containerMetrics)
-	}
-	podMetrics.CpuUsage = totalCpuUsage
-	podMetrics.MemoryUsage = totalMemoryUsage
-	return podMetrics, nil
-
 }
 
 func DeletePod(pod *api.Pod) bool {
@@ -100,5 +72,6 @@ func DeletePod(pod *api.Pod) bool {
 	}
 
 	// delete pod
+	node.DeletePodInCheckList(pod)
 	return true
 }
