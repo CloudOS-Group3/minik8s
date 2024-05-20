@@ -13,8 +13,8 @@ import (
 
 func GetPod(namespace string, name string) (*api.Pod, error) {
 	URL := config.GetUrlPrefix() + config.PodURL
-	strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
-	strings.Replace(URL, config.NamePlaceholder, name, -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
 
 	res, err := http.Get(URL)
 	if err != nil {
@@ -38,7 +38,7 @@ func GetPod(namespace string, name string) (*api.Pod, error) {
 
 func GetPodsByNamespace(namespace string) ([]api.Pod, error) {
 	URL := config.GetUrlPrefix() + config.PodsURL
-	strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
 
 	res, err := http.Get(URL)
 	if err != nil {
@@ -68,7 +68,7 @@ func ApplyPod(pod *api.Pod) error {
 	}
 
 	URL := config.GetUrlPrefix() + config.PodsURL
-	strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
 
 	err = httputil.Post(URL, byteArr)
 	if err != nil {

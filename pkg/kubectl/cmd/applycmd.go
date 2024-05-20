@@ -117,6 +117,29 @@ func applyPodHandler(content []byte) {
 
 func applyServiceHandler(content []byte) {
 	log.Info("creating or updating service")
+	service := &api.Service{}
+	err := yaml.Unmarshal(content, service)
+	if err != nil {
+		log.Error("Error yaml unmarshal service")
+		return
+	}
+
+	var namespace string
+	if service.Metadata.NameSpace != "" {
+		namespace = service.Metadata.NameSpace
+	} else {
+		namespace = "default"
+	}
+	path := strings.Replace(config.ServiceURL, config.NamespacePlaceholder, namespace, -1)
+	path = strings.Replace(path, config.NamePlaceholder, service.Metadata.Name, -1)
+	byteArr, err := json.Marshal(*service)
+	URL := config.GetUrlPrefix() + path
+
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
 }
 
 func applyDeploymentHandler(content []byte) {
