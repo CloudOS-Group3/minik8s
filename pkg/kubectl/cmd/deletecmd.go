@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"minik8s/pkg/config"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -15,8 +18,9 @@ func DeleteCmd() *cobra.Command {
 	}
 
 	deletePodCmd := &cobra.Command{
-		Use:   "pod",
+		Use:   "pod [pod name]",
 		Short: "delete pod",
+		Args:  cobra.MinimumNArgs(1),
 		Run:   deletePodCmdHandler,
 	}
 
@@ -37,6 +41,7 @@ func DeleteCmd() *cobra.Command {
 		Short: "delete hpa",
 		Run:   deleteHPACmdHandler,
 	}
+	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 
 	deleteCmd.AddCommand(deletePodCmd)
 	deleteCmd.AddCommand(deleteDeploymentCmd)
@@ -47,7 +52,24 @@ func DeleteCmd() *cobra.Command {
 }
 
 func deletePodCmdHandler(cmd *cobra.Command, args []string) {
-	log.Info("pod name: %+v", args)
+	// delete pod name --namespace=default
+	name := args[0]
+	namespace, err := cmd.Flags().GetString("namespace")
+	if err != nil {
+		log.Error("Error getting flags: %s", err)
+		return
+	}
+	path := strings.Replace(config.PodURL, config.NamespacePlaceholder, namespace, -1)
+	path = strings.Replace(path, config.NamePlaceholder, name, -1)
+	URL := config.GetUrlPrefix() + path
+	err = httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
+
+	log.Info("pod name: %s, namespace: %s", name, namespace)
+
 }
 
 func deleteDeploymentCmdHandler(cmd *cobra.Command, args []string) {

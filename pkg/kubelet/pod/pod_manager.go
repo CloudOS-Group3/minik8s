@@ -80,7 +80,16 @@ func DeletePod(pod *api.Pod) bool {
 	}
 
 	// delete pause container
-	pause_container := container.GetContainerById(pod.Metadata.Name+"-pause", pod.Metadata.NameSpace)
+	pauseId := pod.Status.PauseId
+	if pauseId == "" {
+		err := error(nil)
+		pauseId, err = container.GetContainerIdByName(pod.Metadata.Name+"-pause", ctx)
+		if err != nil {
+			log.Error("Failed to get pause container id, %s", err.Error())
+			return false
+		}
+	}
+	pause_container := container.GetContainerById(pauseId, pod.Metadata.NameSpace)
 	if pause_container == nil {
 		log.Error("Pause container not found")
 		return false
