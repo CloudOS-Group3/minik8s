@@ -78,16 +78,13 @@ func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 }
 
 func NewEndPointController() *EndPointController {
-	var subscriber = kafka.NewSubscriber(
-		[]string{kafka.DefaultBroker},
-		kafka.ControllerGroup,
-	)
-	endpointController := &EndPointController{
-		subscriber: subscriber,
-		ready: make(chan bool),
-		done: make(chan bool),
+	brokers := []string{"127.0.0.1:9092"}
+	group := "endpoint-controller"
+	return &EndPointController{
+		ready:      make(chan bool),
+		done:       make(chan bool),
+		subscriber: kafka.NewSubscriber(brokers, group),
 	}
-	return endpointController
 }
 
 func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
@@ -339,9 +336,10 @@ func OnServiceDelete(svc *api.Service) {
 }
 
 func (e *EndPointController) Run() {
+	log.Info("EndPointController is running")
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{"pod", "node"}
+	topics := []string{msg_type.PodTopic, msg_type.ServiceTopic}
 	e.subscriber.Subscribe(wg, ctx, topics, e)
 	<-e.ready
 	<-e.done

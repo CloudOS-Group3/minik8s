@@ -15,7 +15,7 @@ func GetLabelIndex(label map[string]string) (*api.LabelIndex, error) {
 	labelString := util.ConvertLabelToString(label)
 
 	URL := config.GetUrlPrefix() + config.LabelIndexURL
-	strings.Replace(URL, config.LabelParam, labelString, -1)
+	URL = strings.Replace(URL, config.LabelParam, labelString, -1)
 
 	res, err := http.Get(URL)
 	if err != nil {
@@ -30,7 +30,7 @@ func GetLabelIndex(label map[string]string) (*api.LabelIndex, error) {
 	labelIndex := &api.LabelIndex{}
 	err = json.Unmarshal(body, &labelIndex)
 	if err != nil {
-		log.Error("error unmarshal into label index")
+		log.Error("error unmarshal into label index: %s %v %v", err.Error(), body, labelIndex)
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func DeleteLabelIndex(label map[string]string) error {
 	labelString := util.ConvertLabelToString(label)
 
 	URL := config.GetUrlPrefix() + config.LabelIndexURL
-	strings.Replace(URL, config.LabelParam, labelString, -1)
+	URL = strings.Replace(URL, config.LabelParam, labelString, -1)
 
 	req, err := http.NewRequest(http.MethodDelete, URL, nil)
 	if err != nil {
@@ -65,7 +65,7 @@ func UpdateLabelIndex(labelIndex *api.LabelIndex) error {
 	labelString := util.ConvertLabelToString(labelIndex.Labels)
 
 	URL := config.GetUrlPrefix() + config.LabelIndexURL
-	strings.Replace(URL, config.LabelParam, labelString, -1)
+	URL = strings.Replace(URL, config.LabelParam, labelString, -1)
 
 	body, err := json.Marshal(labelIndex)
 	if err != nil {

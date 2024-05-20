@@ -31,7 +31,7 @@ func DeleteCmd() *cobra.Command {
 	}
 
 	deleteServiceCmd := &cobra.Command{
-		Use:   "service",
+		Use:   "service [service name]",
 		Short: "delete service",
 		Run:   deleteServiceCmdHandler,
 	}
@@ -42,6 +42,7 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteHPACmdHandler,
 	}
 	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
+	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 
 	deleteCmd.AddCommand(deletePodCmd)
 	deleteCmd.AddCommand(deleteDeploymentCmd)
@@ -77,7 +78,20 @@ func deleteDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 }
 
 func deleteServiceCmdHandler(cmd *cobra.Command, args []string) {
-	log.Info("service name: %+v", args)
+	name := args[0]
+	namespace, err := cmd.Flags().GetString("namespace")
+	if err != nil {
+		log.Error("Error getting flags: %s", err)
+		return
+	}
+	path := strings.Replace(config.ServiceURL, config.NamespacePlaceholder, namespace, -1)
+	path = strings.Replace(path, config.NamePlaceholder, name, -1)
+	URL := config.GetUrlPrefix() + path
+	err = httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
 }
 
 func deleteHPACmdHandler(cmd *cobra.Command, args []string) {
