@@ -79,6 +79,7 @@ func CreatePauseContainer(pod *api.Pod) (string, error) {
 		return "", err
 	}
 	trimmedContainerID := strings.TrimSpace(string(containerID))
+	pod.Status.PauseId = trimmedContainerID
 	log.Info("Create pause: %s", trimmedContainerID)
 
 	// get pause container pid & ip
@@ -345,4 +346,34 @@ func GetContainerMetrics(name string, space string) (*ContainerMetrics, error) {
 		ProcessStatus: string(status.Status),
 	}, nil
 
+}
+
+func GetContainerIdByName(name string, ctx context.Context) (string, error) {
+	client, err := util.CreateClient()
+	if err != nil {
+		log.Error("Failed to create containerd client: %v", err.Error())
+		return "", err
+	}
+	defer client.Close()
+
+	containers, err := client.Containers(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	for _, container := range containers {
+		info, err := container.Info(ctx)
+		if err != nil {
+			return "", err
+		}
+		if info.Labels["io.containerd.container.name"] == name {
+			return container.ID(), nil
+		}
+		if info.Labels["nerdctl/name"] == name {
+			return container.ID(), nil
+		} // pause is created by nerdctl
+		log.Debug("label: %v", info.Labels)
+	}
+
+	return "", fmt.Errorf("container with name %s not found", name)
 }

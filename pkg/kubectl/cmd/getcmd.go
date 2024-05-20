@@ -59,6 +59,7 @@ func GetCmd() *cobra.Command {
 	getDeploymentCmd.Aliases = []string{"deployments"}
 	getHPACmd.Aliases = []string{"hpas"}
 
+	getPodCmd.Flags().StringP("namespace", "n", "default", "namespace of the pod")
 	getCmd.AddCommand(getPodCmd)
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
@@ -70,13 +71,13 @@ func GetCmd() *cobra.Command {
 // TODO: all of these handlers have got the data, but they dont show it in the terminal
 func getPodCmdHandler(cmd *cobra.Command, args []string) {
 
-	log.Debug("the length of args is: %v", len(args))
+	namespace := cmd.Flag("namespace").Value.String()
 
 	matchPods := []api.Pod{}
 	if len(args) == 0 {
 		log.Info("getting all pods")
 		URL := config.GetUrlPrefix() + config.PodsURL
-		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
 
 		err := httputil.Get(URL, &matchPods, "data")
 		if err != nil {
@@ -90,7 +91,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 
 			log.Debug("getting pod: %v", podName)
 			URL := config.GetUrlPrefix() + config.PodURL
-			URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+			URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
 			URL = strings.Replace(URL, config.NamePlaceholder, podName, -1)
 
 			err := httputil.Get(URL, pod, "data")
