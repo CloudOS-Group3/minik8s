@@ -74,9 +74,21 @@ func (store Store) UpdatePod(pod api.Pod) bool {
 		log.Error("%s pod doesn't exist", res.Metadata.Name)
 		return false
 	}
-	store.PutPod(pod)
 
-	return false
+	jsonValue, err := json.Marshal(pod)
+	if err != nil {
+		log.Error("Error marshalling pod json %v", err)
+		return false
+	}
+
+	key := ""
+	if pod.Metadata.NameSpace == "" {
+		key = "/registry/pods/default/" + pod.Metadata.Name
+	} else {
+		key = "/registry/pods/" + pod.Metadata.NameSpace + "/" + pod.Metadata.Name
+	}
+
+	return store.PutEtcdPair(key, string(jsonValue))
 }
 
 func (store Store) DeletePod(namespace, name string) bool {
