@@ -78,6 +78,8 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyDeploymentHandler(content)
 	case "HorizontalPodAutoscaler":
 		applyHPAHandler(content)
+	case "DNS":
+		applyDNSHandler(content)
 	default:
 		fmt.Println("Unknown resource kind")
 	}
@@ -196,4 +198,28 @@ func applyHPAHandler(content []byte) {
 		return
 	}
 	log.Info("apply hpa successed")
+}
+
+func applyDNSHandler(content []byte) {
+	log.Info("creating or updating DNS")
+	dns := &api.DNS{}
+	err := yaml.Unmarshal(content, dns)
+	if err != nil {
+		log.Error("Error yaml unmarshal DNS")
+		return
+	}
+
+	byteArr, err := json.Marshal(*dns)
+	if err != nil {
+		log.Error("Error json marshal DNS")
+		return
+	}
+
+	URL := config.GetUrlPrefix() + config.DNSsURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply DNS successed")
 }

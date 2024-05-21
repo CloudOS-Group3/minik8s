@@ -18,6 +18,8 @@ const (
 	ServiceTopic = "endpoint_service"
 	// node topic
 	NodeTopic = "node"
+	// DNS topic
+	DNSTopic = "dns"
 	// pod operation
 	PodOperation = "opt"
 	// pod new pod
@@ -52,4 +54,10 @@ type NodeMsg struct {
 	Opt     string   `json:"opt"`
 	NewNode api.Node `json:"new_node,omitempty"`
 	OldNode api.Node `json:"old_node,omitempty"`
+}
+
+type DNSMsg struct {
+	Opt    string  `json:"opt"`
+	NewDNS api.DNS `json:"new_dns,omitempty"`
+	OldDNS api.DNS `json:"old_dns,omitempty"`
 }

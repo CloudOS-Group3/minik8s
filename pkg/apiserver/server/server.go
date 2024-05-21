@@ -55,7 +55,6 @@ func (server *apiServer) bind() {
 	server.router.PUT(config.HPAURL, handlers.UpdateHPA)
 	server.router.DELETE(config.HPAURL, handlers.DeleteHPA)
 
-
 	server.router.GET(config.LabelIndexURL, handlers.GetLabelIndex)
 	server.router.POST(config.LabelIndexURL, handlers.AddLabelIndex)
 	server.router.DELETE(config.LabelIndexURL, handlers.DeleteLabelIndex)
@@ -65,4 +64,10 @@ func (server *apiServer) bind() {
 	server.router.GET(config.ServiceURL, handlers.GetService)
 	server.router.POST(config.ServiceURL, handlers.AddService)
 	server.router.DELETE(config.ServiceURL, handlers.DeleteService)
+
+	server.router.GET(config.DNSsURL, handlers.GetDNSs)
+	server.router.POST(config.DNSsURL, handlers.AddDNS)
+	server.router.DELETE(config.DNSURL, handlers.DeleteDNS)
+	server.router.PUT(config.DNSURL, handlers.UpdateDNS)
+	server.router.GET(config.DNSURL, handlers.GetDNS)
 }

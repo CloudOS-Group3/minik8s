@@ -28,4 +28,7 @@ const (
 
 	// usage: /registry/services/<namespace>/<svc-name>
 	ServicePath = "/registry/services/"
+
+	// usage: /registry/dns/<name>
+	EtcdDNSPath = "/registry/dns/"
 )

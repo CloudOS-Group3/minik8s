@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: DNS
+name: new-dns
+host: example.com
+paths:
+  - path: /
+    serviceName: test-service1
+    servicePort: 8000

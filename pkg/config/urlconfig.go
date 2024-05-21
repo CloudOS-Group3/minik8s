@@ -43,13 +43,16 @@ const (
 	CronJobURL  = "/apis/batch/v1/namespaces/:namespace/cronjobs/:name"
 
 	HPAsURL = "/apis/v1/namespaces/:namespace/hpa"
-	HPAURL = "/apis/v1/namespaces/:namespace/hpa/:name"
+	HPAURL  = "/apis/v1/namespaces/:namespace/hpa/:name"
 
 	//Endpoints API
 	EndpointURL = "/api/v1/namespaces/:namespace/endpoints/:label"
 
 	//LabelIndex API
 	LabelIndexURL = "/api/v1/labelIndex/:label"
+
+	DNSsURL = "/api/v1/dns"
+	DNSURL  = "/api/v1/dns/:name"
 )
 
 // const used to send and parse url
