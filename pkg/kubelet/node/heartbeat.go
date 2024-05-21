@@ -71,6 +71,7 @@ func DoHeartBeat() {
 			if err != nil {
 				panic(err)
 			}
+			//log.Info("HeartBeat, Pod: %s", string(byteArr))
 			err = httputil.Put(URL, byteArr)
 			if err != nil {
 				panic(err)
@@ -82,7 +83,7 @@ func DoHeartBeat() {
 		URL := config.GetUrlPrefix() + config.NodeURL
 		URL = strings.Replace(URL, config.NamePlaceholder, Heartbeat.Node.Metadata.Name, -1)
 		byteArr, err := json.Marshal(Heartbeat.Node)
-		log.Info("HeartBeat, Node: %s", string(byteArr))
+		//log.Info("HeartBeat, Node: %s", string(byteArr))
 		if err != nil {
 			panic(err)
 		}
