@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api"
+	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/util/httputil"
+	"minik8s/util/log"
 	"strings"
 	"sync"
 	"time"
@@ -61,9 +63,10 @@ func (s *NodeController) CheckNode() {
 			currentTime := time.Now()
 			TimeDiff := currentTime.Sub(heartBeatTime)
 			if TimeDiff > time.Minute*3 {
+				log.Info("Node dead: %s", node.Metadata.Name)
 				node.Status.Condition.Status = api.NodeUnknown
 				URL := config.GetUrlPrefix() + config.NodeURL
-				strings.Replace(URL, config.NamePlaceholder, node.Metadata.Name, -1)
+				URL = strings.Replace(URL, config.NamePlaceholder, node.Metadata.Name, -1)
 				byteArr, err := json.Marshal(node)
 				if err != nil {
 					panic(err)
@@ -79,11 +82,21 @@ func (s *NodeController) CheckNode() {
 }
 
 func (s *NodeController) NodeHandler(msg []byte) {
+	var message msg_type.NodeMsg
 	var node api.Node
-	err := json.Unmarshal(msg, &node)
+	err := json.Unmarshal(msg, &message)
 	if err != nil {
 		panic(err)
 	}
+	if message.Opt == msg_type.Delete {
+		for index, nodeInList := range s.RegisteredNode {
+			if nodeInList.Metadata.Name == message.OldNode.Metadata.Name {
+				s.RegisteredNode = append(s.RegisteredNode[:index], s.RegisteredNode[index+1:]...)
+				return
+			}
+		}
+	}
+	node = message.NewNode
 	exist := false
 	for _, nodeInList := range s.RegisteredNode {
 		if nodeInList.Metadata.Name == node.Metadata.Name {
@@ -92,6 +105,7 @@ func (s *NodeController) NodeHandler(msg []byte) {
 		}
 	}
 	if !exist {
+		log.Info("add node: %s", node.Metadata.Name)
 		s.RegisteredNode = append(s.RegisteredNode, node)
 	}
 }
