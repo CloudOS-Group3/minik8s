@@ -47,6 +47,9 @@ func (c *ContainerMetrics) String() string {
 func (c *ContainerMetrics) ProtoMessage() {
 
 }
+func GetPauseName(pod *api.Pod) string {
+	return pod.Metadata.NameSpace + "-" + pod.Metadata.Name + "-pause"
+}
 
 type ContainerInspect struct {
 	State struct {
@@ -66,14 +69,14 @@ func CreatePauseContainer(pod *api.Pod) (string, error) {
 	//		ports = append(ports, port)
 	//	}
 	//}
-	pause_name := pod.Metadata.Name + "-pause"
+	pause_name := GetPauseName(pod)
 	pause_image := "registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9"
 
 	// Use nerdctl to create pause container
 	// network: cbr0, which is flannel network
 	// the cmd will output the container id
 	cmd := exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "run", "-d", "--name", pause_name, "--network", "cbr0", pause_image)
-	log.Debug("%v", cmd)
+	log.Info("cmd: %v", cmd)
 	containerID, err := cmd.Output()
 	if err != nil {
 		log.Error("Failed to run nerdctl run: %s", err.Error())
