@@ -68,6 +68,7 @@ func DoHeartBeat() {
 			URL = strings.Replace(URL, config.NamespacePlaceholder, PodInList.Metadata.NameSpace, -1)
 			URL = strings.Replace(URL, config.NamePlaceholder, PodInList.Metadata.Name, -1)
 			byteArr, err := json.Marshal(PodInList)
+			log.Info("HeartBeat, Pod: %s", string(byteArr))
 			if err != nil {
 				panic(err)
 			}
