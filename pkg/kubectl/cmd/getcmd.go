@@ -5,6 +5,7 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
 	"minik8s/pkg/kubelet/node"
+	"minik8s/pkg/util"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/prettyprint"
@@ -60,6 +61,7 @@ func GetCmd() *cobra.Command {
 	getHPACmd.Aliases = []string{"hpas"}
 
 	getPodCmd.Flags().StringP("namespace", "n", "default", "namespace of the pod")
+	getServiceCmd.Flags().StringP("namespace", "n", "default", "namespace of the pod")
 	getCmd.AddCommand(getPodCmd)
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
@@ -109,7 +111,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	header := []string{"name", "status", "age", "status"}
+	header := []string{"name", "status", "age", "usage", "ip"}
 	data := [][]string{}
 
 	for _, matchPod := range matchPods {
@@ -120,7 +122,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 		log.Debug("metric is: %+v", metric)
 		log.Debug("pod is: %+v", matchPod)
 		metric_string := fmt.Sprintf("cpu: %v, memory: %v", metric.CpuUsage, metric.MemoryUsage)
-		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age, metric_string})
+		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age, metric_string, matchPod.Status.PodIP})
 	}
 
 	prettyprint.PrintTable(header, data)
@@ -155,7 +157,42 @@ func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 }
 
 func getServiceCmdHandler(cmd *cobra.Command, args []string) {
+	namespace := cmd.Flag("namespace").Value.String()
+	matchServices := []api.Service{}
 
+	if len(args) == 0 {
+		log.Debug("getting all services")
+		URL := config.GetUrlPrefix() + config.ServicesURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+		err := httputil.Get(URL, matchServices, "data")
+		if err != nil {
+			log.Error("error get all services: %s", err.Error())
+			return
+		}
+	} else {
+		for _, serviceName := range args {
+			service := &api.Service{}
+			URL := config.GetUrlPrefix() + config.ServiceURL
+			URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+			URL = strings.Replace(URL, config.NamePlaceholder, serviceName, -1)
+
+			err := httputil.Get(URL, service, "data")
+			if err != nil {
+				log.Error("error get service: %s", err.Error())
+				return
+			}
+			matchServices = append(matchServices, *service)
+		}
+	}
+
+	header := []string{"name", "label", "ip"}
+	data := [][]string{}
+	for _, matchService := range matchServices {
+		labelstring := util.ConvertLabelToString(matchService.Spec.Selector)
+		data = append(data, []string{matchService.Metadata.Name, labelstring, matchService.Status.ClusterIP})
+
+	}
+	prettyprint.PrintTable(header, data)
 }
 
 func getNodeCmdHandler(cmd *cobra.Command, args []string) {

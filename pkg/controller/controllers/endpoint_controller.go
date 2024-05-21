@@ -305,6 +305,7 @@ func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
 	if err != nil {
 		log.Fatal("add label index error")
 	}
+
 }
 
 func OnServiceDelete(svc *api.Service) {

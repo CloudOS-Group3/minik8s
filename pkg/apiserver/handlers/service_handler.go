@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"minik8s/pkg/api"
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/pkg/controller/controllers"
+	"minik8s/util/log"
+	"net"
 	"net/http"
 )
 
@@ -41,6 +44,7 @@ func GetServicesByNamespace(context *gin.Context) {
 }
 
 func AddService(context *gin.Context) {
+	log.Info("AddService")
 	var newService api.Service
 	if err := context.ShouldBind(&newService); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{
@@ -48,14 +52,25 @@ func AddService(context *gin.Context) {
 		})
 		return
 	}
+	log.Info("new service is: %+v", newService)
 
 	serviceByteArray, err := json.Marshal(newService)
 	if err != nil {
+		log.Error("Failed to marshal service: %s", err.Error())
 		return
 	}
 	// check if the service already exists
 	oldService, _ := controllers.GetService(newService.Metadata.NameSpace, newService.Metadata.Name)
 
+	// Allocate ClusterIP
+	if oldService != nil && oldService.Status.ClusterIP != "" {
+		newService.Status.ClusterIP = oldService.Status.ClusterIP
+	} else {
+		err = GenerateClusterIP(&newService)
+		if err != nil {
+			log.Fatal("Failed to generate ClusterIP: %v", err)
+		}
+	}
 	URL := config.ServicePath + newService.Metadata.NameSpace + "/" + newService.Metadata.Name
 	etcdClient.PutEtcdPair(URL, string(serviceByteArray))
 
@@ -95,6 +110,23 @@ func DeleteService(context *gin.Context) {
 		return
 	}
 	etcdClient.DeleteEtcdPair(URL)
+	// delete ClusterIP
+	allocatedIpsStr := etcdClient.GetEtcdPair(clusterIpEtcdPrefix)
+	allocatedIPs := make(map[string]string)
+	if len(allocatedIpsStr) != 0 {
+		err := json.Unmarshal([]byte(allocatedIpsStr), &allocatedIPs)
+		if err != nil {
+			log.Fatal("Failed to unmarshal allocatedIPs: %s", err.Error())
+		} else {
+			delete(allocatedIPs, oldService.Status.ClusterIP)
+			allocatedIpsByte, err := json.Marshal(allocatedIPs)
+			if err != nil {
+				log.Fatal("Failed to marshal allocatedIPs: %s", err.Error())
+			} else {
+				etcdClient.PutEtcdPair(clusterIpEtcdPrefix, string(allocatedIpsByte))
+			}
+		}
+	}
 
 	//construct message
 	message := msg.ServiceMsg{
@@ -107,4 +139,54 @@ func DeleteService(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{
 		"status": "ok",
 	})
+}
+
+// range: 10.96.0.0 - 10.96.255.255
+const cidr = "10.96.0.0/16"
+const clusterIpEtcdPrefix = "/registry/service/clusterIP"
+
+//allocatedIPs map[string]string  // map IP -> service ns:name
+
+func GenerateClusterIP(svc *api.Service) error {
+	log.Info("GenerateClusterIP")
+	_, ipNet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return err
+	}
+	allocatedIpsStr := etcdClient.GetEtcdPair(clusterIpEtcdPrefix)
+	allocatedIPs := make(map[string]string)
+	if len(allocatedIpsStr) != 0 {
+		err = json.Unmarshal([]byte(allocatedIpsStr), &allocatedIPs)
+		if err != nil {
+			return err
+		}
+	}
+
+	for ip := ipNet.IP.Mask(ipNet.Mask); ipNet.Contains(ip); inc(ip) {
+		ipStr := ip.String()
+		log.Info("ipStr: %s", ipStr)
+		if allocatedIPs[ipStr] == "" {
+			// find an available IP
+			allocatedIPs[ipStr] = svc.Metadata.NameSpace + ":" + svc.Metadata.Name
+			svc.Status.ClusterIP = ipStr
+			// update etcd
+			allocatedIpsByte, err := json.Marshal(allocatedIPs)
+			if err != nil {
+				return err
+			}
+			etcdClient.PutEtcdPair(clusterIpEtcdPrefix, string(allocatedIpsByte))
+		}
+	}
+	// no available IP
+	return errors.New("no available IP addresses for ClusterIP allocation")
+
+}
+
+func inc(ip net.IP) {
+	for j := len(ip) - 1; j >= 0; j-- {
+		ip[j]++
+		if ip[j] > 0 {
+			break
+		}
+	}
 }

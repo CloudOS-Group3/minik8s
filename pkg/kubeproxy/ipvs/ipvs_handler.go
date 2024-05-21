@@ -17,7 +17,7 @@ type IPVS interface {
 type IpvsHandler struct {
 }
 
-func (i *IpvsHandler) AddService(service *api.Service) error {
+func AddService(service *api.Service) error {
 	handle, err := libipvs.New("")
 	if err != nil {
 		return err
@@ -59,11 +59,11 @@ func (i *IpvsHandler) AddService(service *api.Service) error {
 	return nil
 }
 
-func (i *IpvsHandler) UpdateService(service *api.Service) error {
-	return i.AddService(service)
+func UpdateService(service *api.Service) error {
+	return AddService(service)
 }
 
-func (i *IpvsHandler) DeleteService(service *api.Service) error {
+func DeleteService(service *api.Service) error {
 	handle, err := libipvs.New("")
 	if err != nil {
 		return err
