@@ -14,8 +14,8 @@ import (
 type DeploymentController struct{}
 
 const (
-	initialDelay   time.Duration = 10
-	updateInterval time.Duration = 30
+	initialDelay   time.Duration = 10 * time.Second
+	updateInterval time.Duration = 30 * time.Second
 )
 
 func (this *DeploymentController) Run() {
@@ -76,7 +76,7 @@ func (this *DeploymentController) update() {
 func (this *DeploymentController) getAllPods() ([]api.Pod, error) {
 
 	URL := config.GetUrlPrefix() + config.PodsURL
-	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
 	pods := []api.Pod{}
 
@@ -91,7 +91,7 @@ func (this *DeploymentController) getAllPods() ([]api.Pod, error) {
 
 func (this *DeploymentController) getAllDeployments() ([]api.Deployment, error) {
 	URL := config.GetUrlPrefix() + config.DeploymentsURL
-	strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 	deployments := []api.Deployment{}
 
 	err := httputil.Get(URL, deployments, "data")
