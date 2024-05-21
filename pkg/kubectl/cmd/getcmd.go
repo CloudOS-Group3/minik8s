@@ -160,7 +160,7 @@ func getServiceCmdHandler(cmd *cobra.Command, args []string) {
 		log.Debug("getting all services")
 		URL := config.GetUrlPrefix() + config.ServicesURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
-		err := httputil.Get(URL, matchServices, "data")
+		err := httputil.Get(URL, &matchServices, "data")
 		if err != nil {
 			log.Error("error get all services: %s", err.Error())
 			return

@@ -9,6 +9,7 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/pkg/controller/controllers"
 	"minik8s/util/log"
+	"minik8s/util/stringutil"
 	"net"
 	"net/http"
 )
@@ -18,9 +19,23 @@ func GetService(context *gin.Context) {
 	name := context.Param(config.NameParam)
 	URL := config.ServicePath + namespace + "/" + name
 	svc := etcdClient.GetEtcdPair(URL)
-
+	var service api.Service
+	if len(svc) == 0 {
+		log.Info("Service %s not found", name)
+	} else {
+		err := json.Unmarshal([]byte(svc), &service)
+		if err != nil {
+			log.Error("Error unmarshalling service json %v", err)
+			return
+		}
+	}
+	byteArr, err := json.Marshal(service)
+	if err != nil {
+		log.Error("Error marshal service: %s", err.Error())
+		return
+	}
 	context.JSON(http.StatusOK, gin.H{
-		"data": svc,
+		"data": string(byteArr),
 	})
 }
 
@@ -28,8 +43,9 @@ func GetAllServices(context *gin.Context) {
 	URL := config.ServicePath
 	services := etcdClient.PrefixGet(URL)
 
+	jsonString := stringutil.EtcdResEntryToJSON(services)
 	context.JSON(http.StatusOK, gin.H{
-		"data": services,
+		"data": jsonString,
 	})
 }
 
@@ -38,8 +54,9 @@ func GetServicesByNamespace(context *gin.Context) {
 	URL := config.ServicePath + namespace
 	services := etcdClient.PrefixGet(URL)
 
+	jsonString := stringutil.EtcdResEntryToJSON(services)
 	context.JSON(http.StatusOK, gin.H{
-		"data": services,
+		"data": jsonString,
 	})
 }
 
@@ -52,13 +69,7 @@ func AddService(context *gin.Context) {
 		})
 		return
 	}
-	log.Info("new service is: %+v", newService)
 
-	serviceByteArray, err := json.Marshal(newService)
-	if err != nil {
-		log.Error("Failed to marshal service: %s", err.Error())
-		return
-	}
 	// check if the service already exists
 	oldService, _ := controllers.GetService(newService.Metadata.NameSpace, newService.Metadata.Name)
 
@@ -66,11 +77,18 @@ func AddService(context *gin.Context) {
 	if oldService != nil && oldService.Status.ClusterIP != "" {
 		newService.Status.ClusterIP = oldService.Status.ClusterIP
 	} else {
-		err = GenerateClusterIP(&newService)
+		err := GenerateClusterIP(&newService)
 		if err != nil {
 			log.Fatal("Failed to generate ClusterIP: %v", err)
 		}
 	}
+
+	serviceByteArray, err := json.Marshal(newService)
+	if err != nil {
+		log.Error("Failed to marshal service: %s", err.Error())
+		return
+	}
+	log.Info("new service is: %+v", newService)
 	URL := config.ServicePath + newService.Metadata.NameSpace + "/" + newService.Metadata.Name
 	etcdClient.PutEtcdPair(URL, string(serviceByteArray))
 
@@ -164,7 +182,7 @@ func GenerateClusterIP(svc *api.Service) error {
 
 	for ip := ipNet.IP.Mask(ipNet.Mask); ipNet.Contains(ip); inc(ip) {
 		ipStr := ip.String()
-		log.Info("ipStr: %s", ipStr)
+		log.Info("ipStr: %s, %v", ipStr, allocatedIPs[ipStr])
 		if allocatedIPs[ipStr] == "" {
 			// find an available IP
 			allocatedIPs[ipStr] = svc.Metadata.NameSpace + ":" + svc.Metadata.Name
@@ -175,6 +193,7 @@ func GenerateClusterIP(svc *api.Service) error {
 				return err
 			}
 			etcdClient.PutEtcdPair(clusterIpEtcdPrefix, string(allocatedIpsByte))
+			return nil
 		}
 	}
 	// no available IP
