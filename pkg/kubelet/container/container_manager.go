@@ -73,6 +73,7 @@ func CreatePauseContainer(pod *api.Pod) (string, error) {
 	// network: cbr0, which is flannel network
 	// the cmd will output the container id
 	cmd := exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "run", "-d", "--name", pause_name, "--network", "cbr0", pause_image)
+	log.Debug("%v", cmd)
 	containerID, err := cmd.Output()
 	if err != nil {
 		log.Error("Failed to run nerdctl run: %s", err.Error())

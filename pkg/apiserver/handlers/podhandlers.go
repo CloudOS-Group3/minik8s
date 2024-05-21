@@ -69,7 +69,6 @@ func AddPod(context *gin.Context) {
 	msg_json, _ := json.Marshal(message)
 
 	publisher.Publish(msg.PodTopic, string(msg_json))
-
 }
 
 func GetPod(context *gin.Context) {
