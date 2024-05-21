@@ -89,6 +89,16 @@ func (store Store) PrefixGet(prefix string) []ResEntry {
 	return ret
 }
 
+func (store Store) PrefixDelete(prefix string) bool {
+	log.Info("before etcd delete")
+	_, err := store.etcdClient.Delete(context.TODO(), prefix, clientv3.WithPrefix())
+	if err != nil {
+		log.Error("error delete prefix %s", prefix)
+		return false
+	}
+	return true
+}
+
 func (store Store) PrefixWatch(wg *sync.WaitGroup, ctx context.Context, prefix string, handler func(key string, value string)) {
 	/* usage (not pretty sure):
 	ctx, cancel := context.WithCancel(context.Background())

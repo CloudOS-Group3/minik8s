@@ -39,6 +39,7 @@ func (server *apiServer) bind() {
 
 	server.router.GET(config.PodsURL, handlers.GetPods)
 	server.router.POST(config.PodsURL, handlers.AddPod)
+	server.router.DELETE(config.PodsURL, handlers.DeletePods)
 	server.router.GET(config.PodURL, handlers.GetPod)
 	server.router.PUT(config.PodURL, handlers.UpdatePod)
 	server.router.DELETE(config.PodURL, handlers.DeletePod)
@@ -54,7 +55,6 @@ func (server *apiServer) bind() {
 	server.router.GET(config.HPAURL, handlers.GetHPA)
 	server.router.PUT(config.HPAURL, handlers.UpdateHPA)
 	server.router.DELETE(config.HPAURL, handlers.DeleteHPA)
-
 
 	server.router.GET(config.LabelIndexURL, handlers.GetLabelIndex)
 	server.router.POST(config.LabelIndexURL, handlers.AddLabelIndex)

@@ -14,8 +14,8 @@ import (
 type DeploymentController struct{}
 
 const (
-	initialDelay   time.Duration = 10 * time.Second
-	updateInterval time.Duration = 30 * time.Second
+	initialDelay   time.Duration = 0 * time.Second
+	updateInterval time.Duration = 10 * time.Second
 )
 
 func (this *DeploymentController) Run() {
@@ -30,22 +30,24 @@ func (this *DeploymentController) Run() {
 func (this *DeploymentController) update() {
 
 	allPods, err := this.getAllPods()
+	log.Debug("before getting all pods")
 	if err != nil {
 		log.Error("get all pods error")
 		return
 	}
-
-	deployments, err := this.getAllDeployments()
+	log.Debug("all pods are %+v", allPods)
+	allDeployments, err := this.getAllDeployments()
+	log.Debug("before getting all allDeployments")
 	if err != nil {
-		log.Error("get all deployments error")
+		log.Error("get all allDeployments error")
 		return
 	}
-
+	log.Debug("all allDeployments found: %+v", allDeployments)
 	// UUID -> existence
 	// used to delete all pods without deployment
 	allPodsWithDeployment := map[string]bool{}
 
-	for _, deployment := range deployments {
+	for _, deployment := range allDeployments {
 		targetPods := []api.Pod{}
 		for _, pod := range allPods {
 			if this.checkLabel(pod, deployment) {
@@ -53,6 +55,7 @@ func (this *DeploymentController) update() {
 				allPodsWithDeployment[pod.Metadata.UUID] = true
 			}
 		}
+		log.Debug("targetpods: %v", targetPods)
 		if len(targetPods) < deployment.Spec.Replicas {
 			this.addPod(deployment.Spec.Template, deployment.Metadata, deployment.Spec.Replicas-len(targetPods))
 		} else if len(targetPods) > deployment.Spec.Replicas {
@@ -80,7 +83,7 @@ func (this *DeploymentController) getAllPods() ([]api.Pod, error) {
 
 	pods := []api.Pod{}
 
-	err := httputil.Get(URL, pods, "data")
+	err := httputil.Get(URL, &pods, "data")
 	if err != nil {
 		log.Error("error get all pods")
 		return nil, err
@@ -94,20 +97,19 @@ func (this *DeploymentController) getAllDeployments() ([]api.Deployment, error) 
 	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 	deployments := []api.Deployment{}
 
-	err := httputil.Get(URL, deployments, "data")
+	err := httputil.Get(URL, &deployments, "data")
 	if err != nil {
 		log.Error("error get all deployments")
 		return nil, err
 	}
-
-
+	log.Debug("all deployments are: %v", deployments)
 	return deployments, nil
 }
 
 // to return true, just need to match one label
 func (this *DeploymentController) checkLabel(targetPod api.Pod, targetDeployment api.Deployment) bool {
-	for _, label := range targetDeployment.Spec.Selector.MatchLabels {
-		if targetPod.Metadata.Labels[label] != "" {
+	for key, _ := range targetDeployment.Spec.Selector.MatchLabels {
+		if targetPod.Metadata.Labels[key] != "" {
 			return true
 		}
 	}
@@ -123,6 +125,9 @@ func (this *DeploymentController) addPod(template api.PodTemplateSpec, deploymen
 	newPod.Metadata = template.Metadata
 	newPod.Spec = template.Spec
 	newPod.Metadata.Labels["deployment"] = deploymentMetadata.UUID
+	for key, value := range template.Metadata.Labels {
+		newPod.Metadata.Labels[key] = value
+	}
 
 	basePodName := newPod.Metadata.Name
 	baseContainerNames := []string{}

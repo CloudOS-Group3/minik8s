@@ -106,6 +106,16 @@ func GetPod(context *gin.Context) {
 	})
 }
 
+func DeletePods(context *gin.Context) {
+	log.Info("received delete all request")
+	URL := config.EtcdPodPath
+	ok := etcdClient.PrefixDelete(URL)
+	if !ok {
+		log.Error("delete pods failed")
+		return
+	}
+}
+
 func UpdatePod(context *gin.Context) {
 	log.Info("received update pod request")
 
