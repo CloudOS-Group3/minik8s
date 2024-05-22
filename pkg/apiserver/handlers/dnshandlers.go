@@ -60,6 +60,7 @@ func DeleteDNS(context *gin.Context) {
 	}
 	etcdClient.DeleteEtcdPair(EtcdPath)
 	var deletedDNS api.DNS
+	_ = json.Unmarshal([]byte(oldDNS), &deletedDNS)
 	var message msg_type.DNSMsg
 	message = msg_type.DNSMsg{
 		Opt:    msg_type.Delete,

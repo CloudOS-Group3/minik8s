@@ -45,7 +45,7 @@ func (s *NodeController) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (s *NodeController) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		if msg.Topic == "node" {
+		if msg.Topic == msg_type.NodeTopic {
 			sess.MarkMessage(msg, "")
 			s.NodeHandler(msg.Value)
 		}
@@ -114,7 +114,7 @@ func (s *NodeController) Run() {
 	go s.CheckNode()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{"node"}
+	topics := []string{msg_type.NodeTopic}
 	s.subscriber.Subscribe(wg, ctx, topics, s)
 	<-s.ready
 	<-s.done
