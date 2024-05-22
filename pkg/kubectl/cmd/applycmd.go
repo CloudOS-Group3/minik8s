@@ -88,7 +88,7 @@ func applyPodHandler(content []byte) {
 	pod := &api.Pod{}
 	err := yaml.Unmarshal(content, pod)
 	if err != nil {
-		log.Error("error marshal yaml")
+		log.Error("error marshal yaml, %s", err.Error())
 		return
 	}
 	pod.Metadata.UUID = uuid.NewString()
