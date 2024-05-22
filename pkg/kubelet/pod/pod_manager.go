@@ -7,7 +7,6 @@ import (
 	"minik8s/pkg/kubelet/container"
 	"minik8s/pkg/kubelet/node"
 	"minik8s/util/log"
-	"os/exec"
 )
 
 func CreatePod(pod *api.Pod) bool {
@@ -19,10 +18,16 @@ func CreatePod(pod *api.Pod) bool {
 		return false
 	}
 
+	// for VolumeMounts in hostPath
+	hostMount := make(map[string]string)
+	for _, volume := range pod.Spec.Volumes {
+		hostMount[volume.Name] = volume.HostPath
+	}
+
 	// create other containers
 	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
 	for _, container_ := range pod.Spec.Containers {
-		new_container := container.CreateContainer(container_, pod.Metadata.NameSpace, pause_container_pid)
+		new_container := container.CreateContainer(container_, pod.Metadata.NameSpace, pause_container_pid, hostMount)
 		if new_container == nil {
 			log.Error("Failed to create container %s", container_.Name)
 		}
@@ -37,52 +42,22 @@ func CreatePod(pod *api.Pod) bool {
 }
 
 func DeletePod(pod *api.Pod) bool {
-	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
+	// first delete pod from list
+	node.DeletePodInCheckList(pod)
 
 	// delete containers
 	for _, container_ := range pod.Spec.Containers {
-		container_to_del := container.GetContainerById(container_.Name, pod.Metadata.NameSpace)
-		if container_to_del == nil {
-			log.Warn("Container %s not found", container_.Name)
+		if container.RemoveContainer(container_.Name, pod.Metadata.NameSpace) == false {
+			log.Warn("Failed to remove container %s", container_.Name)
 			continue
-		}
-		if container.RemoveContainer(container_to_del, ctx) == false {
-			log.Error("Failed to remove container %s", container_.Name)
-			return false
 		}
 	}
 
 	// delete pause container
-	//pauseId := pod.Status.PauseId
-	//if pauseId == "" {
-	//	err := error(nil)
-	//	pauseId, err = container.GetContainerIdByName(container.GetPauseName(pod), ctx)
-	//	if err != nil {
-	//		log.Error("Failed to get pause container id, %s", err.Error())
-	//		return false
-	//	}
-	//}
-	//pause_container := container.GetContainerById(pauseId, pod.Metadata.NameSpace)
-	//if pause_container == nil {
-	//	log.Error("Pause container not found")
-	//	return false
-	//}
-	//if container.RemoveContainer(pause_container, ctx) == false {
-	//	log.Error("Failed to remove pause container")
-	//	return false
-	//}
-	cmd := exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "stop", container.GetPauseName(pod))
-	_, err := cmd.Output()
-	if err != nil {
-		log.Error("Failed to stop pause container %s", container.GetPauseName(pod))
-	}
-	cmd = exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "rm", container.GetPauseName(pod))
-	_, err = cmd.Output()
-	if err != nil {
-		log.Error("Failed to remove pause container %s", container.GetPauseName(pod))
+	if container.RemoveContainer(container.GetPauseName(pod), pod.Metadata.NameSpace) == false {
+		log.Warn("Failed to remove pause container %s", container.GetPauseName(pod))
+		return false
 	}
 
-	// delete pod
-	node.DeletePodInCheckList(pod)
 	return true
 }

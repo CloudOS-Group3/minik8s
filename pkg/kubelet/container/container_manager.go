@@ -18,7 +18,6 @@ import (
 	"os/exec"
 	"reflect"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -107,7 +106,7 @@ func CreatePauseContainer(pod *api.Pod) (string, error) {
 	return fmt.Sprintf("%d", pid), nil
 }
 
-func CreateContainer(config api.Container, namespace string, pause_pid string) containerd.Container {
+func CreateContainer(config api.Container, namespace string, pause_pid string, hostMount map[string]string) containerd.Container {
 	client, err := util.CreateClient()
 	if err != nil {
 		log.Error("Failed to create containerd client: %v", err.Error())
@@ -132,10 +131,31 @@ func CreateContainer(config api.Container, namespace string, pause_pid string) c
 		return container_
 	}
 	opt := []oci.SpecOpts{oci.WithImageConfig(image_)}
-	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "pid", Path: "/proc/" + pause_pid + "/ns/pid"}))
+
+	/* Set Linux namespace */
+	//allow container to have their own pid namespace
+	//opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "pid", Path: "/proc/" + pause_pid + "/ns/pid"}))
 	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "ipc", Path: "/proc/" + pause_pid + "/ns/ipc"}))
 	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "uts", Path: "/proc/" + pause_pid + "/ns/uts"}))
+	//opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "mount", Path: "/proc/" + pause_pid + "/ns/mount"}))
 	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "network", Path: "/proc/" + pause_pid + "/ns/net"}))
+
+	/* Manage volume: mount host path to container */
+	log.Info("hostMount: %v", hostMount)
+	for _, volume := range config.VolumeMounts {
+		permission := "rw"
+		if volume.ReadOnly {
+			permission = "ro"
+		}
+		opt = append(opt, oci.WithMounts([]specs.Mount{
+			{
+				Destination: volume.MountPath,
+				Source:      hostMount[volume.Name],
+				Type:        "bind",
+				Options:     []string{"rbind", permission},
+			},
+		}))
+	}
 	opt_ := []containerd.NewContainerOpts{
 		//containerd.WithImage(image_),
 		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
@@ -211,95 +231,18 @@ func StartContainer(container containerd.Container, ctx context.Context) bool {
 	return true
 }
 
-func StopContainer(container containerd.Container, ctx context.Context) bool {
-	// search for task
-	task, err := container.Task(ctx, nil)
+func RemoveContainer(name string, namespace string) bool {
+	cmd := exec.Command("nerdctl", "-n", namespace, "stop", name)
+	_, err := cmd.Output()
 	if err != nil {
-		log.Error("Failed to get task for container %s: %v", container.ID(), err.Error())
+		log.Error("Failed to stop container %s", err.Error())
+	}
+	cmd = exec.Command("nerdctl", "-n", namespace, "rm", name)
+	_, err = cmd.Output()
+	if err != nil {
+		log.Error("Failed to remove container %s", err.Error())
 		return false
 	}
-
-	// check if already stopped
-	status, err := task.Status(ctx)
-	if err == nil && status.Status == containerd.Stopped {
-		log.Error("Container %s already stopped", container.ID())
-		return true
-	}
-
-	// kill task
-	err = task.Kill(ctx, syscall.SIGTERM)
-	if err != nil {
-		log.Error("Failed to kill task for container %s: %v", container.ID(), err)
-		return false
-	}
-
-	// wait for task to exit
-	exitStatusC, err := task.Wait(ctx)
-	if err != nil {
-		log.Error("Failed to wait task for container %s: %v", container.ID(), err.Error())
-		return false
-	}
-	select {
-	case <-exitStatusC:
-		break
-	case <-time.After(30 * time.Second):
-		log.Error("Failed to wait task for container %s: timeout", container.ID())
-	}
-	log.Info("Container %s stopped", container.ID())
-	return true
-}
-
-func RemoveContainer(container containerd.Container, ctx context.Context) bool {
-	// search for task
-	task, err := container.Task(ctx, nil)
-	if err != nil {
-		log.Error("Failed to get task for container %s: %v", container.ID(), err.Error())
-		return false
-	}
-	// check status
-	status, err := task.Status(ctx)
-	if err != nil {
-		log.Error("Failed to get task status for container %s: %v", container.ID(), err.Error())
-		return false
-	}
-
-	// stop task if running
-	if status.Status == containerd.Running {
-		err = task.Kill(ctx, syscall.SIGTERM)
-		if err != nil {
-			log.Error("Failed to kill task for container %s: %v", container.ID(), err.Error())
-			return false
-		}
-
-		// wait for task to exit
-		exitStatusC, err := task.Wait(ctx)
-		if err != nil {
-			log.Error("Failed to wait task for container %s: %v", container.ID(), err.Error())
-			return false
-		}
-		select {
-		case <-exitStatusC:
-			break
-		case <-time.After(30 * time.Second):
-			log.Error("Failed to wait task for container %s: timeout", container.ID())
-			return false
-		}
-
-	}
-	// delete task
-	_, err = task.Delete(ctx)
-	if err != nil {
-		log.Error("Failed to remove task for container %s: %v", container.ID(), err.Error())
-		return false
-	}
-
-	// remove container
-	err = container.Delete(ctx, containerd.WithSnapshotCleanup)
-	if err != nil {
-		log.Error("Failed to remove container %s: %v", container.ID(), err.Error())
-		return false
-	}
-	log.Info("Container %s removed", container.ID())
 	return true
 }
 

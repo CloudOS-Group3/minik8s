@@ -109,8 +109,8 @@ func GetPodMetrics(pod *api.Pod) (*api.PodMetrics, error) {
 		}
 		containerMetrics, err := container.GetContainerMetrics(container_.Name, pod.Metadata.NameSpace)
 		if err != nil {
-			log.Error("Failed to get metrics for container %s", container_.Name)
-			return nil, err
+			log.Info("Failed to get metrics for container %s", container_.Name)
+			continue
 		}
 		totalCpuUsage += containerMetrics.CpuUsage
 		totalMemoryUsage += containerMetrics.MemoryUsage
