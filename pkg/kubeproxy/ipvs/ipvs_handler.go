@@ -6,6 +6,7 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/util/log"
 	"net"
+	"os/exec"
 )
 
 type IPVS interface {
@@ -66,24 +67,8 @@ func UpdateService(service *api.Service) error {
 func AddEndpoint(service *api.Service) error {
 	for _, endpoint := range service.Status.EndPoints {
 		for _, port := range endpoint.Ports {
-			dst := libipvs.Destination{
-				Address:       net.ParseIP(endpoint.IP),
-				Port:          uint16(port.ContainerPort),
-				AddressFamily: unix.AF_INET,
-				//Weight:        1, // default weight
-				//ForwardingMethod: libipvs.IP_VS_CONN_F_MASQ, // NAT mode
-			}
-			handle, err := libipvs.New("")
-			if err != nil {
-				return err
-			}
-			defer handle.Close()
-			// add destination
 			for _, svc_port := range service.Spec.Ports {
-				if err := handle.NewDestination(net.ParseIP(service.Status.ClusterIP), uint16(svc_port.Port), dst); err != nil {
-					log.Fatal("Failed to add destination: %v", err)
-					return err
-				}
+				exec.Command("ipvsadm", "-a", "-t", service.Status.ClusterIP, ":", string(svc_port.Port), "-r", endpoint.IP, ":", string(port.ContainerPort)).Run()
 				log.Info("bind endpoint %s:%d to service %s:%d", endpoint.IP, port.ContainerPort, service.Status.ClusterIP, svc_port.Port)
 			}
 
