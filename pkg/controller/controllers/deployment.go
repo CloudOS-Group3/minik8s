@@ -120,14 +120,19 @@ func (this *DeploymentController) addPod(template api.PodTemplateSpec, deploymen
 	log.Info("automatically adding pod in deployment")
 
 	var newPod api.Pod
-	newPod.APIVersion = "Pod"
-	newPod.Kind = "v1"
-	newPod.Metadata = template.Metadata
-	newPod.Spec = template.Spec
-	newPod.Metadata.Labels["deployment"] = deploymentMetadata.UUID
-	for key, value := range template.Metadata.Labels {
-		newPod.Metadata.Labels[key] = value
+	newPod.APIVersion = "v1"
+	newPod.Kind = "Pod"
+	// deep copy struct
+	buffer, err := json.Marshal(template)
+	if err != nil {
+		log.Error("error marshalling pod template")
 	}
+	err = json.Unmarshal([]byte(buffer), &newPod)
+	if err != nil {
+		log.Error("error unmarshalling pod template")
+	}
+	newPod.Metadata.Labels["deployment"] = deploymentMetadata.UUID
+	log.Debug("the content of new pod is: %+v", newPod)
 
 	basePodName := newPod.Metadata.Name
 	baseContainerNames := []string{}

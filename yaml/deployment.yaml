@@ -14,20 +14,10 @@ spec:
         app: server
     spec:
       volumes:
-        - name: shared-data
-          emptyDir: {}
+      - name: shared-data
+        emptyDir: {}
       containers:
-        - name: fileserver
-          image: 7143192/fileserver:latest
-          volumeMounts:
-            - name: shared-data
-              mountPath: /usr/share/files
-          ports:
-            - containerPort: 8080
-        - name: downloader
-          image: 7143192/downloader:latest
-          volumeMounts:
-            - name: shared-data
-              mountPath: /data
-          ports:
-            - containerPort: 3000
+      - name: nginx
+        image: docker.io/library/nginx:latest
+        ports:
+        - containerPort: 80

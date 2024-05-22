@@ -100,10 +100,15 @@ func applyPodHandler(content []byte) {
 	} else {
 		namespace = "default"
 	}
-	path := strings.Replace(config.PodsURL, config.NamespacePlaceholder, namespace, -1)
+	pod.Metadata.UUID = uuid.NewString()
+
+	URL := config.GetUrlPrefix() + config.PodsURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
 	byteArr, err := json.Marshal(*pod)
-	log.Debug("path = %v", path)
-	URL := config.GetUrlPrefix() + path
+	if err != nil {
+		log.Error("error marshal yaml")
+		return
+	}
 
 	err = httputil.Post(URL, byteArr)
 
@@ -153,6 +158,12 @@ func applyDeploymentHandler(content []byte) {
 		return
 	}
 	log.Debug("deployment is %+v", *deployment)
+
+	if deployment.Metadata.NameSpace == "" {
+		deployment.Metadata.NameSpace = "default"
+	}
+
+	deployment.Metadata.UUID = uuid.NewString()
 
 	byteArr, err := json.Marshal(*deployment)
 
