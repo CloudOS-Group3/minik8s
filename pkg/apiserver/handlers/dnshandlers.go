@@ -110,7 +110,10 @@ func GetDNS(context *gin.Context) {
 			"status": "DNS not found",
 		})
 	}
+	var requestedDNS api.DNS
+	_ = json.Unmarshal([]byte(res), &requestedDNS)
+	jsonString, _ := json.Marshal(requestedDNS)
 	context.JSON(http.StatusOK, gin.H{
-		"data": res,
+		"data": string(jsonString),
 	})
 }
