@@ -61,6 +61,19 @@ func DeleteCmd() *cobra.Command {
 
 func deletePodCmdHandler(cmd *cobra.Command, args []string) {
 	// delete pod name --namespace=default
+
+	if len(args) == 0 {
+		log.Debug("deleting all pods")
+		URL := config.GetUrlPrefix() + config.PodsURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		err := httputil.Delete(URL)
+		if err != nil {
+			log.Error("error delete all pods")
+			return
+		}
+		return
+	}
+
 	name := args[0]
 	namespace, err := cmd.Flags().GetString("namespace")
 	if err != nil {

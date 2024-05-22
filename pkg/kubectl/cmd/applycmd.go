@@ -131,6 +131,7 @@ func applyServiceHandler(content []byte) {
 		namespace = service.Metadata.NameSpace
 	} else {
 		namespace = "default"
+		service.Metadata.NameSpace = namespace
 	}
 	path := strings.Replace(config.ServiceURL, config.NamespacePlaceholder, namespace, -1)
 	path = strings.Replace(path, config.NamePlaceholder, service.Metadata.Name, -1)

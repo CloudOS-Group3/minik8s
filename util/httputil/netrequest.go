@@ -39,6 +39,7 @@ func Get(URL string, result interface{}, key string) error {
 	log.Debug("data is: %+v", value)
 	dataStr := fmt.Sprint(value)
 	err = json.Unmarshal([]byte(dataStr), result)
+	log.Debug("result is: %v", result)
 	if err != nil {
 		log.Error("Error json unmarshal: %s", err.Error())
 		return err

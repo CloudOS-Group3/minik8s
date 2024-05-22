@@ -13,13 +13,15 @@ const (
 
 const (
 	// pod topic
-	PodTopic = "endpoint_pod"
+	PodTopic = "pod"
 	// service topic
-	ServiceTopic = "endpoint_service"
+	ServiceTopic = "service"
 	// node topic
 	NodeTopic = "node"
 	// DNS topic
 	DNSTopic = "dns"
+	// endpoint topic
+	EndpointTopic = "endpoint"
 	// pod operation
 	PodOperation = "opt"
 	// pod new pod

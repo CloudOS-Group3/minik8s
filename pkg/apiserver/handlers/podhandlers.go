@@ -69,7 +69,6 @@ func AddPod(context *gin.Context) {
 	msg_json, _ := json.Marshal(message)
 
 	publisher.Publish(msg.PodTopic, string(msg_json))
-
 }
 
 func GetPod(context *gin.Context) {
@@ -105,6 +104,16 @@ func GetPod(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{
 		"data": string(byteArr),
 	})
+}
+
+func DeletePods(context *gin.Context) {
+	log.Info("received delete all request")
+	URL := config.EtcdPodPath
+	ok := etcdClient.PrefixDelete(URL)
+	if !ok {
+		log.Error("delete pods failed")
+		return
+	}
 }
 
 func UpdatePod(context *gin.Context) {

@@ -15,7 +15,7 @@ import (
 type HPAController struct{}
 
 const (
-	hpaDelay    time.Duration = 10 * time.Second
+	hpaDelay    time.Duration = 0 * time.Second
 	hpaInterval time.Duration = 30 * time.Second
 )
 
@@ -92,6 +92,7 @@ func (this *HPAController) getAllHPAs() ([]api.HPA, error) {
 	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
 	hpas := []api.HPA{}
+	log.Debug("before getting all hpas")
 	err := httputil.Get(URL, hpas, "data")
 	if err != nil {
 		log.Error("error get all hpas")

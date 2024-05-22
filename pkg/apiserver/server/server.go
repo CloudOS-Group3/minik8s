@@ -39,6 +39,7 @@ func (server *apiServer) bind() {
 
 	server.router.GET(config.PodsURL, handlers.GetPods)
 	server.router.POST(config.PodsURL, handlers.AddPod)
+	server.router.DELETE(config.PodsURL, handlers.DeletePods)
 	server.router.GET(config.PodURL, handlers.GetPod)
 	server.router.PUT(config.PodURL, handlers.UpdatePod)
 	server.router.DELETE(config.PodURL, handlers.DeletePod)

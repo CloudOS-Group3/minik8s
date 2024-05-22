@@ -7,6 +7,7 @@ import (
 	"minik8s/pkg/kubelet/container"
 	"minik8s/pkg/kubelet/node"
 	"minik8s/util/log"
+	"os/exec"
 )
 
 func CreatePod(pod *api.Pod) bool {
@@ -29,7 +30,7 @@ func CreatePod(pod *api.Pod) bool {
 			return false
 		}
 	}
-
+	log.Info("add pod %v to check list", pod)
 	node.AddPodToCheckList(pod)
 
 	return true
@@ -52,23 +53,33 @@ func DeletePod(pod *api.Pod) bool {
 	}
 
 	// delete pause container
-	pauseId := pod.Status.PauseId
-	if pauseId == "" {
-		err := error(nil)
-		pauseId, err = container.GetContainerIdByName(pod.Metadata.Name+"-pause", ctx)
-		if err != nil {
-			log.Error("Failed to get pause container id, %s", err.Error())
-			return false
-		}
+	//pauseId := pod.Status.PauseId
+	//if pauseId == "" {
+	//	err := error(nil)
+	//	pauseId, err = container.GetContainerIdByName(container.GetPauseName(pod), ctx)
+	//	if err != nil {
+	//		log.Error("Failed to get pause container id, %s", err.Error())
+	//		return false
+	//	}
+	//}
+	//pause_container := container.GetContainerById(pauseId, pod.Metadata.NameSpace)
+	//if pause_container == nil {
+	//	log.Error("Pause container not found")
+	//	return false
+	//}
+	//if container.RemoveContainer(pause_container, ctx) == false {
+	//	log.Error("Failed to remove pause container")
+	//	return false
+	//}
+	cmd := exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "stop", container.GetPauseName(pod))
+	_, err := cmd.Output()
+	if err != nil {
+		log.Error("Failed to stop pause container %s", container.GetPauseName(pod))
 	}
-	pause_container := container.GetContainerById(pauseId, pod.Metadata.NameSpace)
-	if pause_container == nil {
-		log.Error("Pause container not found")
-		return false
-	}
-	if container.RemoveContainer(pause_container, ctx) == false {
-		log.Error("Failed to remove pause container")
-		return false
+	cmd = exec.Command("nerdctl", "-n", pod.Metadata.NameSpace, "rm", container.GetPauseName(pod))
+	_, err = cmd.Output()
+	if err != nil {
+		log.Error("Failed to remove pause container %s", container.GetPauseName(pod))
 	}
 
 	// delete pod
