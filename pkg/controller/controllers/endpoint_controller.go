@@ -127,15 +127,15 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
 			if svc != nil {
 				// update service
 				// add the new endpoint to the service
-				var all_ports []api.ContainerPort
+				// var all_ports []api.ContainerPort
 				for _, container := range pod.Spec.Containers {
-					all_ports = append(all_ports, container.Ports...)
+					//all_ports = append(all_ports, container.Ports...)
+					svc.Status.EndPoints = append(svc.Status.EndPoints,
+						api.EndPoint{
+							IP:    pod.Status.PodIP,
+							Ports: matchTargetPort(svc, container.Ports),
+						})
 				}
-				svc.Status.EndPoints = append(svc.Status.EndPoints,
-					api.EndPoint{
-						IP:    pod.Status.PodIP,
-						Ports: all_ports,
-					})
 				err := UpdateService(svc)
 				if err != nil {
 					return
@@ -266,15 +266,15 @@ func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
 		namespace, name := util.GetNamespaceAndName(podName)
 		pod, _ := GetPod(namespace, name)
 		if pod != nil {
-			var all_ports []api.ContainerPort
+			//var all_ports []api.ContainerPort
 			for _, container := range pod.Spec.Containers {
-				all_ports = append(all_ports, container.Ports...)
+				//all_ports = append(all_ports, container.Ports...)
+				svc.Status.EndPoints = append(svc.Status.EndPoints,
+					api.EndPoint{
+						IP:    pod.Status.PodIP,
+						Ports: matchTargetPort(svc, container.Ports),
+					})
 			}
-			svc.Status.EndPoints = append(svc.Status.EndPoints,
-				api.EndPoint{
-					IP:    pod.Status.PodIP,
-					Ports: all_ports,
-				})
 		}
 	}
 	// store service
@@ -480,4 +480,16 @@ func DeleteService(namespace string, name string) error {
 	defer res.Body.Close()
 
 	return nil
+}
+
+func matchTargetPort(svc *api.Service, ports []api.ContainerPort) []api.ContainerPort {
+	targetPorts := []api.ContainerPort{}
+	for _, target := range svc.Spec.Ports {
+		for _, container := range ports {
+			if uint16(target.TargetPort) == uint16(container.ContainerPort) {
+				targetPorts = append(targetPorts, container)
+			}
+		}
+	}
+	return targetPorts
 }
