@@ -61,6 +61,7 @@ const (
 	NamespacePlaceholder = ":namespace"
 	NameParam            = "name"
 	NamespaceParam       = "namespace"
+	LabelPlaceholder     = ":label"
 	LabelParam           = "label"
 )
 

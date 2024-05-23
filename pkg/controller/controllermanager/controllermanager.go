@@ -30,10 +30,10 @@ func NewControllerManager() *ControllerManager {
 }
 
 func (CM *ControllerManager) Run(stop chan bool) {
-	//go CM.DeploymentController.Run()
-	//go CM.EndpointController.Run()
-	//go CM.HPACcntroller.Run()
-	//go CM.NodeController.Run()
+	go CM.DeploymentController.Run()
+	go CM.EndpointController.Run()
+	go CM.HPACcntroller.Run()
+	go CM.NodeController.Run()
 	go CM.DNSController.Run()
 
 	_, ok := <-stop
