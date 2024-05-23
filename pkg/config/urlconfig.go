@@ -50,6 +50,9 @@ const (
 
 	//LabelIndex API
 	LabelIndexURL = "/api/v1/labelIndex/:label"
+
+	DNSsURL = "/api/v1/dns"
+	DNSURL  = "/api/v1/dns/:name"
 )
 
 // const used to send and parse url
