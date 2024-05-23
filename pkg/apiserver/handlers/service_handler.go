@@ -95,7 +95,7 @@ func AddService(context *gin.Context) {
 
 	//construct message
 	var message msg.ServiceMsg
-	if oldService != nil {
+	if oldService.Status.ClusterIP != "" {
 		message = msg.ServiceMsg{
 			Opt:        msg.Update,
 			OldService: *oldService,
