@@ -10,6 +10,7 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/util"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"net/http"
 	"strings"
@@ -74,10 +75,12 @@ func (e *EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, c
 				log.Error("unmarshal service error")
 				continue
 			}
+
+			log.Info("service message, %v", serviceMsg)
 			switch serviceMsg.Opt {
 			case msg_type.Update:
-				if !util.IsLabelEqual(serviceMsg.NewService.Metadata.Labels, serviceMsg.OldService.Metadata.Labels) {
-					OnServiceUpdate(&serviceMsg.NewService, serviceMsg.OldService.Metadata.Labels)
+				if !util.IsLabelEqual(serviceMsg.NewService.Spec.Selector, serviceMsg.OldService.Spec.Selector) {
+					OnServiceUpdate(&serviceMsg.NewService, serviceMsg.OldService.Spec.Selector)
 				}
 				break
 			case msg_type.Delete:
@@ -306,18 +309,18 @@ func OnPodDelete(pod *api.Pod) {
 }
 
 func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
-	if util.IsLabelEqual(svc.Metadata.Labels, oldLabel) {
+	if util.IsLabelEqual(svc.Spec.Selector, oldLabel) {
 		// no need to update
 		return
 	}
 
 	// Step 1: Deal with new label
-	labelIndex, _ := GetLabelIndex(svc.Metadata.Labels)
+	labelIndex, _ := GetLabelIndex(svc.Spec.Selector)
 	if labelIndex == nil || len(labelIndex.Labels) == 0 {
 		// a new label
 		// create a new label index
 		labelIndex = &api.LabelIndex{
-			Labels:      svc.Metadata.Labels,
+			Labels:      svc.Spec.Selector,
 			ServiceName: []string{util.GetUniqueName(svc.Metadata.NameSpace, svc.Metadata.Name)},
 		}
 	} else {
@@ -384,7 +387,7 @@ func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
 }
 
 func OnServiceDelete(svc *api.Service) {
-	labelIndex, _ := GetLabelIndex(svc.Metadata.Labels)
+	labelIndex, _ := GetLabelIndex(svc.Spec.Selector)
 	if labelIndex == nil || len(labelIndex.Labels) == 0 {
 		// Can't be here
 		return
@@ -399,7 +402,7 @@ func OnServiceDelete(svc *api.Service) {
 	// store the label index
 	// check if to delete the label index
 	if len(labelIndex.PodName) == 0 && len(labelIndex.ServiceName) == 0 {
-		err := DeleteLabelIndex(svc.Metadata.Labels)
+		err := DeleteLabelIndex(svc.Spec.Selector)
 		if err != nil {
 			log.Fatal("delete label index error")
 		}
@@ -429,24 +432,14 @@ func GetService(namespace string, name string) (*api.Service, error) {
 	URL := config.GetUrlPrefix() + config.ServiceURL
 	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
 	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
-	res, err := http.Get(URL)
+	service := &api.Service{}
+	err := httputil.Get(URL, service, "data")
 	if err != nil {
 		log.Error("err get service %s:%s", namespace, name)
 		return nil, err
 	}
 
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-
-	svc := &api.Service{}
-	err = json.Unmarshal(body, &svc)
-	if err != nil {
-		log.Error("error unmarshal into all deployments")
-		return nil, err
-	}
-
-	return svc, nil
+	return service, nil
 }
 
 func GetAllServices() ([]api.Service, error) {
@@ -506,19 +499,7 @@ func UpdateService(service *api.Service) error {
 	URL = strings.Replace(URL, config.NamespacePlaceholder, service.Metadata.NameSpace, -1)
 	URL = strings.Replace(URL, config.NamePlaceholder, service.Metadata.Name, -1)
 
-	req, err := http.NewRequest(http.MethodPost, URL, strings.NewReader(string(serviceByteArray)))
-	if err != nil {
-		log.Error("err add service %s:%s", service.Metadata.NameSpace, service.Metadata.Name)
-		return err
-	}
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Error("err add service %s:%s", service.Metadata.NameSpace, service.Metadata.Name)
-		return err
-	}
-
-	defer res.Body.Close()
+	err = httputil.Put(URL, serviceByteArray)
 
 	return nil
 }
