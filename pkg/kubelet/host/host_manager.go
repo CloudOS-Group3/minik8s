@@ -31,6 +31,9 @@ func (m *KubeletHostManager) RemoveHost(host string) {
 }
 
 func (m *KubeletHostManager) WriteHost() {
+	if config.Local {
+		return
+	}
 	str := "127.0.0.1 localhost\n# The following lines are desirable for IPv6 capable hosts\n::1 ip6-localhost ip6-loopback\nfe00::0 ip6-localnet\nff00::0 ip6-mcastprefix\nff02::1 ip6-allnodes\nff02::2 ip6-allrouters\nff02::3 ip6-allhosts"
 	for _, host := range m.Hosts {
 		hostStr := fmt.Sprintf("%s %s\n", config.Remotehost, host)

@@ -55,7 +55,7 @@ func (s *NodeController) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sa
 
 func (s *NodeController) CheckNode() {
 	for {
-		for _, node := range s.RegisteredNode {
+		for index, node := range s.RegisteredNode {
 			if node.Status.Condition.Status != api.NodeReady {
 				continue
 			}
@@ -75,6 +75,7 @@ func (s *NodeController) CheckNode() {
 				if err != nil {
 					panic(err)
 				}
+				s.RegisteredNode[index] = node
 			}
 		}
 		time.Sleep(time.Second * 30)
@@ -98,9 +99,9 @@ func (s *NodeController) NodeHandler(msg []byte) {
 	}
 	node = message.NewNode
 	exist := false
-	for _, nodeInList := range s.RegisteredNode {
+	for index, nodeInList := range s.RegisteredNode {
 		if nodeInList.Metadata.Name == node.Metadata.Name {
-			nodeInList = node
+			s.RegisteredNode[index] = node
 			exist = true
 		}
 	}

@@ -29,9 +29,9 @@ func init() {
 
 func AddPodToCheckList(pod *api.Pod) {
 	dupe := false
-	for _, PodInList := range Heartbeat.Node.Status.Pods {
+	for index, PodInList := range Heartbeat.Node.Status.Pods {
 		if PodInList.Metadata.Name == pod.Metadata.Name && PodInList.Metadata.NameSpace == pod.Metadata.NameSpace {
-			PodInList = *pod
+			Heartbeat.Node.Status.Pods[index] = *pod
 			dupe = true
 		}
 	}

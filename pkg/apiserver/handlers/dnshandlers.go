@@ -37,6 +37,20 @@ func AddDNS(context *gin.Context) {
 		})
 		return
 	}
+	for index, path := range newDNS.Paths {
+		ServiceEtcdPath := config.EtcdServicePath + path.ServiceNamespace + "/" + path.ServiceName
+		res = etcdClient.GetEtcdPair(ServiceEtcdPath)
+		if res == "" {
+			log.Error("can not find the service at %s", ServiceEtcdPath)
+			context.JSON(http.StatusBadRequest, gin.H{
+				"status": "Service Not Found",
+			})
+			return
+		}
+		var Service api.Service
+		_ = json.Unmarshal([]byte(res), &Service)
+		newDNS.Paths[index].ServiceIP = Service.Status.ClusterIP
+	}
 	jsonString, _ := json.Marshal(newDNS)
 	etcdClient.PutEtcdPair(EtcdPath, string(jsonString))
 	var message msg_type.DNSMsg

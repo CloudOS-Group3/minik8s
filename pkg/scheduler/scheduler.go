@@ -81,9 +81,9 @@ func (s *Scheduler) NodeHandler(msg []byte) {
 		panic(err)
 	}
 	exist := false
-	for _, nodeInList := range s.nodes {
+	for index, nodeInList := range s.nodes {
 		if nodeInList.Metadata.Name == node.Metadata.Name {
-			nodeInList = node
+			s.nodes[index] = node
 			exist = true
 		}
 	}

@@ -3,7 +3,7 @@ package config
 import "strconv"
 
 const (
-	local      = true
+	Local      = true
 	localhost  = "localhost"
 	Remotehost = "127.0.0.1"
 	port       = 6443
@@ -15,7 +15,7 @@ const (
 )
 
 func GetUrlPrefix() string {
-	if local {
+	if Local {
 		return protocol + localhost + ":" + strconv.Itoa(port)
 	} else {
 		return protocol + Remotehost + ":" + strconv.Itoa(port)
@@ -23,7 +23,7 @@ func GetUrlPrefix() string {
 }
 
 func GetHostAndPort() (string, int) {
-	if local {
+	if Local {
 		return localhost, port
 	} else {
 		return Remotehost, port

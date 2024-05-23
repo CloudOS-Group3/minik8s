@@ -9,7 +9,9 @@ type DNS struct {
 }
 
 type DNSPath struct {
-	Path        string `json:"path,omitempty" yaml:"path,omitempty"`
-	ServiceName string `json:"serviceName,omitempty" yaml:"serviceName,omitempty"`
-	ServicePort string `json:"servicePort,omitempty" yaml:"servicePort,omitempty"`
+	Path             string `json:"path,omitempty" yaml:"path,omitempty"`
+	ServiceNamespace string `json:"serviceNamespace,omitempty" yaml:"serviceNamespace,omitempty"`
+	ServiceName      string `json:"serviceName,omitempty" yaml:"serviceName,omitempty"`
+	ServiceIP        string `json:"serviceIP,omitempty" yaml:"serviceIP,omitempty"`
+	ServicePort      string `json:"servicePort,omitempty" yaml:"servicePort,omitempty"`
 }
