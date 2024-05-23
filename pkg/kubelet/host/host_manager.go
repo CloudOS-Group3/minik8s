@@ -2,7 +2,9 @@ package host
 
 import (
 	"fmt"
+	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	"minik8s/util/httputil"
 	"os"
 )
 
@@ -11,8 +13,15 @@ type KubeletHostManager struct {
 }
 
 func NewHostManager() *KubeletHostManager {
+	URL := config.GetUrlPrefix() + config.DNSsURL
+	var initialDNS []api.DNS
+	_ = httputil.Get(URL, &initialDNS, "data")
+	initialHost := make([]string, 0)
+	for _, v := range initialDNS {
+		initialHost = append(initialHost, v.Host)
+	}
 	return &KubeletHostManager{
-		Hosts: make([]string, 0),
+		Hosts: initialHost,
 	}
 }
 

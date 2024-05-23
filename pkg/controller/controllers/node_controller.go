@@ -30,7 +30,10 @@ func NewNodeController() *NodeController {
 		done:       make(chan bool),
 		subscriber: kafka.NewSubscriber(brokers, group),
 	}
-	Controller.RegisteredNode = make([]api.Node, 0)
+	URL := config.GetUrlPrefix() + config.NodesURL
+	var initialNode []api.Node
+	_ = httputil.Get(URL, &initialNode, "data")
+	Controller.RegisteredNode = initialNode
 	return Controller
 }
 

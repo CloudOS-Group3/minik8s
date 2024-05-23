@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api"
+	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
+	"minik8s/util/httputil"
+	"strings"
 	"sync"
 )
 
@@ -19,15 +23,13 @@ type Scheduler struct {
 }
 
 func NewScheduler() *Scheduler {
-	// TODO: require node list from apiserver
-	nodeList := make([]api.Node, 2)
-	nodeList[0].Metadata.Name = "node1"
-	nodeList[1].Metadata.Name = "node2"
-
+	URL := config.GetUrlPrefix() + config.NodesURL
+	var initialNode []api.Node
+	_ = httputil.Get(URL, &initialNode, "data")
 	brokers := []string{"127.0.0.1:9092"}
 	group := "scheduler"
 	return &Scheduler{
-		nodes:      nodeList,
+		nodes:      initialNode,
 		ready:      make(chan bool),
 		done:       make(chan bool),
 		count:      0,
@@ -46,10 +48,10 @@ func (s *Scheduler) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (s *Scheduler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		if msg.Topic == "pod" {
+		if msg.Topic == msg_type.PodTopic {
 			sess.MarkMessage(msg, "")
 			s.PodHandler(msg.Value)
-		} else if msg.Topic == "node" {
+		} else if msg.Topic == msg_type.NodeTopic {
 			sess.MarkMessage(msg, "")
 			s.NodeHandler(msg.Value)
 		}
@@ -71,7 +73,15 @@ func (s *Scheduler) PodHandler(msg []byte) {
 		pod.Spec.NodeName = s.nodes[index].Metadata.Name
 	}
 	fmt.Printf("pod %s has assigned to node %s\n", pod.Metadata.Name, pod.Spec.NodeName)
-	// TODO: send new node to apiserver
+
+	URL := config.GetUrlPrefix() + config.PodURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, pod.Metadata.Name, -1)
+	byteArr, err := json.Marshal(pod)
+	if err != nil {
+		panic(err)
+	}
+	err = httputil.Put(URL, byteArr)
 }
 
 func (s *Scheduler) NodeHandler(msg []byte) {
@@ -95,7 +105,7 @@ func (s *Scheduler) NodeHandler(msg []byte) {
 func (s *Scheduler) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{"pod", "node"}
+	topics := []string{msg_type.PodTopic, msg_type.NodeTopic}
 	s.subscriber.Subscribe(wg, ctx, topics, s)
 	<-s.ready
 	<-s.done

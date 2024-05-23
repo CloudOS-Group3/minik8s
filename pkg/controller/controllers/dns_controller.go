@@ -9,9 +9,11 @@ import (
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 )
 
@@ -30,7 +32,11 @@ func NewDnsController() *DNSController {
 		done:       make(chan bool),
 		subscriber: kafka.NewSubscriber(brokers, group),
 	}
-	Controller.RegisteredDNS = make([]api.DNS, 0)
+	URL := config.GetUrlPrefix() + config.DNSsURL
+	var initialDNS []api.DNS
+	_ = httputil.Get(URL, &initialDNS, "data")
+	log.Info("fetch %d dns from apiserver", len(initialDNS))
+	Controller.RegisteredDNS = initialDNS
 	return Controller
 }
 
@@ -95,28 +101,45 @@ func (s *DNSController) ServiceHandler(msg []byte) {
 	}
 	if message.Opt == msg_type.Delete {
 		for index, dns := range s.RegisteredDNS {
+			modified := false
 			for indexService, path := range dns.Paths {
+				log.Info("ServiceName: %s, TargetName: %s", path.ServiceName, message.OldService.Metadata.Name)
 				if path.ServiceName == message.OldService.Metadata.Name && path.ServiceNamespace == message.OldService.Metadata.NameSpace {
 					s.RegisteredDNS[index].Paths = append(dns.Paths[:indexService], dns.Paths[indexService+1:]...)
+					modified = true
 				}
 			}
-			if len(dns.Paths) == 0 {
-				s.RegisteredDNS = append(s.RegisteredDNS[:index], s.RegisteredDNS[index+1:]...)
-				fileName := fmt.Sprintf("/etc/nginx/conf.d/%s.conf", dns.Host)
-				os.Remove(fileName)
+			if len(s.RegisteredDNS[index].Paths) == 0 {
+				log.Info("delete dns: %s", dns.Name)
+				URL := config.GetUrlPrefix() + config.DNSURL
+				URL = strings.Replace(URL, config.NamePlaceholder, dns.Name, -1)
+				_ = httputil.Delete(URL)
+			} else {
+				if modified {
+					URL := config.GetUrlPrefix() + config.DNSURL
+					URL = strings.Replace(URL, config.NamePlaceholder, dns.Name, -1)
+					jsonString, _ := json.Marshal(s.RegisteredDNS[index])
+					_ = httputil.Put(URL, jsonString)
+				}
 			}
 		}
-		s.WriteDNS()
 		return
 	}
 	for index, dns := range s.RegisteredDNS {
+		modified := false
 		for serviceIndex, path := range dns.Paths {
 			if path.ServiceName == message.NewService.Metadata.Name && path.ServiceNamespace == message.NewService.Metadata.NameSpace {
 				s.RegisteredDNS[index].Paths[serviceIndex].ServiceIP = message.NewService.Status.ClusterIP
+				modified = true
 			}
 		}
+		if modified {
+			URL := config.GetUrlPrefix() + config.DNSURL
+			URL = strings.Replace(URL, config.NamePlaceholder, dns.Name, -1)
+			jsonString, _ := json.Marshal(s.RegisteredDNS[index])
+			_ = httputil.Put(URL, jsonString)
+		}
 	}
-	s.WriteDNS()
 }
 
 func (s *DNSController) WriteDNS() {
