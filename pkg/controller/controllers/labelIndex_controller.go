@@ -28,6 +28,10 @@ func GetLabelIndex(label map[string]string) (*api.LabelIndex, error) {
 	body, err := ioutil.ReadAll(res.Body)
 
 	labelIndex := &api.LabelIndex{}
+	// deal with not found
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	err = json.Unmarshal(body, &labelIndex)
 	if err != nil {
 		log.Error("error unmarshal into label index: %s %v %v", err.Error(), body, labelIndex)
@@ -62,6 +66,7 @@ func DeleteLabelIndex(label map[string]string) error {
 }
 
 func UpdateLabelIndex(labelIndex *api.LabelIndex) error {
+	log.Info("update label index: %v", labelIndex)
 	labelString := util.ConvertLabelToString(labelIndex.Labels)
 
 	URL := config.GetUrlPrefix() + config.LabelIndexURL

@@ -22,18 +22,17 @@ type EndPointController struct {
 	done       chan bool
 }
 
-func (e EndPointController) Setup(session sarama.ConsumerGroupSession) error {
+func (e *EndPointController) Setup(session sarama.ConsumerGroupSession) error {
 	close(e.ready)
 	return nil
 }
 
-func (e EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
+func (e *EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (e *EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		log.Info("Watch msg: %s\n", string(msg.Value))
 		if msg.Topic == msg_type.PodTopic {
 			session.MarkMessage(msg, "")
 			podMsg := &msg_type.PodMsg{}
@@ -46,7 +45,7 @@ func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 			case msg_type.Update:
 				// discard pod without pod ip
 				if podMsg.NewPod.Status.PodIP == "" {
-					return nil
+					break
 				}
 				if !util.IsLabelEqual(podMsg.NewPod.Spec.NodeSelector, podMsg.OldPod.Spec.NodeSelector) {
 					OnPodUpdate(&podMsg.NewPod, podMsg.OldPod.Spec.NodeSelector)
@@ -58,7 +57,7 @@ func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 			case msg_type.Add:
 				// discard pod without pod ip
 				if podMsg.NewPod.Status.PodIP == "" {
-					return nil
+					break
 				}
 				OnPodUpdate(&podMsg.NewPod, nil)
 				break
@@ -100,6 +99,7 @@ func NewEndPointController() *EndPointController {
 }
 
 func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
+	log.Info("OnPodUpdate")
 	if util.IsLabelEqual(pod.Spec.NodeSelector, oldLabel) {
 		// no need to update
 		return
