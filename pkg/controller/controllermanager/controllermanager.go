@@ -10,6 +10,7 @@ type ControllerManager struct {
 	EndpointController   *controllers.EndPointController
 	HPACcntroller        *controllers.HPAController
 	NodeController       *controllers.NodeController
+	DNSController        *controllers.DNSController
 }
 
 func NewControllerManager() *ControllerManager {
@@ -17,20 +18,23 @@ func NewControllerManager() *ControllerManager {
 	newEC := controllers.NewEndPointController()
 	newHC := &controllers.HPAController{}
 	newNC := controllers.NewNodeController()
+	newDNSController := controllers.NewDnsController()
 
 	return &ControllerManager{
 		DeploymentController: newDC,
 		EndpointController:   newEC,
 		HPACcntroller:        newHC,
 		NodeController:       newNC,
+		DNSController:        newDNSController,
 	}
 }
 
 func (CM *ControllerManager) Run(stop chan bool) {
-	go CM.DeploymentController.Run()
-	go CM.EndpointController.Run()
+	//go CM.DeploymentController.Run()
+	//go CM.EndpointController.Run()
 	//go CM.HPACcntroller.Run()
-	go CM.NodeController.Run()
+	//go CM.NodeController.Run()
+	go CM.DNSController.Run()
 
 	_, ok := <-stop
 	if !ok {

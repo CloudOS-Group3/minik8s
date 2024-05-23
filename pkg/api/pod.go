@@ -27,7 +27,7 @@ type PodStatus struct {
 	Message           string            `json:"message,omitempty" yaml:"message,omitempty"`
 	Phase             string            `json:"phase,omitempty" yaml:"phase,omitempty"`
 	PodIP             string            `json:"podIP,omitempty" yaml:"podIP,omitempty"`
-  PauseId           string            `json:"pauseId,omitempty" yaml:"pauseId,omitempty"`
+	PauseId           string            `json:"pauseId,omitempty" yaml:"pauseId,omitempty"`
 	StartTime         time.Time         `json:"startTime,omitempty" yaml:"startTime,omitempty"`
 	Metrics           PodMetrics        `json:"metrics,omitempty" yaml:"metrics,omitempty"`
 	CPUPercentage     float64           `json:"cpuPercentage,omitempty" yaml:"cpuPercentage,omitempty"`

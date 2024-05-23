@@ -30,7 +30,10 @@ func NewNodeController() *NodeController {
 		done:       make(chan bool),
 		subscriber: kafka.NewSubscriber(brokers, group),
 	}
-	Controller.RegisteredNode = make([]api.Node, 0)
+	URL := config.GetUrlPrefix() + config.NodesURL
+	var initialNode []api.Node
+	_ = httputil.Get(URL, &initialNode, "data")
+	Controller.RegisteredNode = initialNode
 	return Controller
 }
 
@@ -45,7 +48,7 @@ func (s *NodeController) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (s *NodeController) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		if msg.Topic == "node" {
+		if msg.Topic == msg_type.NodeTopic {
 			sess.MarkMessage(msg, "")
 			s.NodeHandler(msg.Value)
 		}
@@ -55,7 +58,7 @@ func (s *NodeController) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sa
 
 func (s *NodeController) CheckNode() {
 	for {
-		for _, node := range s.RegisteredNode {
+		for index, node := range s.RegisteredNode {
 			if node.Status.Condition.Status != api.NodeReady {
 				continue
 			}
@@ -75,6 +78,7 @@ func (s *NodeController) CheckNode() {
 				if err != nil {
 					panic(err)
 				}
+				s.RegisteredNode[index] = node
 			}
 		}
 		time.Sleep(time.Second * 30)
@@ -98,9 +102,9 @@ func (s *NodeController) NodeHandler(msg []byte) {
 	}
 	node = message.NewNode
 	exist := false
-	for _, nodeInList := range s.RegisteredNode {
+	for index, nodeInList := range s.RegisteredNode {
 		if nodeInList.Metadata.Name == node.Metadata.Name {
-			nodeInList = node
+			s.RegisteredNode[index] = node
 			exist = true
 		}
 	}
@@ -114,7 +118,7 @@ func (s *NodeController) Run() {
 	go s.CheckNode()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{"node"}
+	topics := []string{msg_type.NodeTopic}
 	s.subscriber.Subscribe(wg, ctx, topics, s)
 	<-s.ready
 	<-s.done
