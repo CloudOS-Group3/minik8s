@@ -59,7 +59,8 @@ func DoHeartBeat() {
 		for index, PodInList := range Heartbeat.Node.Status.Pods {
 			Metrics, err := GetPodMetrics(&PodInList)
 			if err != nil {
-				panic(err)
+				log.Error("Get Pod Metrics Error: %s", err.Error())
+				continue
 			}
 			PodInList.Status.Metrics = *Metrics
 			PodInList.Status.CPUPercentage = Metrics.CpuUsage
@@ -70,12 +71,13 @@ func DoHeartBeat() {
 			byteArr, err := json.Marshal(PodInList)
 			log.Info("HeartBeat, Pod: %s", string(byteArr))
 			if err != nil {
-				panic(err)
+				log.Error("HeartBeat, Pod Marshal Error: %s", err.Error())
+				continue
 			}
 			//log.Info("HeartBeat, Pod: %s", string(byteArr))
 			err = httputil.Put(URL, byteArr)
 			if err != nil {
-				panic(err)
+				log.Error("HeartBeat Put Error: %s", err.Error())
 			}
 			Heartbeat.Node.Status.Pods[index] = PodInList
 		}
@@ -86,11 +88,12 @@ func DoHeartBeat() {
 		byteArr, err := json.Marshal(Heartbeat.Node)
 		//log.Info("HeartBeat, Node: %s", string(byteArr))
 		if err != nil {
-			panic(err)
+			log.Error("HeartBeat Marshal Error: %s", err.Error())
+			continue
 		}
 		err = httputil.Put(URL, byteArr)
 		if err != nil {
-			panic(err)
+			log.Error("HeartBeat Put Error: %s", err.Error())
 		}
 		log.Info("HeartBeat done")
 		time.Sleep(30 * time.Second)

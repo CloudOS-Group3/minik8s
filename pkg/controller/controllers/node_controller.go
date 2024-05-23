@@ -72,11 +72,12 @@ func (s *NodeController) CheckNode() {
 				URL = strings.Replace(URL, config.NamePlaceholder, node.Metadata.Name, -1)
 				byteArr, err := json.Marshal(node)
 				if err != nil {
-					panic(err)
+					log.Error("Error marshalling node: %s", err.Error())
+					continue
 				}
 				err = httputil.Put(URL, byteArr)
 				if err != nil {
-					panic(err)
+					log.Error("Error putting node: %s", err.Error())
 				}
 				s.RegisteredNode[index] = node
 			}
@@ -90,7 +91,8 @@ func (s *NodeController) NodeHandler(msg []byte) {
 	var node api.Node
 	err := json.Unmarshal(msg, &message)
 	if err != nil {
-		panic(err)
+		log.Error("Error unmarshalling node: %s", err.Error())
+		return
 	}
 	if message.Opt == msg_type.Delete {
 		for index, nodeInList := range s.RegisteredNode {

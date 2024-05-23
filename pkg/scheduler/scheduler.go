@@ -10,6 +10,7 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/util/httputil"
+	"minik8s/util/log"
 	"strings"
 	"sync"
 )
@@ -63,7 +64,8 @@ func (s *Scheduler) PodHandler(msg []byte) {
 	var pod api.Pod
 	err := json.Unmarshal(msg, &pod)
 	if err != nil {
-		panic(err)
+		log.Error("Unmarshal pod err: %s", err.Error())
+		return
 	}
 	if pod.Spec.NodeName != "" {
 		return
@@ -79,7 +81,8 @@ func (s *Scheduler) PodHandler(msg []byte) {
 	URL = strings.Replace(URL, config.NamePlaceholder, pod.Metadata.Name, -1)
 	byteArr, err := json.Marshal(pod)
 	if err != nil {
-		panic(err)
+		log.Error("Marshal pod err: %s", err.Error())
+		return
 	}
 	err = httputil.Put(URL, byteArr)
 }
@@ -88,7 +91,8 @@ func (s *Scheduler) NodeHandler(msg []byte) {
 	var node api.Node
 	err := json.Unmarshal(msg, &node)
 	if err != nil {
-		panic(err)
+		log.Error("Unmarshal node err: %s", err.Error())
+		return
 	}
 	exist := false
 	for index, nodeInList := range s.nodes {

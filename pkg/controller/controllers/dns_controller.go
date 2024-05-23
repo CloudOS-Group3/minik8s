@@ -67,7 +67,8 @@ func (s *DNSController) DNSHandler(msg []byte) {
 	var message msg_type.DNSMsg
 	err := json.Unmarshal(msg, &message)
 	if err != nil {
-		panic(err)
+		log.Error("unmarshal msg err: %s", err.Error())
+		return
 	}
 	if message.Opt == msg_type.Delete {
 		for index, dns := range s.RegisteredDNS {
@@ -97,7 +98,8 @@ func (s *DNSController) ServiceHandler(msg []byte) {
 	var message msg_type.ServiceMsg
 	err := json.Unmarshal(msg, &message)
 	if err != nil {
-		panic(err)
+		log.Error("unmarshal msg err: %s", err.Error())
+		return
 	}
 	if message.Opt == msg_type.Delete {
 		for index, dns := range s.RegisteredDNS {

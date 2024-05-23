@@ -60,7 +60,7 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 	err := json.Unmarshal(msg, &podMsg)
 	if err != nil {
 		log.Error("unmarshal pod message failed, error: %s", err.Error())
-		panic(err)
+		return
 	}
 	switch podMsg.Opt {
 	case msg_type.Add:
@@ -88,7 +88,7 @@ func (k *KubeletSubscriber) DNSHandler(msg []byte) {
 	err := json.Unmarshal(msg, &dnsMsg)
 	if err != nil {
 		log.Error("unmarshal dns message failed, error: %s", err.Error())
-		panic(err)
+		return
 	}
 	switch dnsMsg.Opt {
 	case msg_type.Add:
