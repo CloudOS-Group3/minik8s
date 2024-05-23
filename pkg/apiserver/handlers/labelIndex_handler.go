@@ -6,16 +6,32 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
 	"minik8s/pkg/util"
+	"minik8s/util/log"
 	"net/http"
 )
 
 func GetLabelIndex(context *gin.Context) {
 	label := context.Param(config.LabelParam)
 	URL := config.LabelIndexPath + label
-	labelIndex := etcdClient.PrefixGet(URL)
+	res := etcdClient.GetEtcdPair(URL)
+	log.Info("Get URL %s", URL)
+
+	labelIndex := &api.LabelIndex{}
+	if len(res) != 0 {
+		err := json.Unmarshal([]byte(res), labelIndex)
+		if err != nil {
+			log.Error("Error unmarshalling labelIndex json %v", err)
+			return
+		}
+	}
+	byteArr, err := json.Marshal(labelIndex)
+	if err != nil {
+		log.Error("Error marshal labelIndex: %s", err.Error())
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{
-		"data": labelIndex,
+		"data": string(byteArr),
 	})
 }
 func AddLabelIndex(context *gin.Context) {
