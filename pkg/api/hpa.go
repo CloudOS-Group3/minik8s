@@ -11,13 +11,12 @@ type HPA struct {
 }
 
 type HPASpec struct {
-	Behavior       HPABehavior                 `json:"behavior" yaml:"behavior"`
-	MaxReplica     int                         `json:"maxReplica" yaml:"maxReplica"`
-	MinReplica     int                         `json:"minReplica" yaml:"minReplica"`
-	Metrics        MetricsSpec                 `json:"metrics" yaml:"metrics"`
-	ScaleTargetRef CrossVersionObjectReference `json:"scaleTargetRef" yaml:"scaleTargetRef"`
-	Template       PodTemplateSpec             `json:"template" yaml:"template"`
-	Selector       LabelSelector               `json:"selector" yaml:"selector"`
+	MaxReplica     int             `json:"maxReplica" yaml:"maxReplica"`
+	MinReplica     int             `json:"minReplica" yaml:"minReplica"`
+	Metrics        MetricsSpec     `json:"metrics" yaml:"metrics"`
+	Template       PodTemplateSpec `json:"template" yaml:"template"`
+	Selector       LabelSelector   `json:"selector" yaml:"selector"`
+	AdjustInterval int             `json:"adjustInterval" yaml:"adjustInterval"`
 }
 
 type HPAStatus struct {
@@ -27,20 +26,9 @@ type HPAStatus struct {
 	LastScaleTime   time.Time      `json:"lastScaleTime" yaml:"lastScaleTime"`
 }
 
-type HPABehavior struct {
-	ScaleDown HPAScalingRules `json:"scaleDown" yaml:"scaleDown"`
-	ScaleUp   HPAScalingRules `json:"scaleUp" yaml:"scaleUp"`
-}
-
 type MetricsSpec struct {
 	CPUPercentage    float64 `json:"cpuPercentage" yaml:"cpuPercentage"`
 	MemoryPercentage float64 `json:"memoryPercentage" yaml:"memoryPercentage"`
-}
-
-type CrossVersionObjectReference struct {
-	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
-	Kind       string `json:"kind" yaml:"kind"`
-	Name       string `json:"name" yaml:"name"`
 }
 
 type HPAScalingRules struct {

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: HPA
+metadata:
+  name: test-hpa
+  namespace: default
+spec:
+  minReplica: 2
+  maxReplica: 5
+  template:
+    metadata:
+      name: test-hpa-pod
+      namespace: default
+      labels:
+        app: hpa
+    spec:
+      containers:
+        - name: nginx
+          image: docker.io/library/nginx:latest
+          ports:
+            - containerPort: 80
+  adjustInterval: 15
+  selector:
+    matchLabels:
+      app: hpa
+  metrics:
+    cpuPercentage: 0.35
+    memoryPercentage: 0.5

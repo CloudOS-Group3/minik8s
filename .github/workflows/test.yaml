@@ -25,7 +25,7 @@ jobs:
                 wget https://github.com/etcd-io/etcd/releases/download/v3.5.13/etcd-v3.5.13-linux-amd64.tar.gz
                 tar -zxvf etcd-v3.5.13-linux-amd64.tar.gz
                 cd etcd-v3.5.13-linux-amd64
-                ./etcd &
+                ./etcd &> /dev/null &
 
             - name: Download nerdctl
               run: |
@@ -44,7 +44,7 @@ jobs:
                 cd kafka_2.13-3.6.0
                 KAFKA_CLUSTER_ID="$(bin/kafka-storage.sh random-uuid)"
                 bin/kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c config/kraft/server.properties
-                bin/kafka-server-start.sh config/kraft/server.properties &
+                bin/kafka-server-start.sh config/kraft/server.properties &> /dev/null &
 
             - name: Download etcdctl
               run: |

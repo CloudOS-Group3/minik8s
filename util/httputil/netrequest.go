@@ -29,17 +29,13 @@ func Get(URL string, result interface{}, key string) error {
 		log.Error("Error json decode: %s", err.Error())
 		return err
 	}
-	log.Debug("the resMap is: %+v", resMap)
 	value, ok := resMap[key]
 	if !ok {
 		log.Warn("Empty data with key: %s", key)
 		return nil
 	}
-	log.Debug("value type is: %T", value)
-	log.Debug("data is: %+v", value)
 	dataStr := fmt.Sprint(value)
 	err = json.Unmarshal([]byte(dataStr), result)
-	log.Debug("result is: %v", result)
 	if err != nil {
 		log.Error("Error json unmarshal: %s", err.Error())
 		return err
@@ -73,7 +69,7 @@ func Put(URL string, body []byte) error {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Debug("Error client do put")
+		log.Debug("Error client do put: %s", err.Error())
 		return err
 	}
 	defer res.Body.Close()

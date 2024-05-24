@@ -114,8 +114,6 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 	data := [][]string{}
 
 	for _, matchPod := range matchPods {
-		log.Debug("%s", time.Now().String())
-		log.Debug("%s", matchPod.Status.StartTime)
 		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
 		metric_string := fmt.Sprintf("cpu: %v, memory: %v", matchPod.Status.CPUPercentage, matchPod.Status.MemoryPercentage)
 		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age, metric_string, matchPod.Status.PodIP})
@@ -132,7 +130,7 @@ func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 		log.Info("getting all deployments")
 		URL := config.GetUrlPrefix() + config.DeploymentsURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
-		err := httputil.Get(URL, matchDeployments, "data")
+		err := httputil.Get(URL, &matchDeployments, "data")
 		if err != nil {
 			log.Error("error getting all deployments: %s", err.Error())
 			return
