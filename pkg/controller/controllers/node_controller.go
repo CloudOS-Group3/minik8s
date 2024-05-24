@@ -23,7 +23,8 @@ type NodeController struct {
 }
 
 func NewNodeController() *NodeController {
-	brokers := []string{"127.0.0.1:9092"}
+	KafkaURL := config.Remotehost + ":9092"
+	brokers := []string{KafkaURL}
 	group := "node-controller"
 	Controller := &NodeController{
 		ready:      make(chan bool),

@@ -11,7 +11,7 @@ import (
 
 const (
 	//broker
-	DefaultBroker = "127.0.0.1:9092"
+	DefaultBroker = "192.168.3.6:9092"
 	//group
 	ControllerGroup = "controller-group"
 )

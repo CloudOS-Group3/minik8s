@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/kubelet/host"
 	"minik8s/pkg/kubelet/node"
@@ -21,7 +22,8 @@ type KubeletSubscriber struct {
 }
 
 func NewKubeletSubscriber() *KubeletSubscriber {
-	brokers := []string{"127.0.0.1:9092"}
+	KafkaURL := config.Remotehost + ":9092"
+	brokers := []string{KafkaURL}
 	group := "kubelet"
 	return &KubeletSubscriber{
 		ready:       make(chan bool),

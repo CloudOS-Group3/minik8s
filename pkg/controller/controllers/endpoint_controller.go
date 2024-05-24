@@ -96,7 +96,8 @@ func (e *EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, c
 }
 
 func NewEndPointController() *EndPointController {
-	brokers := []string{"127.0.0.1:9092"}
+	KafkaURL := config.Remotehost + ":9092"
+	brokers := []string{KafkaURL}
 	group := "endpoint-controller"
 	return &EndPointController{
 		ready:      make(chan bool),

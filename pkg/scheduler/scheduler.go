@@ -27,7 +27,8 @@ func NewScheduler() *Scheduler {
 	URL := config.GetUrlPrefix() + config.NodesURL
 	var initialNode []api.Node
 	_ = httputil.Get(URL, &initialNode, "data")
-	brokers := []string{"127.0.0.1:9092"}
+	KafkaURL := config.Remotehost + ":9092"
+	brokers := []string{KafkaURL}
 	group := "scheduler"
 	return &Scheduler{
 		nodes:      initialNode,

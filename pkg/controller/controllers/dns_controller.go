@@ -25,7 +25,8 @@ type DNSController struct {
 }
 
 func NewDnsController() *DNSController {
-	brokers := []string{"127.0.0.1:9092"}
+	KafkaURL := config.Remotehost + ":9092"
+	brokers := []string{KafkaURL}
 	group := "dns-controller"
 	Controller := &DNSController{
 		ready:      make(chan bool),
