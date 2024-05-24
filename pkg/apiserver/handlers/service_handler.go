@@ -7,7 +7,6 @@ import (
 	"minik8s/pkg/api"
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
-	"minik8s/pkg/controller/controllers"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net"
@@ -71,10 +70,13 @@ func AddService(context *gin.Context) {
 	}
 
 	// check if the service already exists
-	oldService, _ := controllers.GetService(newService.Metadata.NameSpace, newService.Metadata.Name)
+	URL := config.ServicePath + newService.Metadata.NameSpace + "/" + newService.Metadata.Name
+	oldService := &api.Service{}
+	res := etcdClient.GetEtcdPair(URL)
+	_ = json.Unmarshal([]byte(res), oldService)
 
 	// Allocate ClusterIP
-	if oldService != nil && oldService.Status.ClusterIP != "" {
+	if res != "" && oldService.Status.ClusterIP != "" {
 		newService.Status.ClusterIP = oldService.Status.ClusterIP
 	} else {
 		err := GenerateClusterIP(&newService)
@@ -89,12 +91,11 @@ func AddService(context *gin.Context) {
 		return
 	}
 	log.Info("new service is: %+v", newService)
-	URL := config.ServicePath + newService.Metadata.NameSpace + "/" + newService.Metadata.Name
 	etcdClient.PutEtcdPair(URL, string(serviceByteArray))
 
 	//construct message
 	var message msg.ServiceMsg
-	if oldService != nil {
+	if oldService.Status.ClusterIP != "" {
 		message = msg.ServiceMsg{
 			Opt:        msg.Update,
 			OldService: *oldService,
@@ -120,13 +121,15 @@ func DeleteService(context *gin.Context) {
 	URL := config.ServicePath + namespace + "/" + name
 
 	// check if the service already exists
-	oldService, _ := controllers.GetService(namespace, name)
-	if oldService == nil {
+	var oldService api.Service
+	res := etcdClient.GetEtcdPair(URL)
+	if res == "" {
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
 		})
 		return
 	}
+	_ = json.Unmarshal([]byte(res), &oldService)
 	etcdClient.DeleteEtcdPair(URL)
 	// delete ClusterIP
 	allocatedIpsStr := etcdClient.GetEtcdPair(clusterIpEtcdPrefix)
@@ -149,8 +152,9 @@ func DeleteService(context *gin.Context) {
 	//construct message
 	message := msg.ServiceMsg{
 		Opt:        msg.Delete,
-		OldService: *oldService,
+		OldService: oldService,
 	}
+	log.Info("deleted service is: %+v", message)
 	msg_json, _ := json.Marshal(message)
 	publisher.Publish(msg.ServiceTopic, string(msg_json))
 

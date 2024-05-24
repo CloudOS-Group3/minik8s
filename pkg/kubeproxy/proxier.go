@@ -21,22 +21,27 @@ type ProxyInterface interface {
 // KubeProxy watch service changes
 //
 //	and update the ipvs rules
+//
+// 1. create Cluster service : ipvsadm -A -t <ClusterIP>:<Port> -s rr
+// 2. create Endpoints : ipvsadm -a -t <ClusterIP>:<Port> -r <PodIP>:<PodPort> -m
+// 3. remove Cluster service : ipvsadm -D -t <ClusterIP>:<Port>
+// 4. remove Endpoints : ipvsadm -d -t <ClusterIP>:<Port> -r <PodIP>:<PodPort>
 type KubeProxy struct {
 	subscriber *kafka.Subscriber
 	ready      chan bool
 	done       chan bool
 }
 
-func (e KubeProxy) Setup(session sarama.ConsumerGroupSession) error {
+func (e *KubeProxy) Setup(session sarama.ConsumerGroupSession) error {
 	close(e.ready)
 	return nil
 }
 
-func (e KubeProxy) Cleanup(session sarama.ConsumerGroupSession) error {
+func (e *KubeProxy) Cleanup(session sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-func (e KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (e *KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		log.Info("Watch msg: %s\n", string(msg.Value))
 		if msg.Topic == msg_type.ServiceTopic {
@@ -56,25 +61,26 @@ func (e KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				err := ipvs.UpdateService(&serviceMsg.NewService)
 				if err != nil {
 					log.Fatal("Failed to update service: %s", err.Error())
-					return err
+					break
 				}
 				break
 			case msg_type.Delete:
 				err := ipvs.DeleteService(&serviceMsg.OldService)
 				if err != nil {
 					log.Fatal("Failed to delete service: %s", err.Error())
-					return err
+					break
 				}
 				break
 			case msg_type.Add:
-				// discard service without endpoints
-				if len(serviceMsg.NewService.Status.EndPoints) == 0 {
-					return nil
-				}
 				err := ipvs.AddService(&serviceMsg.NewService)
 				if err != nil {
 					log.Fatal("Failed to add service: %s", err.Error())
-					return err
+					break
+				}
+				err = ipvs.AddEndpoint(&serviceMsg.NewService)
+				if err != nil {
+					log.Fatal("Failed to add endpoint: %s", err.Error())
+					break
 				}
 				break
 			}

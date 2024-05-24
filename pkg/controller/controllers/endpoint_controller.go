@@ -10,6 +10,7 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/util"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"net/http"
 	"strings"
@@ -22,18 +23,17 @@ type EndPointController struct {
 	done       chan bool
 }
 
-func (e EndPointController) Setup(session sarama.ConsumerGroupSession) error {
+func (e *EndPointController) Setup(session sarama.ConsumerGroupSession) error {
 	close(e.ready)
 	return nil
 }
 
-func (e EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
+func (e *EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (e *EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		log.Info("Watch msg: %s\n", string(msg.Value))
 		if msg.Topic == msg_type.PodTopic {
 			session.MarkMessage(msg, "")
 			podMsg := &msg_type.PodMsg{}
@@ -46,19 +46,23 @@ func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 			case msg_type.Update:
 				// discard pod without pod ip
 				if podMsg.NewPod.Status.PodIP == "" {
-					return nil
+					break
 				}
-				if !util.IsLabelEqual(podMsg.NewPod.Spec.NodeSelector, podMsg.OldPod.Spec.NodeSelector) {
-					OnPodUpdate(&podMsg.NewPod, podMsg.OldPod.Spec.NodeSelector)
+				// 1. the pod first created by kubelet and the pod ip is assigned
+				// 2. the pod's label is changed
+				if podMsg.OldPod.Status.PodIP == "" {
+					OnPodAdd(&podMsg.NewPod)
+				} else if !util.IsLabelEqual(podMsg.NewPod.Metadata.Labels, podMsg.OldPod.Metadata.Labels) {
+					OnPodUpdate(&podMsg.NewPod, podMsg.OldPod.Metadata.Labels)
 				}
 				break
 			case msg_type.Delete:
-				OnPodDelete(&podMsg.NewPod)
+				OnPodDelete(&podMsg.OldPod)
 				break
 			case msg_type.Add:
 				// discard pod without pod ip
 				if podMsg.NewPod.Status.PodIP == "" {
-					return nil
+					break
 				}
 				OnPodUpdate(&podMsg.NewPod, nil)
 				break
@@ -71,14 +75,16 @@ func (e EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 				log.Error("unmarshal service error")
 				continue
 			}
+
+			log.Info("service message, %v", serviceMsg)
 			switch serviceMsg.Opt {
 			case msg_type.Update:
-				if !util.IsLabelEqual(serviceMsg.NewService.Metadata.Labels, serviceMsg.OldService.Metadata.Labels) {
-					OnServiceUpdate(&serviceMsg.NewService, serviceMsg.OldService.Metadata.Labels)
+				if !util.IsLabelEqual(serviceMsg.NewService.Spec.Selector, serviceMsg.OldService.Spec.Selector) {
+					OnServiceUpdate(&serviceMsg.NewService, serviceMsg.OldService.Spec.Selector)
 				}
 				break
 			case msg_type.Delete:
-				OnServiceDelete(&serviceMsg.NewService)
+				OnServiceDelete(&serviceMsg.OldService)
 				break
 			case msg_type.Add:
 				OnServiceUpdate(&serviceMsg.NewService, nil)
@@ -98,20 +104,17 @@ func NewEndPointController() *EndPointController {
 		subscriber: kafka.NewSubscriber(brokers, group),
 	}
 }
-
-func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
-	if util.IsLabelEqual(pod.Spec.NodeSelector, oldLabel) {
-		// no need to update
-		return
-	}
-	labelIndex, _ := GetLabelIndex(pod.Spec.NodeSelector)
-
+func OnPodAdd(pod *api.Pod) {
+	log.Info("OnPodAdd")
+	labelIndex, _ := GetLabelIndex(pod.Metadata.Labels)
+	log.Info("GetLabelIndex: %v", labelIndex)
 	// Step 1: Deal with new label
-	if labelIndex == nil {
+	if labelIndex == nil || len(labelIndex.Labels) == 0 {
 		// a new label
 		// create a new label index
+		log.Info("create a new label index, %v", pod.Metadata.Labels)
 		labelIndex = &api.LabelIndex{
-			Labels:  pod.Spec.NodeSelector,
+			Labels:  pod.Metadata.Labels,
 			PodName: []string{util.GetUniqueName(pod.Metadata.NameSpace, pod.Metadata.Name)},
 		}
 
@@ -127,15 +130,71 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
 			if svc != nil {
 				// update service
 				// add the new endpoint to the service
-				var all_ports []api.ContainerPort
+				// var all_ports []api.ContainerPort
 				for _, container := range pod.Spec.Containers {
-					all_ports = append(all_ports, container.Ports...)
+					//all_ports = append(all_ports, container.Ports...)
+					svc.Status.EndPoints = append(svc.Status.EndPoints,
+						api.EndPoint{
+							IP:    pod.Status.PodIP,
+							Ports: matchTargetPort(svc, container.Ports),
+						})
 				}
-				svc.Status.EndPoints = append(svc.Status.EndPoints,
-					api.EndPoint{
-						IP:    pod.Status.PodIP,
-						Ports: all_ports,
-					})
+				log.Info("update service: %v", svc)
+				err := UpdateService(svc)
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
+	// Step 2: store the new label index
+	err := UpdateLabelIndex(labelIndex)
+	if err != nil {
+		log.Fatal("add label index error")
+		return
+	}
+}
+
+func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
+	log.Info("OnPodUpdate")
+	if util.IsLabelEqual(pod.Metadata.Labels, oldLabel) {
+		// no need to update
+		return
+	}
+	labelIndex, _ := GetLabelIndex(pod.Metadata.Labels)
+	log.Info("GetLabelIndex: %v", labelIndex)
+	// Step 1: Deal with new label
+	if labelIndex == nil || len(labelIndex.Labels) == 0 {
+		// a new label
+		// create a new label index
+		log.Info("create a new label index, %v", pod.Metadata.Labels)
+		labelIndex = &api.LabelIndex{
+			Labels:  pod.Metadata.Labels,
+			PodName: []string{util.GetUniqueName(pod.Metadata.NameSpace, pod.Metadata.Name)},
+		}
+
+		// no service need to be updated, since the label is new
+	} else {
+		// update the label index
+		labelIndex.PodName = append(labelIndex.PodName, util.GetUniqueName(pod.Metadata.NameSpace, pod.Metadata.Name))
+
+		// need to update service
+		for _, serviceName := range labelIndex.ServiceName {
+			svc_namespace, name := util.GetNamespaceAndName(serviceName)
+			svc, _ := GetService(svc_namespace, name)
+			if svc != nil {
+				// update service
+				// add the new endpoint to the service
+				// var all_ports []api.ContainerPort
+				for _, container := range pod.Spec.Containers {
+					//all_ports = append(all_ports, container.Ports...)
+					svc.Status.EndPoints = append(svc.Status.EndPoints,
+						api.EndPoint{
+							IP:    pod.Status.PodIP,
+							Ports: matchTargetPort(svc, container.Ports),
+						})
+				}
+				log.Info("update service: %v", svc)
 				err := UpdateService(svc)
 				if err != nil {
 					return
@@ -155,7 +214,7 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
 		return
 	}
 	oldLabelIndex, _ := GetLabelIndex(oldLabel)
-	if oldLabelIndex == nil {
+	if oldLabelIndex == nil || len(oldLabelIndex.Labels) == 0 {
 		// Can't be here
 		return
 	}
@@ -188,7 +247,7 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
 	// store the old label index
 	// check if to delete the label index
 	if len(labelIndex.PodName) == 0 && len(labelIndex.ServiceName) == 0 {
-		err := DeleteLabelIndex(pod.Spec.NodeSelector)
+		err := DeleteLabelIndex(pod.Metadata.Labels)
 		if err != nil {
 			log.Fatal("delete label index error")
 		}
@@ -201,9 +260,11 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
 }
 
 func OnPodDelete(pod *api.Pod) {
-	labelIndex, _ := GetLabelIndex(pod.Spec.NodeSelector)
-	if labelIndex == nil {
+	log.Info("OnPodDelete")
+	labelIndex, _ := GetLabelIndex(pod.Metadata.Labels)
+	if labelIndex == nil || len(labelIndex.Labels) == 0 {
 		// Can't be here
+		log.Error("Can't find labelIndex. %v", labelIndex)
 		return
 	}
 	// remove the pod name from the label index
@@ -235,7 +296,7 @@ func OnPodDelete(pod *api.Pod) {
 	// store the label index
 	// check if to delete the label index
 	if len(labelIndex.PodName) == 0 && len(labelIndex.ServiceName) == 0 {
-		err := DeleteLabelIndex(pod.Spec.NodeSelector)
+		err := DeleteLabelIndex(pod.Metadata.Labels)
 		if err != nil {
 			log.Fatal("delete label index error")
 		}
@@ -248,33 +309,38 @@ func OnPodDelete(pod *api.Pod) {
 }
 
 func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
-	if util.IsLabelEqual(svc.Metadata.Labels, oldLabel) {
+	if util.IsLabelEqual(svc.Spec.Selector, oldLabel) {
 		// no need to update
 		return
 	}
 
 	// Step 1: Deal with new label
-	labelIndex, _ := GetLabelIndex(svc.Metadata.Labels)
-	if labelIndex == nil {
-		// Can't be here
-		return
+	labelIndex, _ := GetLabelIndex(svc.Spec.Selector)
+	if labelIndex == nil || len(labelIndex.Labels) == 0 {
+		// a new label
+		// create a new label index
+		labelIndex = &api.LabelIndex{
+			Labels:      svc.Spec.Selector,
+			ServiceName: []string{util.GetUniqueName(svc.Metadata.NameSpace, svc.Metadata.Name)},
+		}
+	} else {
+		// update the label index
+		labelIndex.ServiceName = append(labelIndex.ServiceName, util.GetUniqueName(svc.Metadata.NameSpace, svc.Metadata.Name))
+		// update service's endpoint
 	}
-	// update the label index
-	labelIndex.ServiceName = append(labelIndex.ServiceName, util.GetUniqueName(svc.Metadata.NameSpace, svc.Metadata.Name))
-	// update service's endpoint
 	for _, podName := range labelIndex.PodName {
 		namespace, name := util.GetNamespaceAndName(podName)
 		pod, _ := GetPod(namespace, name)
 		if pod != nil {
-			var all_ports []api.ContainerPort
+			//var all_ports []api.ContainerPort
 			for _, container := range pod.Spec.Containers {
-				all_ports = append(all_ports, container.Ports...)
+				//all_ports = append(all_ports, container.Ports...)
+				svc.Status.EndPoints = append(svc.Status.EndPoints,
+					api.EndPoint{
+						IP:    pod.Status.PodIP,
+						Ports: matchTargetPort(svc, container.Ports),
+					})
 			}
-			svc.Status.EndPoints = append(svc.Status.EndPoints,
-				api.EndPoint{
-					IP:    pod.Status.PodIP,
-					Ports: all_ports,
-				})
 		}
 	}
 	// store service
@@ -293,7 +359,7 @@ func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
 		return
 	}
 	oldLabelIndex, _ := GetLabelIndex(oldLabel)
-	if oldLabelIndex == nil {
+	if oldLabelIndex == nil || len(oldLabelIndex.Labels) == 0 {
 		// Can't be here
 		return
 	}
@@ -321,8 +387,8 @@ func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
 }
 
 func OnServiceDelete(svc *api.Service) {
-	labelIndex, _ := GetLabelIndex(svc.Metadata.Labels)
-	if labelIndex == nil {
+	labelIndex, _ := GetLabelIndex(svc.Spec.Selector)
+	if labelIndex == nil || len(labelIndex.Labels) == 0 {
 		// Can't be here
 		return
 	}
@@ -336,7 +402,7 @@ func OnServiceDelete(svc *api.Service) {
 	// store the label index
 	// check if to delete the label index
 	if len(labelIndex.PodName) == 0 && len(labelIndex.ServiceName) == 0 {
-		err := DeleteLabelIndex(svc.Metadata.Labels)
+		err := DeleteLabelIndex(svc.Spec.Selector)
 		if err != nil {
 			log.Fatal("delete label index error")
 		}
@@ -366,24 +432,14 @@ func GetService(namespace string, name string) (*api.Service, error) {
 	URL := config.GetUrlPrefix() + config.ServiceURL
 	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
 	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
-	res, err := http.Get(URL)
+	service := &api.Service{}
+	err := httputil.Get(URL, service, "data")
 	if err != nil {
 		log.Error("err get service %s:%s", namespace, name)
 		return nil, err
 	}
 
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-
-	svc := &api.Service{}
-	err = json.Unmarshal(body, &svc)
-	if err != nil {
-		log.Error("error unmarshal into all deployments")
-		return nil, err
-	}
-
-	return svc, nil
+	return service, nil
 }
 
 func GetAllServices() ([]api.Service, error) {
@@ -443,19 +499,7 @@ func UpdateService(service *api.Service) error {
 	URL = strings.Replace(URL, config.NamespacePlaceholder, service.Metadata.NameSpace, -1)
 	URL = strings.Replace(URL, config.NamePlaceholder, service.Metadata.Name, -1)
 
-	req, err := http.NewRequest(http.MethodPost, URL, strings.NewReader(string(serviceByteArray)))
-	if err != nil {
-		log.Error("err add service %s:%s", service.Metadata.NameSpace, service.Metadata.Name)
-		return err
-	}
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Error("err add service %s:%s", service.Metadata.NameSpace, service.Metadata.Name)
-		return err
-	}
-
-	defer res.Body.Close()
+	err = httputil.Put(URL, serviceByteArray)
 
 	return nil
 }
@@ -480,4 +524,16 @@ func DeleteService(namespace string, name string) error {
 	defer res.Body.Close()
 
 	return nil
+}
+
+func matchTargetPort(svc *api.Service, ports []api.ContainerPort) []api.ContainerPort {
+	targetPorts := []api.ContainerPort{}
+	for _, target := range svc.Spec.Ports {
+		for _, container := range ports {
+			if uint16(target.TargetPort) == uint16(container.ContainerPort) {
+				targetPorts = append(targetPorts, container)
+			}
+		}
+	}
+	return targetPorts
 }

@@ -42,6 +42,12 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteHPACmdHandler,
 	}
 
+	deleteDNSCmd := &cobra.Command{
+		Use:   "dns [dns name]",
+		Short: "delete DNS",
+		Run:   deleteDNSCmdHandler,
+	}
+  
 	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 
@@ -49,6 +55,7 @@ func DeleteCmd() *cobra.Command {
 	deleteCmd.AddCommand(deleteDeploymentCmd)
 	deleteCmd.AddCommand(deleteServiceCmd)
 	deleteCmd.AddCommand(deleteHPACmd)
+	deleteCmd.AddCommand(deleteDNSCmd)
 
 	return deleteCmd
 }
@@ -115,6 +122,17 @@ func deleteHPACmdHandler(cmd *cobra.Command, args []string) {
 	URL := strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
 
+	err := httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
+}
+
+func deleteDNSCmdHandler(cmd *cobra.Command, args []string) {
+	name := args[0]
+	URL := config.GetUrlPrefix() + config.DNSURL
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
 	err := httputil.Delete(URL)
 	if err != nil {
 		log.Error("error http post: %s", err.Error())

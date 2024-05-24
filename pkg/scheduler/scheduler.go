@@ -6,7 +6,12 @@ import (
 	"fmt"
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api"
+	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
+	"minik8s/util/httputil"
+	"minik8s/util/log"
+	"strings"
 	"sync"
 )
 
@@ -19,15 +24,13 @@ type Scheduler struct {
 }
 
 func NewScheduler() *Scheduler {
-	// TODO: require node list from apiserver
-	nodeList := make([]api.Node, 2)
-	nodeList[0].Metadata.Name = "node1"
-	nodeList[1].Metadata.Name = "node2"
-
+	URL := config.GetUrlPrefix() + config.NodesURL
+	var initialNode []api.Node
+	_ = httputil.Get(URL, &initialNode, "data")
 	brokers := []string{"127.0.0.1:9092"}
 	group := "scheduler"
 	return &Scheduler{
-		nodes:      nodeList,
+		nodes:      initialNode,
 		ready:      make(chan bool),
 		done:       make(chan bool),
 		count:      0,
@@ -46,10 +49,10 @@ func (s *Scheduler) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (s *Scheduler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		if msg.Topic == "pod" {
+		if msg.Topic == msg_type.PodTopic {
 			sess.MarkMessage(msg, "")
 			s.PodHandler(msg.Value)
-		} else if msg.Topic == "node" {
+		} else if msg.Topic == msg_type.NodeTopic {
 			sess.MarkMessage(msg, "")
 			s.NodeHandler(msg.Value)
 		}
@@ -61,7 +64,8 @@ func (s *Scheduler) PodHandler(msg []byte) {
 	var pod api.Pod
 	err := json.Unmarshal(msg, &pod)
 	if err != nil {
-		panic(err)
+		log.Error("Unmarshal pod err: %s", err.Error())
+		return
 	}
 	if pod.Spec.NodeName != "" {
 		return
@@ -71,19 +75,29 @@ func (s *Scheduler) PodHandler(msg []byte) {
 		pod.Spec.NodeName = s.nodes[index].Metadata.Name
 	}
 	fmt.Printf("pod %s has assigned to node %s\n", pod.Metadata.Name, pod.Spec.NodeName)
-	// TODO: send new node to apiserver
+
+	URL := config.GetUrlPrefix() + config.PodURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, pod.Metadata.Name, -1)
+	byteArr, err := json.Marshal(pod)
+	if err != nil {
+		log.Error("Marshal pod err: %s", err.Error())
+		return
+	}
+	err = httputil.Put(URL, byteArr)
 }
 
 func (s *Scheduler) NodeHandler(msg []byte) {
 	var node api.Node
 	err := json.Unmarshal(msg, &node)
 	if err != nil {
-		panic(err)
+		log.Error("Unmarshal node err: %s", err.Error())
+		return
 	}
 	exist := false
-	for _, nodeInList := range s.nodes {
+	for index, nodeInList := range s.nodes {
 		if nodeInList.Metadata.Name == node.Metadata.Name {
-			nodeInList = node
+			s.nodes[index] = node
 			exist = true
 		}
 	}
@@ -95,7 +109,7 @@ func (s *Scheduler) NodeHandler(msg []byte) {
 func (s *Scheduler) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{"pod", "node"}
+	topics := []string{msg_type.PodTopic, msg_type.NodeTopic}
 	s.subscriber.Subscribe(wg, ctx, topics, s)
 	<-s.ready
 	<-s.done

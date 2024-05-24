@@ -29,9 +29,9 @@ func init() {
 
 func AddPodToCheckList(pod *api.Pod) {
 	dupe := false
-	for _, PodInList := range Heartbeat.Node.Status.Pods {
+	for index, PodInList := range Heartbeat.Node.Status.Pods {
 		if PodInList.Metadata.Name == pod.Metadata.Name && PodInList.Metadata.NameSpace == pod.Metadata.NameSpace {
-			PodInList = *pod
+			Heartbeat.Node.Status.Pods[index] = *pod
 			dupe = true
 		}
 	}
@@ -59,23 +59,25 @@ func DoHeartBeat() {
 		for index, PodInList := range Heartbeat.Node.Status.Pods {
 			Metrics, err := GetPodMetrics(&PodInList)
 			if err != nil {
-				panic(err)
+				log.Error("Get Pod Metrics Error: %s", err.Error())
+				continue
 			}
 			PodInList.Status.Metrics = *Metrics
-			PodInList.Status.CPUPercentage = Metrics.CpuUsage
-			PodInList.Status.MemoryPercentage = Metrics.MemoryUsage
+			PodInList.Status.CPUPercentage = (Metrics.CpuUsage - Heartbeat.Node.Status.Pods[index].Status.Metrics.CpuUsage) / float64(30*time.Second)
+			PodInList.Status.MemoryPercentage = Metrics.MemoryUsage / (2 * 1024 * 1024 * 1024) // total: 2G
 			URL := config.GetUrlPrefix() + config.PodURL
 			URL = strings.Replace(URL, config.NamespacePlaceholder, PodInList.Metadata.NameSpace, -1)
 			URL = strings.Replace(URL, config.NamePlaceholder, PodInList.Metadata.Name, -1)
 			byteArr, err := json.Marshal(PodInList)
 			log.Info("HeartBeat, Pod: %s", string(byteArr))
 			if err != nil {
-				panic(err)
+				log.Error("HeartBeat, Pod Marshal Error: %s", err.Error())
+				continue
 			}
 			//log.Info("HeartBeat, Pod: %s", string(byteArr))
 			err = httputil.Put(URL, byteArr)
 			if err != nil {
-				panic(err)
+				log.Error("HeartBeat Put Error: %s", err.Error())
 			}
 			Heartbeat.Node.Status.Pods[index] = PodInList
 		}
@@ -86,11 +88,12 @@ func DoHeartBeat() {
 		byteArr, err := json.Marshal(Heartbeat.Node)
 		//log.Info("HeartBeat, Node: %s", string(byteArr))
 		if err != nil {
-			panic(err)
+			log.Error("HeartBeat Marshal Error: %s", err.Error())
+			continue
 		}
 		err = httputil.Put(URL, byteArr)
 		if err != nil {
-			panic(err)
+			log.Error("HeartBeat Put Error: %s", err.Error())
 		}
 		log.Info("HeartBeat done")
 		time.Sleep(30 * time.Second)
@@ -109,8 +112,8 @@ func GetPodMetrics(pod *api.Pod) (*api.PodMetrics, error) {
 		}
 		containerMetrics, err := container.GetContainerMetrics(container_.Name, pod.Metadata.NameSpace)
 		if err != nil {
-			log.Error("Failed to get metrics for container %s", container_.Name)
-			return nil, err
+			log.Info("Failed to get metrics for container %s", container_.Name)
+			continue
 		}
 		totalCpuUsage += containerMetrics.CpuUsage
 		totalMemoryUsage += containerMetrics.MemoryUsage

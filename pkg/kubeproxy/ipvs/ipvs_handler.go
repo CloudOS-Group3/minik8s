@@ -6,6 +6,7 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/util/log"
 	"net"
+	"os/exec"
 )
 
 type IPVS interface {
@@ -31,7 +32,7 @@ func AddService(service *api.Service) error {
 	for _, port := range service.Spec.Ports {
 		svc := &libipvs.Service{
 			// BUG : net.ParseIP("ClusterIP") is <nil>
-			Address:       net.ParseIP(service.Spec.Type),
+			Address:       net.ParseIP(service.Status.ClusterIP),
 			Port:          uint16(port.Port),
 			Protocol:      unix.IPPROTO_TCP,
 			AddressFamily: unix.AF_INET, //nl.FAMILY_V4
@@ -41,7 +42,7 @@ func AddService(service *api.Service) error {
 		// check if service already exists
 		var is_existed bool = false
 		for _, existed_svc := range services {
-			if existed_svc.Port == svc.Port && (existed_svc.Address.String() == svc.Address.String() || (svc.Address == nil && existed_svc.Address.String() == "0.0.0.0")) {
+			if existed_svc.Port == svc.Port && existed_svc.Address.String() == svc.Address.String() {
 				is_existed = true
 				break
 			}
@@ -61,6 +62,19 @@ func AddService(service *api.Service) error {
 
 func UpdateService(service *api.Service) error {
 	return AddService(service)
+}
+
+func AddEndpoint(service *api.Service) error {
+	for _, endpoint := range service.Status.EndPoints {
+		for _, port := range endpoint.Ports {
+			for _, svc_port := range service.Spec.Ports {
+				exec.Command("ipvsadm", "-a", "-t", service.Status.ClusterIP, ":", string(svc_port.Port), "-r", endpoint.IP, ":", string(port.ContainerPort)).Run()
+				log.Info("bind endpoint %s:%d to service %s:%d", endpoint.IP, port.ContainerPort, service.Status.ClusterIP, svc_port.Port)
+			}
+
+		}
+	}
+	return nil
 }
 
 func DeleteService(service *api.Service) error {

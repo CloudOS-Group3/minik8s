@@ -31,4 +31,8 @@ const (
 
 	// usage: /registry/hpas/<namespace>/<hpa-name>
 	EtcdHPAPath = "/registry/hpas/"
+
+	// usage: /registry/dns/<name>
+	EtcdDNSPath = "/registry/dns/"
+
 )
