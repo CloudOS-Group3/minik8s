@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
@@ -76,10 +75,10 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyServiceHandler(content)
 	case "Deployment":
 		applyDeploymentHandler(content)
-	case "HorizontalPodAutoscaler":
+	case "HPA":
 		applyHPAHandler(content)
 	default:
-		fmt.Println("Unknown resource kind")
+		log.Warn("Unknown resource kind")
 	}
 
 }
@@ -189,7 +188,7 @@ func applyHPAHandler(content []byte) {
 	hpa := &api.HPA{}
 	err := yaml.Unmarshal(content, hpa)
 	if err != nil {
-		log.Error("Error yaml unmarshal hpa")
+		log.Error("Error yaml unmarshal hpa %s", err.Error())
 		return
 	}
 

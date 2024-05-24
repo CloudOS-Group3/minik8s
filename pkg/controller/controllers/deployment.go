@@ -30,14 +30,12 @@ func (this *DeploymentController) Run() {
 func (this *DeploymentController) update() {
 
 	allPods, err := this.getAllPods()
-	log.Debug("before getting all pods")
 	if err != nil {
 		log.Error("get all pods error")
 		return
 	}
 	log.Debug("all pods are %+v", allPods)
 	allDeployments, err := this.getAllDeployments()
-	log.Debug("before getting all allDeployments")
 	if err != nil {
 		log.Error("get all allDeployments error")
 		return
@@ -108,8 +106,8 @@ func (this *DeploymentController) getAllDeployments() ([]api.Deployment, error) 
 
 // to return true, just need to match one label
 func (this *DeploymentController) checkLabel(targetPod api.Pod, targetDeployment api.Deployment) bool {
-	for key, _ := range targetDeployment.Spec.Selector.MatchLabels {
-		if targetPod.Metadata.Labels[key] != "" {
+	for key, value := range targetDeployment.Spec.Selector.MatchLabels {
+		if targetPod.Metadata.Labels[key] == value {
 			return true
 		}
 	}
@@ -132,6 +130,9 @@ func (this *DeploymentController) addPod(template api.PodTemplateSpec, deploymen
 		log.Error("error unmarshalling pod template")
 	}
 	newPod.Metadata.Labels["deployment"] = deploymentMetadata.UUID
+	if newPod.Metadata.NameSpace == "" {
+		newPod.Metadata.NameSpace = "default"
+	}
 	log.Debug("the content of new pod is: %+v", newPod)
 
 	basePodName := newPod.Metadata.Name

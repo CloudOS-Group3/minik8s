@@ -69,7 +69,7 @@ func Put(URL string, body []byte) error {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Debug("Error client do put")
+		log.Debug("Error client do put: %s", err.Error())
 		return err
 	}
 	defer res.Body.Close()

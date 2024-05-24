@@ -16,7 +16,7 @@ type HPAController struct{}
 
 const (
 	hpaDelay    time.Duration = 0 * time.Second
-	hpaInterval time.Duration = 30 * time.Second
+	hpaInterval time.Duration = 10 * time.Second
 )
 
 func (this *HPAController) Run() {
@@ -35,6 +35,7 @@ func (this *HPAController) update() {
 		log.Error("error getting all pods in hpa")
 		return
 	}
+	log.Debug("all pods are: %v", allPods)
 
 	allHPAs, err := this.getAllHPAs()
 
@@ -42,6 +43,8 @@ func (this *HPAController) update() {
 		log.Error("error getting all HPAs")
 		return
 	}
+
+	log.Debug("all hpas are: %v", allHPAs)
 
 	allPodsWithHPA := map[string]bool{}
 
@@ -59,12 +62,26 @@ func (this *HPAController) update() {
 
 		expectReplicaNum := this.calculateExpectReplicaNum(hpa, cpuUsage, memoryUsage)
 
-		if expectReplicaNum > hpa.Status.CurrentReplicas {
-			this.deleteHPAPods(targetPods, expectReplicaNum-hpa.Status.CurrentReplicas)
-		}
 		if expectReplicaNum < hpa.Status.CurrentReplicas {
-			this.addHPAPods(hpa, targetPods[0], hpa.Status.CurrentReplicas-expectReplicaNum)
+			this.deleteHPAPods(targetPods, hpa.Status.CurrentReplicas-expectReplicaNum)
 		}
+		if expectReplicaNum > hpa.Status.CurrentReplicas {
+			this.addHPAPods(hpa, hpa.Spec.Template, expectReplicaNum-hpa.Status.CurrentReplicas)
+		}
+
+		// update currentreplicas to etcd
+		hpa.Status.CurrentReplicas = expectReplicaNum
+		URL := config.GetUrlPrefix() + config.HPAURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		URL = strings.Replace(URL, config.NamePlaceholder, hpa.Metadata.Name, -1)
+
+		byteArr, err := json.Marshal(hpa)
+		if err != nil {
+			log.Error("error marshal hpa")
+			continue
+		}
+
+		err = httputil.Put(URL, byteArr)
 	}
 
 }
@@ -76,7 +93,7 @@ func (this *HPAController) getAllPods() ([]api.Pod, error) {
 
 	pods := []api.Pod{}
 
-	err := httputil.Get(URL, pods, "data")
+	err := httputil.Get(URL, &pods, "data")
 	if err != nil {
 		log.Error("error get all pods")
 		return nil, err
@@ -92,8 +109,7 @@ func (this *HPAController) getAllHPAs() ([]api.HPA, error) {
 	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
 	hpas := []api.HPA{}
-	log.Debug("before getting all hpas")
-	err := httputil.Get(URL, hpas, "data")
+	err := httputil.Get(URL, &hpas, "data")
 	if err != nil {
 		log.Error("error get all hpas")
 		return nil, err
@@ -103,8 +119,8 @@ func (this *HPAController) getAllHPAs() ([]api.HPA, error) {
 
 // to return true, just need to match one label
 func (this *HPAController) checkLabel(targetPod api.Pod, targetHPA api.HPA) bool {
-	for _, label := range targetHPA.Spec.Selector.MatchLabels {
-		if targetPod.Metadata.Labels[label] != "" {
+	for key, value := range targetHPA.Spec.Selector.MatchLabels {
+		if targetPod.Metadata.Labels[key] == value {
 			return true
 		}
 	}
@@ -142,26 +158,40 @@ func (this *HPAController) calculateExpectReplicaNum(hpa api.HPA, cpuUsage float
 		expectNum = hpa.Spec.MinReplica
 	}
 
+	log.Debug("expect replica num is %d", expectNum)
 	return expectNum
 
 }
 
-func (this *HPAController) addHPAPods(hpa api.HPA, template api.Pod, num int) {
+func (this *HPAController) addHPAPods(hpa api.HPA, template api.PodTemplateSpec, num int) {
+	log.Debug("adding new hpa pods")
+	log.Debug("num is %d", num)
 	for i := 0; i < num; i++ {
-		newPod := template
+		var newPod api.Pod
+		byteArr, err := json.Marshal(template)
+		if err != nil {
+			log.Error("error marshalling template")
+			continue
+		}
+		err = json.Unmarshal(byteArr, &newPod)
+		if err != nil {
+			log.Error("error unmarshalling template")
+			continue
+		}
+
 		newPod.Metadata.Name = template.Metadata.Name + "-" + stringutil.GenerateRandomString(5)
+
 		for index := range newPod.Spec.Containers {
 			newPod.Spec.Containers[index].Name = newPod.Spec.Containers[index].Name + "-" + stringutil.GenerateRandomString(5)
 		}
 
-		newPod.Metadata.Labels["hpaName"] = hpa.Metadata.Name
-		newPod.Metadata.Labels["hpaNamespace"] = hpa.Metadata.NameSpace
 		newPod.Metadata.Labels["hpaUUID"] = hpa.Metadata.UUID
 
+		log.Debug("the pod to be add is %+v", newPod)
 		URL := config.GetUrlPrefix() + config.PodsURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 
-		byteArr, err := json.Marshal(newPod)
+		byteArr, err = json.Marshal(newPod)
 		if err != nil {
 			log.Error("error marshal new pod: %s", err.Error())
 			continue
