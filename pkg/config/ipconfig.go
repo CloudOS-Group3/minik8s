@@ -3,9 +3,10 @@ package config
 import "strconv"
 
 const (
-	Local      = true // master: true. node: false
+	Local      = false
 	localhost  = "localhost"
-	Remotehost = "192.168.3.6" // IP of master
+	Remotehost = "192.168.3.8" // IP of master
+	Nodename   = "node2"
 	port       = 6443
 	protocol   = "http://"
 )
