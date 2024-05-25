@@ -72,4 +72,6 @@ func (server *apiServer) bind() {
 	server.router.DELETE(config.DNSURL, handlers.DeleteDNS)
 	server.router.PUT(config.DNSURL, handlers.UpdateDNS)
 	server.router.GET(config.DNSURL, handlers.GetDNS)
+
+	server.router.POST(config.PersistentVolumesURL, handlers.AddPV)
 }

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PV
+metadata:
+  name: test-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  nfs:
+    path: /nfsroot/test
+    server: 10.119.12.232

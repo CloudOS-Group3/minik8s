@@ -93,13 +93,19 @@ type EnvVar struct {
 }
 
 type ResourceRequirements struct {
+	Claims   []ResourceClaim `json:"claims,omitempty" yaml:"claims,omitempty"`
 	Limits   ComputeResource `json:"limits,omitempty" yaml:"limits,omitempty"`
 	Requests ComputeResource `json:"requests,omitempty" yaml:"requests,omitempty"`
 }
 
+type ResourceClaim struct {
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+}
+
 type ComputeResource struct {
-	Cpu    string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Cpu     string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	Memory  string `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Storage string `json:"storage,omitempty" yaml:"storage,omitempty"`
 }
 
 type VolumeMount struct {
@@ -109,8 +115,9 @@ type VolumeMount struct {
 }
 
 type Volume struct {
-	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
-	HostPath string `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
+	Name     string          `json:"name,omitempty" yaml:"name,omitempty"`
+	HostPath string          `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
+	NFS      NFSVolumeSource `json:"nfs,omitempty" yaml:"nfs,omitempty"`
 }
 
 const (
