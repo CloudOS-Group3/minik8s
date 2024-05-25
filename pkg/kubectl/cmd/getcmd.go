@@ -116,7 +116,7 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 	for _, matchPod := range matchPods {
 		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
 		metric_string := fmt.Sprintf("cpu: %.2f%%, memory: %.2f%%", matchPod.Status.CPUPercentage*100, matchPod.Status.MemoryPercentage*100)
-		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age, metric_string, matchPod.Status.PodIP})
+		data = append(data, []string{matchPod.Metadata.Name, "RUNNING", age, metric_string, matchPod.Status.PodIP})
 	}
 
 	prettyprint.PrintTable(header, data)
@@ -197,7 +197,7 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		log.Debug("getting all nodes")
 		URL := config.GetUrlPrefix() + config.NodesURL
-		err := httputil.Get(URL, matchNodes, "data")
+		err := httputil.Get(URL, &matchNodes, "data")
 		if err != nil {
 			log.Error("error getting all nodes: %s", err.Error())
 			return

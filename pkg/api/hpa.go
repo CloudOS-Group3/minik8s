@@ -16,7 +16,7 @@ type HPASpec struct {
 	Metrics        MetricsSpec     `json:"metrics" yaml:"metrics"`
 	Template       PodTemplateSpec `json:"template" yaml:"template"`
 	Selector       LabelSelector   `json:"selector" yaml:"selector"`
-	AdjustInterval int             `json:"adjustInterval" yaml:"adjustInterval"`
+	AdjustInterval float64         `json:"adjustInterval" yaml:"adjustInterval"`
 }
 
 type HPAStatus struct {
