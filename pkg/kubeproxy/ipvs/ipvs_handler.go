@@ -60,6 +60,7 @@ func AddService(service *api.Service) error {
 		// ip addr add
 		cmd := exec.Command("ip", "addr", "add", service.Status.ClusterIP, "dev", "flannel.1")
 		output, err := cmd.CombinedOutput()
+		log.Info("cmd: %v", cmd)
 		if err != nil {
 			fmt.Println("Error:", err)
 			fmt.Println("Command output:", string(output))
@@ -78,7 +79,7 @@ func AddEndpoint(service *api.Service) error {
 	for _, endpoint := range service.Status.EndPoints {
 		log.Info("endpoint: %v", endpoint)
 		for _, port := range endpoint.Ports {
-			cmd := exec.Command("ipvsadm", "-a", "-t", service.Status.ClusterIP+":"+endpoint.ServicePort, "-r", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort)))
+			cmd := exec.Command("ipvsadm", "-a", "-t", service.Status.ClusterIP+":"+endpoint.ServicePort, "-r", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort)), "-m")
 			log.Info("cmd: %v", cmd)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
@@ -98,41 +99,22 @@ func DeleteService(service *api.Service) error {
 	if err != nil {
 		return err
 	}
-	handle, err := libipvs.New("")
-	if err != nil {
-		return err
-	}
-	services, err := handle.GetServices()
-	if err != nil {
-		return err
-	}
-	defer handle.Close()
-	// add service
+	// ipvsadm -D -t <ClusterIP>:<Port>
 	for _, port := range service.Spec.Ports {
-		svc := &libipvs.Service{
-			// BUG : net.ParseIP("ClusterIP") is <nil>
-			Address:       net.ParseIP(service.Spec.Type),
-			Port:          uint16(port.Port),
-			Protocol:      unix.IPPROTO_TCP,
-			AddressFamily: unix.AF_INET, //nl.FAMILY_V4
-			SchedName:     libipvs.RoundRobin,
+		cmd := exec.Command("ipvsadm", "-D", "-t", service.Status.ClusterIP+":"+strconv.Itoa(int(port.Port)))
+		log.Info("cmd: %v", cmd)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("Error:", err)
+			fmt.Println("Command output:", string(output))
 		}
-
-		for _, existed_svc := range services {
-			if existed_svc.Port == svc.Port && (existed_svc.Address.String() == svc.Address.String() || (svc.Address == nil && existed_svc.Address.String() == "0.0.0.0")) {
-				if err := handle.DelService(existed_svc); err != nil {
-					log.Fatal("Failed to delete service: %v", err.Error())
-					return err
-				}
-				// ip addr del
-				cmd := exec.Command("ip", "addr", "del", service.Status.ClusterIP, "dev", "flannel.1")
-				output, err := cmd.CombinedOutput()
-				if err != nil {
-					fmt.Println("Error:", err)
-					fmt.Println("Command output:", string(output))
-				}
-			}
-		}
+	}
+	// ip addr del
+	cmd := exec.Command("ip", "addr", "del", service.Status.ClusterIP, "dev", "flannel.1")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("Error:", err)
+		fmt.Println("Command output:", string(output))
 	}
 
 	return nil

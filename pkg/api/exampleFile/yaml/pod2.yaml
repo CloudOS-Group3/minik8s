@@ -21,3 +21,6 @@ spec:
       volumeMounts:
         - name: shared-data
           mountPath: /data
+  volumes:
+    - name: shared-data
+      hostPath: /root/data
