@@ -1,12 +1,14 @@
 package ipvs
 
 import (
+	"fmt"
 	libipvs "github.com/moby/ipvs"
 	"golang.org/x/sys/unix"
 	"minik8s/pkg/api"
 	"minik8s/util/log"
 	"net"
 	"os/exec"
+	"strconv"
 )
 
 type IPVS interface {
@@ -65,19 +67,30 @@ func UpdateService(service *api.Service) error {
 }
 
 func AddEndpoint(service *api.Service) error {
+	log.Info("AddEndpoint, service: %v", service)
 	for _, endpoint := range service.Status.EndPoints {
+		log.Info("endpoint: %v", endpoint)
 		for _, port := range endpoint.Ports {
-			for _, svc_port := range service.Spec.Ports {
-				exec.Command("ipvsadm", "-a", "-t", service.Status.ClusterIP, ":", string(svc_port.Port), "-r", endpoint.IP, ":", string(port.ContainerPort)).Run()
-				log.Info("bind endpoint %s:%d to service %s:%d", endpoint.IP, port.ContainerPort, service.Status.ClusterIP, svc_port.Port)
+			cmd := exec.Command("ipvsadm", "-a", "-t", service.Status.ClusterIP+":"+endpoint.ServicePort, "-r", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort)))
+			log.Info("cmd: %v", cmd)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Println("Error:", err)
+				fmt.Println("Command output:", string(output))
+			} else {
+				fmt.Println("Command succeeded with output:", string(output))
 			}
-
+			log.Info("bind endpoint %s:%d to service %s:%d", endpoint.IP, port.ContainerPort, service.Status.ClusterIP, endpoint.ServicePort)
 		}
 	}
 	return nil
 }
 
 func DeleteService(service *api.Service) error {
+	err := DeleteEndpoint(&service.Status.EndPoints, service.Status.ClusterIP)
+	if err != nil {
+		return err
+	}
 	handle, err := libipvs.New("")
 	if err != nil {
 		return err
@@ -108,5 +121,33 @@ func DeleteService(service *api.Service) error {
 		}
 	}
 
+	return nil
+}
+
+func UpdateEndpoints(a *api.Service, old *[]api.EndPoint) error {
+	// delete old endpoints
+	err := DeleteEndpoint(old, a.Status.ClusterIP)
+	if err != nil {
+		return err
+	}
+	// add new endpoints
+	return AddEndpoint(a)
+}
+
+func DeleteEndpoint(old *[]api.EndPoint, ClusterIp string) error {
+	for _, endpoint := range *old {
+		for _, port := range endpoint.Ports {
+			cmd := exec.Command("ipvsadm", "-d", "-t", ClusterIp+":"+endpoint.ServicePort, "-r", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort)))
+			log.Info("cmd: %v", cmd)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Println("Error:", err)
+				fmt.Println("Command output:", string(output))
+			} else {
+				fmt.Println("Command succeeded with output:", string(output))
+			}
+			log.Info("unbind endpoint %s:%d from service %s:%d", endpoint.IP, port.ContainerPort, ClusterIp, endpoint.ServicePort)
+		}
+	}
 	return nil
 }

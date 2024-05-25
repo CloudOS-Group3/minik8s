@@ -18,7 +18,7 @@ func TestIpvsHandler_AddService(t *testing.T) {
 			Ports: []api.ServicePort{
 				{
 					Port:       80,
-					TargetPort: 8080,
+					TargetPort: "8080",
 					Protocol:   "TCP",
 					Name:       "http",
 				},
@@ -63,7 +63,7 @@ func TestIpvsHandler_DeleteService(t *testing.T) {
 			Ports: []api.ServicePort{
 				{
 					Port:       80,
-					TargetPort: 8080,
+					TargetPort: "8080",
 					Protocol:   "TCP",
 					Name:       "http",
 				},
