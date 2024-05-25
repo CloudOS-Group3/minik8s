@@ -96,13 +96,11 @@ func (e *EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, c
 }
 
 func NewEndPointController() *EndPointController {
-	KafkaURL := config.Remotehost + ":9092"
-	brokers := []string{KafkaURL}
 	group := "endpoint-controller"
 	return &EndPointController{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 }
 func OnPodAdd(pod *api.Pod) {

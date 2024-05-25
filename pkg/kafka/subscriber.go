@@ -20,12 +20,14 @@ type Subscriber struct {
 	consumerGroup sarama.ConsumerGroup
 }
 
-func NewSubscriber(brokers []string, group string) *Subscriber {
+func NewSubscriber(group string) *Subscriber {
 	// make a default config (maybe add config as a parameter in the future)
 	config := sarama.NewConfig()
 	config.Version = sarama.V3_6_0_0
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	brokers := []string{"192.168.3.8:9092", "192.168.3.11:9092", "192.168.3.12:9092"}
 
 	// create a consumer group
 	consumerGroup, err := sarama.NewConsumerGroup(brokers, group, config)

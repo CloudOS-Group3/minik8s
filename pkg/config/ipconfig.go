@@ -6,7 +6,7 @@ const (
 	Local      = false
 	localhost  = "localhost"
 	Remotehost = "192.168.3.8" // IP of master
-	Nodename   = "node2"
+	Nodename   = "node1"
 	port       = 6443
 	protocol   = "http://"
 )

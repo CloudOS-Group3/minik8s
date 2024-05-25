@@ -22,13 +22,11 @@ type KubeletSubscriber struct {
 }
 
 func NewKubeletSubscriber() *KubeletSubscriber {
-	KafkaURL := config.Remotehost + ":9092"
-	brokers := []string{KafkaURL}
-	group := "kubelet"
+	group := "kubelet" + "-" + config.Nodename
 	return &KubeletSubscriber{
 		ready:       make(chan bool),
 		done:        make(chan bool),
-		subscriber:  kafka.NewSubscriber(brokers, group),
+		subscriber:  kafka.NewSubscriber(group),
 		HostManager: host.NewHostManager(),
 	}
 }
