@@ -6,6 +6,7 @@ import (
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/kubeproxy/ipvs"
 	"minik8s/util/log"
@@ -96,12 +97,11 @@ func (e *KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sara
 }
 
 func NewKubeProxy() *KubeProxy {
-	brokers := []string{"127.0.0.1:9092"}
-	group := "kube-proxy"
+	group := "kube-proxy" + "-" + config.Nodename
 	return &KubeProxy{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 }
 

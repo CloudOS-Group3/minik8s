@@ -48,8 +48,8 @@ func TestKafka(t *testing.T) {
 		return
 	}
 	defer publisher.producer.Close()
-	consumerGroup := NewSubscriber(brokers, consumer_group)
-	consumerGroup_another := NewSubscriber(brokers, consumer_group_2)
+	consumerGroup := NewSubscriber(consumer_group)
+	consumerGroup_another := NewSubscriber(consumer_group_2)
 	if consumerGroup == nil || consumerGroup_another == nil {
 		t.Errorf("kafka consumer init fail")
 		return

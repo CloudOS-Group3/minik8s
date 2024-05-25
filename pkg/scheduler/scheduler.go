@@ -27,14 +27,13 @@ func NewScheduler() *Scheduler {
 	URL := config.GetUrlPrefix() + config.NodesURL
 	var initialNode []api.Node
 	_ = httputil.Get(URL, &initialNode, "data")
-	brokers := []string{"127.0.0.1:9092"}
 	group := "scheduler"
 	return &Scheduler{
 		nodes:      initialNode,
 		ready:      make(chan bool),
 		done:       make(chan bool),
 		count:      0,
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 }
 
@@ -61,12 +60,12 @@ func (s *Scheduler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.
 }
 
 func (s *Scheduler) PodHandler(msg []byte) {
-	var pod api.Pod
-	err := json.Unmarshal(msg, &pod)
-	if err != nil {
-		log.Error("Unmarshal pod err: %s", err.Error())
+	var message msg_type.PodMsg
+	_ = json.Unmarshal(msg, &message)
+	if message.Opt == msg_type.Delete {
 		return
 	}
+	pod := message.NewPod
 	if pod.Spec.NodeName != "" {
 		return
 	} else {
@@ -88,12 +87,17 @@ func (s *Scheduler) PodHandler(msg []byte) {
 }
 
 func (s *Scheduler) NodeHandler(msg []byte) {
-	var node api.Node
-	err := json.Unmarshal(msg, &node)
-	if err != nil {
-		log.Error("Unmarshal node err: %s", err.Error())
-		return
+	var message msg_type.NodeMsg
+	_ = json.Unmarshal(msg, &message)
+	if message.Opt == msg_type.Delete {
+		for index, node := range s.nodes {
+			if node.Metadata.Name == message.OldNode.Metadata.Name {
+				s.nodes = append(s.nodes[:index], s.nodes[index+1:]...)
+				return
+			}
+		}
 	}
+	node := message.NewNode
 	exist := false
 	for index, nodeInList := range s.nodes {
 		if nodeInList.Metadata.Name == node.Metadata.Name {

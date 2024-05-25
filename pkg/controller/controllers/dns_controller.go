@@ -25,12 +25,11 @@ type DNSController struct {
 }
 
 func NewDnsController() *DNSController {
-	brokers := []string{"127.0.0.1:9092"}
 	group := "dns-controller"
 	Controller := &DNSController{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 	URL := config.GetUrlPrefix() + config.DNSsURL
 	var initialDNS []api.DNS

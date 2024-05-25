@@ -21,7 +21,7 @@ func init() {
 	NewNode := &api.Node{}
 	NewNode.APIVersion = "v1"
 	NewNode.Kind = "Node"
-	NewNode.Metadata.Name = "node1" // TODO: config
+	NewNode.Metadata.Name = config.Nodename
 	NewNode.Status.Pods = make([]api.Pod, 0)
 	NewNode.Status.PodsNumber = 0
 	Heartbeat = &NodeInfo{NewNode}

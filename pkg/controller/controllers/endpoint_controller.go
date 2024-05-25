@@ -97,12 +97,11 @@ func (e *EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, c
 }
 
 func NewEndPointController() *EndPointController {
-	brokers := []string{"127.0.0.1:9092"}
 	group := "endpoint-controller"
 	return &EndPointController{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 }
 func OnPodAdd(pod *api.Pod) {
