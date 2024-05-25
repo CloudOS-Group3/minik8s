@@ -163,8 +163,8 @@ func DeleteService(context *gin.Context) {
 	})
 }
 
-// range: 10.96.0.0 - 10.96.255.255
-const cidr = "10.96.0.0/16"
+// range: 10.96.0.1 - 10.96.255.254
+const cidr = "10.96.0.1/16"
 const clusterIpEtcdPrefix = "/registry/service/clusterIP"
 
 //allocatedIPs map[string]string  // map IP -> service ns:name

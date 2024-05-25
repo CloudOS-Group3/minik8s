@@ -57,6 +57,13 @@ func AddService(service *api.Service) error {
 			log.Fatal("Failed to add service: %v", err)
 			return err
 		}
+		// ip addr add
+		cmd := exec.Command("ip", "addr", "add", service.Status.ClusterIP, "dev", "flannel.1")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("Error:", err)
+			fmt.Println("Command output:", string(output))
+		}
 	}
 
 	return nil
@@ -116,6 +123,13 @@ func DeleteService(service *api.Service) error {
 				if err := handle.DelService(existed_svc); err != nil {
 					log.Fatal("Failed to delete service: %v", err.Error())
 					return err
+				}
+				// ip addr del
+				cmd := exec.Command("ip", "addr", "del", service.Status.ClusterIP, "dev", "flannel.1")
+				output, err := cmd.CombinedOutput()
+				if err != nil {
+					fmt.Println("Error:", err)
+					fmt.Println("Command output:", string(output))
 				}
 			}
 		}
