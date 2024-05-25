@@ -26,6 +26,7 @@ type ProxyInterface interface {
 // 2. create Endpoints : ipvsadm -a -t <ClusterIP>:<Port> -r <PodIP>:<PodPort> -m
 // 3. remove Cluster service : ipvsadm -D -t <ClusterIP>:<Port>
 // 4. remove Endpoints : ipvsadm -d -t <ClusterIP>:<Port> -r <PodIP>:<PodPort>
+// 5. show all rules : ipvsadm -L -n
 type KubeProxy struct {
 	subscriber *kafka.Subscriber
 	ready      chan bool
@@ -61,6 +62,11 @@ func (e *KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sara
 				err := ipvs.UpdateService(&serviceMsg.NewService)
 				if err != nil {
 					log.Fatal("Failed to update service: %s", err.Error())
+					break
+				}
+				err = ipvs.UpdateEndpoints(&serviceMsg.NewService, &serviceMsg.OldService.Status.EndPoints)
+				if err != nil {
+					log.Fatal("Failed to add endpoint: %s", err.Error())
 					break
 				}
 				break

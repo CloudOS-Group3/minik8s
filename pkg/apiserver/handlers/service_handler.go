@@ -163,7 +163,7 @@ func DeleteService(context *gin.Context) {
 	})
 }
 
-// range: 10.96.0.0 - 10.96.255.255
+// range: 10.96.0.1 - 10.96.255.254
 const cidr = "10.96.0.0/16"
 const clusterIpEtcdPrefix = "/registry/service/clusterIP"
 
@@ -183,8 +183,12 @@ func GenerateClusterIP(svc *api.Service) error {
 			return err
 		}
 	}
-
+	broadcast := make(net.IP, len(ipNet.IP))
 	for ip := ipNet.IP.Mask(ipNet.Mask); ipNet.Contains(ip); inc(ip) {
+		// Skip network address and broadcast address
+		if ip.Equal(ipNet.IP) || ip.Equal(broadcast) {
+			continue
+		}
 		ipStr := ip.String()
 		log.Info("ipStr: %s, %v", ipStr, allocatedIPs[ipStr])
 		if allocatedIPs[ipStr] == "" {

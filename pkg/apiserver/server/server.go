@@ -63,7 +63,7 @@ func (server *apiServer) bind() {
 	server.router.GET(config.ServicesURL, handlers.GetServicesByNamespace)
 	server.router.GET(config.ServicesAllURL, handlers.GetAllServices)
 	server.router.GET(config.ServiceURL, handlers.GetService)
-	server.router.PUT(config.ServiceURL, handlers.GetService)
+	server.router.PUT(config.ServiceURL, handlers.AddService)
 	server.router.POST(config.ServiceURL, handlers.AddService)
 	server.router.DELETE(config.ServiceURL, handlers.DeleteService)
 

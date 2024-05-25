@@ -24,7 +24,7 @@ type ServicePort struct {
 	Port int `json:"port,omitempty" yaml:"port,omitempty"`
 
 	// The port on each node that will be used by the service.
-	TargetPort int `json:"targetPort,omitempty" yaml:"targetPort,omitempty"`
+	TargetPort string `json:"targetPort,omitempty" yaml:"targetPort,omitempty"`
 
 	// The protocol: TCP(default) or UDP.
 	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
@@ -40,6 +40,8 @@ type ServiceStatus struct {
 
 // EndPoint : match a pod by label
 type EndPoint struct {
+	// ServicePort: bind PodIP:ContainerPort to ClusterIP:ServicePort
+	ServicePort string `json:"targetPort,omitempty" yaml:"targetPort,omitempty"`
 	// IP is the IP address of the pod
 	IP string `json:"ip,omitempty" yaml:"ip,omitempty"`
 	// Ports is a list of ports that are exposed.
