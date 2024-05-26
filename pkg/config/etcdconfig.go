@@ -35,4 +35,6 @@ const (
 	// usage: /registry/dns/<name>
 	EtcdDNSPath = "/registry/dns/"
 
+	// usage: /registry/function/<name>
+	FunctionPath = "/registry/function/"
 )

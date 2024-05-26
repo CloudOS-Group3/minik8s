@@ -53,6 +53,10 @@ const (
 
 	DNSsURL = "/api/v1/dns"
 	DNSURL  = "/api/v1/dns/:name"
+
+	FunctionsAllURL = "/api/v1/functions"
+	FunctionsURL    = "/api/v1/namespaces/:namespace/functions"
+	FunctionURL     = "/api/v1/namespaces/:namespace/functions/:name"
 )
 
 // const used to send and parse url
