@@ -17,6 +17,7 @@ import (
 	"minik8s/util/log"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -155,6 +156,28 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 				Options:     []string{"rbind", permission},
 			},
 		}))
+	}
+
+	// Command
+	if config.Command != nil && len(config.Command) != 0 {
+		opt = append(opt, oci.WithProcessArgs(config.Command...))
+	}
+	// Cpu
+	if config.Resources.Limits.CpuCores != "" {
+		opt = append(opt, oci.WithCPUs(config.Resources.Limits.CpuCores))
+	}
+	if config.Resources.Limits.CpuNumber != "" {
+		// convert to int
+		intCpuNumber, err := strconv.ParseInt(config.Resources.Limits.CpuNumber, 10, 64)
+		if err != nil {
+			log.Error("Failed to convert CpuNumber to int: %v", err.Error())
+		} else {
+			opt = append(opt, oci.WithCPUCFS(int64(intCpuNumber*100000), uint64(100000)))
+		}
+	}
+	// Memory
+	if config.Resources.Limits.Memory != 0 {
+		opt = append(opt, oci.WithMemoryLimit(config.Resources.Limits.Memory))
 	}
 	opt_ := []containerd.NewContainerOpts{
 		//containerd.WithImage(image_),

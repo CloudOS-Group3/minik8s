@@ -9,6 +9,7 @@ import (
 	"net"
 	"os/exec"
 	"strconv"
+	"time"
 )
 
 type IPVS interface {
@@ -143,6 +144,7 @@ func DeleteEndpoint(old *[]api.EndPoint, ClusterIp string) error {
 				fmt.Println("Command succeeded with output:", string(output))
 			}
 			log.Info("unbind endpoint %s:%d from service %s:%d", endpoint.IP, port.ContainerPort, ClusterIp, endpoint.ServicePort)
+			time.Sleep(1 * time.Second)
 		}
 	}
 	return nil

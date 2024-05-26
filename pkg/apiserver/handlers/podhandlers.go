@@ -34,7 +34,7 @@ func AddPod(context *gin.Context) {
 
 	var newPod api.Pod
 	if err := context.ShouldBind(&newPod); err != nil {
-		log.Error("decode pod failed")
+		log.Error("decode pod failed, %s", err.Error())
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
 		})
