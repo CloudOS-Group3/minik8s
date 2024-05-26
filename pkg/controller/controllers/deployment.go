@@ -14,13 +14,10 @@ import (
 type DeploymentController struct{}
 
 const (
-	initialDelay   time.Duration = 0 * time.Second
 	updateInterval time.Duration = 10 * time.Second
 )
 
 func (this *DeploymentController) Run() {
-	<-time.After(initialDelay)
-
 	for {
 		this.update()
 		<-time.After(updateInterval)
