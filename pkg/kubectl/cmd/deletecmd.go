@@ -48,16 +48,46 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteDNSCmdHandler,
 	}
 
+	deleteFunctionCmd := &cobra.Command{
+		Use:   "function [function name]",
+		Short: "delete function",
+		Run:   deleteFunctionCmdHandler,
+	}
+
 	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
+	deleteFunctionCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 
 	deleteCmd.AddCommand(deletePodCmd)
 	deleteCmd.AddCommand(deleteDeploymentCmd)
 	deleteCmd.AddCommand(deleteServiceCmd)
 	deleteCmd.AddCommand(deleteHPACmd)
 	deleteCmd.AddCommand(deleteDNSCmd)
+	deleteCmd.AddCommand(deleteFunctionCmd)
 
 	return deleteCmd
+}
+
+func deleteFunctionCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) == 0 {
+		log.Error("function name is required")
+		return
+	}
+	name := args[0]
+	namespace, err := cmd.Flags().GetString("namespace")
+	if err != nil {
+		log.Error("Error getting flags: %s", err)
+		return
+	}
+	path := strings.Replace(config.FunctionURL, config.NamespacePlaceholder, namespace, -1)
+	path = strings.Replace(path, config.NamePlaceholder, name, -1)
+	URL := config.GetUrlPrefix() + path
+	err = httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
+	log.Info("function name: %s, namespace: %s", name, namespace)
 }
 
 func deletePodCmdHandler(cmd *cobra.Command, args []string) {
