@@ -72,4 +72,9 @@ func (server *apiServer) bind() {
 	server.router.DELETE(config.DNSURL, handlers.DeleteDNS)
 	server.router.PUT(config.DNSURL, handlers.UpdateDNS)
 	server.router.GET(config.DNSURL, handlers.GetDNS)
+
+	server.router.GET(config.FunctionURL, handlers.GetFunction)
+	server.router.PUT(config.FunctionURL, handlers.UpdateFunction)
+	server.router.POST(config.FunctionURL, handlers.AddFunction)
+	server.router.DELETE(config.FunctionURL, handlers.DeleteFunction)
 }

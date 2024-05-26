@@ -40,4 +40,7 @@ const (
 
 	// usage: /trigger/<function_namespace>/<function_name>
 	UserTriggerPath = "/trigger"
+	
+	// usage: /registry/function/<name>
+	FunctionPath = "/registry/function/"
 )

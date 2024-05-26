@@ -79,10 +79,40 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyHPAHandler(content)
 	case "DNS":
 		applyDNSHandler(content)
+	case "Function":
+		applyFunctionHandler(content)
 	default:
 		log.Warn("Unknown resource kind")
 	}
 
+}
+
+func applyFunctionHandler(content []byte) {
+	log.Info("Creating or updating function")
+	function := &api.Function{}
+	err := yaml.Unmarshal(content, function)
+	if err != nil {
+		log.Error("Error yaml unmarshal function, %s", err.Error())
+		return
+	}
+
+	//Generate
+	function.Metadata.UUID = uuid.NewString()
+
+	byteArr, err := json.Marshal(*function)
+	if err != nil {
+		log.Error("Error json marshal function, %s", err.Error())
+		return
+	}
+	URL := config.GetUrlPrefix() + config.FunctionURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, function.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, function.Metadata.Name, -1)
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post function, %s", err.Error())
+		return
+	}
+	log.Info("apply function successed")
 }
 func applyPodHandler(content []byte) {
 	log.Info("Creating or updating pod")
