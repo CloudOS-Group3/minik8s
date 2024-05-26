@@ -24,6 +24,16 @@ func init() {
 	NewNode.Metadata.Name = config.Nodename
 	NewNode.Status.Pods = make([]api.Pod, 0)
 	NewNode.Status.PodsNumber = 0
+	URL := config.GetUrlPrefix() + config.PodsURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	pods := []api.Pod{}
+	_ = httputil.Get(URL, &pods, "data")
+	for _, pod := range pods {
+		if pod.Spec.NodeName == config.Nodename {
+			pods = append(NewNode.Status.Pods, pod)
+			NewNode.Status.PodsNumber++
+		}
+	}
 	Heartbeat = &NodeInfo{NewNode}
 }
 
@@ -60,11 +70,14 @@ func DoHeartBeat() {
 			Metrics, err := GetPodMetrics(&PodInList)
 			if err != nil {
 				log.Error("Get Pod Metrics Error: %s", err.Error())
+				PodInList.Status.Phase = "Unknown"
+				Heartbeat.Node.Status.Pods[index] = PodInList
 				continue
 			}
 			PodInList.Status.Metrics = *Metrics
 			PodInList.Status.CPUPercentage = (Metrics.CpuUsage - Heartbeat.Node.Status.Pods[index].Status.Metrics.CpuUsage) / float64(30*time.Second)
 			PodInList.Status.MemoryPercentage = Metrics.MemoryUsage / (2 * 1024 * 1024 * 1024) // total: 2G
+			PodInList.Status.Phase = "Running"
 			URL := config.GetUrlPrefix() + config.PodURL
 			URL = strings.Replace(URL, config.NamespacePlaceholder, PodInList.Metadata.NameSpace, -1)
 			URL = strings.Replace(URL, config.NamePlaceholder, PodInList.Metadata.Name, -1)
