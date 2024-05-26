@@ -57,6 +57,9 @@ const (
 	FunctionsAllURL = "/api/v1/functions"
 	FunctionsURL    = "/api/v1/namespaces/:namespace/functions"
 	FunctionURL     = "/api/v1/namespaces/:namespace/functions/:name"
+
+	TriggersURL = "/api/v1/triggers"
+	TriggerURL  = "/api/v1/namespace/:namespace/trigger/:name"
 )
 
 // const used to send and parse url

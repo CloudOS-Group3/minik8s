@@ -35,6 +35,12 @@ func GetCmd() *cobra.Command {
 		Run:   getNodeCmdHandler,
 	}
 
+	getTriggerCmd := &cobra.Command{
+		Use:   "trigger",
+		Short: "get trigger",
+		Run:   getTriggerCmdHandler,
+	}
+
 	getServiceCmd := &cobra.Command{
 		Use:   "service",
 		Short: "get service",
@@ -65,6 +71,7 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
 	getCmd.AddCommand(getServiceCmd)
+	getCmd.AddCommand(getTriggerCmd)
 
 	return getCmd
 }
@@ -216,6 +223,19 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 			log.Debug("%+v", node)
 			matchNodes = append(matchNodes, *node)
 		}
+	}
+}
+
+func getTriggerCmdHandler(cmd *cobra.Command, args []string) {
+	log.Debug("the length of args is: %v", len(args))
+
+	matchTriggers := []api.Trigger{}
+	log.Debug("getting all triggers")
+	URL := config.GetUrlPrefix() + config.TriggersURL
+	err := httputil.Get(URL, &matchTriggers, "data")
+	if err != nil {
+		log.Error("error getting all triggers: %s", err.Error())
+		return
 	}
 }
 

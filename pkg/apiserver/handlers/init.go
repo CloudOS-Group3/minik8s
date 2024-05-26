@@ -2,9 +2,13 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"minik8s/pkg/api"
+	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/pkg/etcd"
 	"minik8s/pkg/kafka"
+	"strings"
 	"sync"
 )
 
@@ -13,14 +17,21 @@ var etcdClient etcd.Store
 
 func WatchHandler(key string, value string) {
 	// "/trigger/function_namespace/function_name"
-	function := key[9:]
-	// TODO: get function namespace and name, generate URL
-	URL := ""
-	str := etcdClient.GetEtcdPair(URL)
+	str := key[9:]
+	strList := strings.Split(str, "/")
+	functionNamespace := strList[0]
+	functionName := strList[1]
+	URL := config.FunctionPath + functionNamespace + "/" + functionName
+	str = etcdClient.GetEtcdPair(URL)
 	if str == "" {
 		return
 	}
-	// TODO: check function and send message
+	var function api.Function
+	_ = json.Unmarshal([]byte(str), &function)
+	if function.Trigger.Event == true {
+		jsonString, _ := json.Marshal(function)
+		publisher.Publish(msg_type.TriggerTopic, string(jsonString))
+	}
 }
 
 func init() {

@@ -54,9 +54,16 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteFunctionCmdHandler,
 	}
 
+	deleteTriggerCmd := &cobra.Command{
+		Use:   "trigger [function name]",
+		Short: "delete trigger",
+		Run:   deleteTriggerCmdHandler,
+	}
+
 	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteFunctionCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
+	deleteTriggerCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 
 	deleteCmd.AddCommand(deletePodCmd)
 	deleteCmd.AddCommand(deleteDeploymentCmd)
@@ -64,6 +71,7 @@ func DeleteCmd() *cobra.Command {
 	deleteCmd.AddCommand(deleteHPACmd)
 	deleteCmd.AddCommand(deleteDNSCmd)
 	deleteCmd.AddCommand(deleteFunctionCmd)
+	deleteCmd.AddCommand(deleteTriggerCmd)
 
 	return deleteCmd
 }
@@ -168,4 +176,26 @@ func deleteDNSCmdHandler(cmd *cobra.Command, args []string) {
 		log.Error("error http post: %s", err.Error())
 		return
 	}
+}
+
+func deleteTriggerCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) == 0 {
+		log.Error("function name is required")
+		return
+	}
+	name := args[0]
+	namespace, err := cmd.Flags().GetString("namespace")
+	if err != nil {
+		log.Error("Error getting flags: %s", err)
+		return
+	}
+	path := strings.Replace(config.TriggerURL, config.NamespacePlaceholder, namespace, -1)
+	path = strings.Replace(path, config.NamePlaceholder, name, -1)
+	URL := config.GetUrlPrefix() + path
+	err = httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
+	log.Info("function name: %s, namespace: %s", name, namespace)
 }

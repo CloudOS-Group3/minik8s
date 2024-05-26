@@ -1,4 +1,4 @@
-package serverless
+package api
 
 type Trigger struct {
 	APIVersion string      `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
@@ -7,6 +7,7 @@ type Trigger struct {
 }
 
 type TriggerSpec struct {
-	Type     string `json:"type,omitempty" yaml:"type,omitempty"`
-	Function string `json:"function,omitempty" yaml:"function,omitempty"`
+	Type              string `json:"type,omitempty" yaml:"type,omitempty"`
+	FunctionNamespace string `json:"functionNamespace,omitempty" yaml:"functionNamespace,omitempty"`
+	FunctionName      string `json:"functionName,omitempty" yaml:"functionName,omitempty"`
 }
