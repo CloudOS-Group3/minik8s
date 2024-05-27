@@ -117,6 +117,7 @@ const (
 	PullPolicyAlways       = "Always"
 	PullPolicyIfNotPresent = "IfNotPresent"
 	PullPolicyNever        = "Never"
+	PullFromRegistry       = "registry"
 )
 
 type PodPhase string

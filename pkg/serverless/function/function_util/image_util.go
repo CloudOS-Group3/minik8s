@@ -3,6 +3,7 @@ package function_util
 import (
 	"io"
 	"minik8s/pkg/api"
+	"minik8s/pkg/config"
 	"minik8s/util/log"
 	"os"
 	"os/exec"
@@ -10,53 +11,86 @@ import (
 	"time"
 )
 
-func CreateImage(function *api.Function) error {
+// We have a docker registry running at localhost:5050
+// docker run -d -p 5050:5000 --name minik8s_registry registry:2
+const RegistryPort = "5050"
+
+func CreateImage(function *api.Function) (string, error) {
 	// create image
 	// BUG: docker build can only use relative path
 	// Fix: copy source code to a temp dir and build image
 	curPath := "/root/minik8s/pkg/serverless/function/function_util"
 	tempPath := filepath.Join(curPath, function.Metadata.UUID)
-	//temp, err := os.MkdirTemp("", function.Metadata.UUID)
 	err := os.Mkdir(tempPath, os.ModePerm)
 	if err != nil {
-		return err
+		return "", err
 	}
-	//defer func(path string) {
-	//	err := os.RemoveAll(path)
-	//	if err != nil {
-	//		log.Error("error remove temp dir: %s", err)
-	//	}
-	//}(temp)
+	defer func(path string) {
+		err := os.RemoveAll(path)
+		if err != nil {
+			log.Error("error remove temp dir: %s", err)
+		}
+	}(tempPath)
 
 	// copy source code to temp dir
 	err = copyDirContents(function.FilePath, tempPath)
 	// wait for copy
 	time.Sleep(1 * time.Second)
 
+	// Step 1: Build Image
 	// docker build --build-arg SOURCE_DIR=/path/to/source -t my-python-app .
 	cmd := exec.Command("docker", "build", "--build-arg", "SOURCE_DIR="+function.Metadata.UUID, "-t",
 		GetImageName(function.Metadata.Name, function.Metadata.NameSpace), curPath)
+	output, err := cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		return "", err
+	}
+
+	// Step 2: Tag Image
+	// docker tag myimage:latest localhost:5000/myimage:latest
+	cmd = exec.Command("docker", "tag", GetImageName(function.Metadata.Name, function.Metadata.NameSpace),
+		config.Remotehost+":"+RegistryPort+"/"+GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
 	log.Info("cmd: %s", cmd.String())
+	output, err = cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		return "", err
+	}
+
+	// Step 3: Push Image
+	// docker push localhost:5000/myimage:latest
+	cmd = exec.Command("docker", "push",
+		config.Remotehost+":"+RegistryPort+"/"+GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
+	log.Info("cmd: %s", cmd.String())
+	output, err = cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		return "", err
+	}
+	return config.Remotehost + ":" + RegistryPort + "/" + GetImageName(function.Metadata.Name, function.Metadata.NameSpace), nil
+}
+
+func DeleteFunctionImage(function *api.Function) error {
+	// Step 1: Delete Image
+	cmd := exec.Command("docker", "rmi", GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
 	output, err := cmd.CombinedOutput()
 	log.Info("output: %s", string(output))
 	if err != nil {
 		return err
 	}
-	log.Info("output: %s", string(output))
 
-	// push image
-	// docker push my-python-app
-	//cmd = exec.Command("docker", "push", GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
-	//log.Info("cmd: %s", cmd.String())
-	//output, err = cmd.CombinedOutput()
-	//log.Info("output: %s", string(output))
-	//if err != nil {
-	//	return err
-	//}
-	//log.Info("output: %s", string(output))
+	// Step 2: Delete Image in local registry
+	cmd = exec.Command("docker", "rmi",
+		config.Remotehost+":"+RegistryPort+"/"+GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
+	log.Info("cmd: %s", cmd.String())
+	output, err = cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		return err
+	}
 	return nil
 }
-
 func copyDirContents(srcDir, dstDir string) error {
 	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

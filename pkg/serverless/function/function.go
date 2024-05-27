@@ -22,7 +22,7 @@ func CreatePodFromFunction(function *api.Function) *api.Pod {
 
 func CreatePythonPod(function *api.Function) *api.Pod {
 	log.Info("Create python pod")
-	err := function_util.CreateImage(function)
+	imageName, err := function_util.CreateImage(function)
 	if err != nil {
 		log.Error("error create image: %s", err.Error())
 		return nil
@@ -36,8 +36,9 @@ func CreatePythonPod(function *api.Function) *api.Pod {
 		Spec: api.PodSpec{
 			Containers: []api.Container{
 				{
-					Name:  "python",
-					Image: function_util.GetImageName(function.Metadata.Name, function.Metadata.NameSpace),
+					Name:            "python",
+					Image:           imageName,
+					ImagePullPolicy: api.PullFromRegistry,
 				},
 			},
 		},
