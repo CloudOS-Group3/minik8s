@@ -7,4 +7,5 @@ type Job struct {
 	Instance   Pod    `json:"instance,omitempty" yaml:"instance,omitempty"`
 	Result     string `json:"result,omitempty" yaml:"result,omitempty"`
 	CreateTime string `json:"createTime,omitempty" yaml:"createTime,omitempty"`
+	Params     string `json:"params,omitempty" yaml:"params,omitempty"`
 }
