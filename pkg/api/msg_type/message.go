@@ -22,6 +22,8 @@ const (
 	DNSTopic = "dns"
 	// trigger topic
 	TriggerTopic = "trigger"
+	// job topic
+	JobTopic = "job"
 	// endpoint topic
 	EndpointTopic = "endpoint"
 	// pod operation

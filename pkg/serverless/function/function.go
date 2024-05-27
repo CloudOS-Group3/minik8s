@@ -3,7 +3,6 @@ package function
 import (
 	"github.com/google/uuid"
 	"minik8s/pkg/api"
-	pod_manager "minik8s/pkg/kubelet/pod"
 	"minik8s/pkg/serverless/function/function_util"
 	"minik8s/util/log"
 )
@@ -59,6 +58,6 @@ func CreatePythonPod(function *api.Function) *api.Pod {
 	//	log.Error("error http post: %s", err.Error())
 	//	return nil
 	//}
-	pod_manager.CreatePod(pod)
+	//pod_manager.CreatePod(pod)
 	return pod
 }
