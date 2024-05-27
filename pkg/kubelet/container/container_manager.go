@@ -140,6 +140,9 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 	//opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "mount", Path: "/proc/" + pause_pid + "/ns/mount"}))
 	opt = append(opt, oci.WithLinuxNamespace(specs.LinuxNamespace{Type: "network", Path: "/proc/" + pause_pid + "/ns/net"}))
 
+	// run as privileged container
+	opt = append(opt, oci.WithPrivileged)
+
 	/* Manage volume: mount host path to container */
 	log.Info("hostMount: %v", hostMount)
 	for _, volume := range config.VolumeMounts {
@@ -170,6 +173,53 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 		log.Error("Failed to create container %s: %v", config.Name, err.Error())
 		return nil
 	}
+
+	task, err := container.Task(context.Background(), nil)
+	if err != nil {
+		log.Error("failed to create container task: %v", err)
+		return nil
+	}
+	defer task.Delete(context.Background())
+
+	if err = task.Start(ctx); err != nil {
+		log.Error("failed to start container task: %v", err)
+		return nil
+	}
+
+	process1 := specs.Process{
+		Args: []string{"apt", "update"},
+		Cwd:  "/",
+		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
+	}
+	execResult, err := task.Exec(ctx, "apt update", &process1, cio.NewCreator(cio.WithStdio))
+	if err != nil {
+		log.Error("failed to execResult task: %v", err.Error())
+		return nil
+	}
+	execResult.Wait(ctx)
+	process2 := specs.Process{
+		Args: []string{"apt", "install", "nfs-common"},
+		Cwd:  "/",
+		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
+	}
+	execResult, err = task.Exec(ctx, "apt install nfs-common", &process2, cio.NewCreator(cio.WithStdio))
+	if err != nil {
+		log.Error("failed to execResult task: %v", err.Error())
+		return nil
+	}
+	execResult.Wait(ctx)
+	process3 := specs.Process{
+		Args: []string{"mkdir", "install", "nfs-common"},
+		Cwd:  "/",
+		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
+	}
+	execResult, err = task.Exec(ctx, "make mount dir", &process3, cio.NewCreator(cio.WithStdio))
+	if err != nil {
+		log.Error("failed to execResult task: %v", err.Error())
+		return nil
+	}
+	execResult.Wait(ctx)
+
 	log.Info("Container %s created", config.Name)
 	return container
 

@@ -36,7 +36,7 @@ func AddPV(context *gin.Context) {
 		return
 	}
 	log.Debug("before executing 2")
-	err = exec.Command("sh", "-c", "exportfs", "-r").Run()
+	err = exec.Command("sh", "-c", "exportfs", "-rv").Run()
 	if err != nil {
 		log.Error("error export fs: %s", err.Error())
 		return
