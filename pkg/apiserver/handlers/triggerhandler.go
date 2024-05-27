@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"minik8s/pkg/api"
+	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
@@ -84,4 +86,36 @@ func DeleteTrigger(context *gin.Context) {
 	byteArr, _ := json.Marshal(function)
 	etcdClient.PutEtcdPair(funcURL, string(byteArr))
 	etcdClient.DeleteEtcdPair(TriggerURL)
+}
+
+func HttpTriggerFunction(context *gin.Context) {
+	log.Info("Http trigger function")
+	name := context.Param(config.NameParam)
+	namespace := context.Param(config.NamespaceParam)
+	var resMap map[string]interface{}
+	_ = json.NewDecoder(context.Request.Body).Decode(&resMap)
+	res, _ := resMap["params"]
+	dataStr := fmt.Sprint(res)
+	funcURL := config.FunctionPath + namespace + "/" + name
+	str := etcdClient.GetEtcdPair(funcURL)
+	if str == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "unknown function",
+		})
+		return
+	}
+	var function api.Function
+	_ = json.Unmarshal([]byte(str), &function)
+	if function.Trigger.Http == true {
+		var msg msg_type.TriggerMsg
+		msg.Function = function
+		msg.Params = dataStr
+		jsonString, _ := json.Marshal(msg)
+		publisher.Publish(msg_type.TriggerTopic, string(jsonString))
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "function doesn't allow http trigger",
+		})
+		return
+	}
 }
