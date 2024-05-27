@@ -20,6 +20,8 @@ const (
 	NodeTopic = "node"
 	// DNS topic
 	DNSTopic = "dns"
+	// trigger topic
+	TriggerTopic = "trigger"
 	// endpoint topic
 	EndpointTopic = "endpoint"
 	// pod operation

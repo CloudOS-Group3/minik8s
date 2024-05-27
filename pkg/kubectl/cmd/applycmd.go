@@ -82,6 +82,8 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyDNSHandler(content)
 	case "Function":
 		applyFunctionHandler(content)
+	case "Trigger":
+		applyTriggerHandler(content)
 	default:
 		log.Warn("Unknown resource kind")
 	}
@@ -266,4 +268,26 @@ func applyDNSHandler(content []byte) {
 		return
 	}
 	log.Info("apply DNS successed")
+}
+
+func applyTriggerHandler(content []byte) {
+	log.Info("creating or updating trigger")
+	trigger := &api.Trigger{}
+	err := yaml.Unmarshal(content, trigger)
+	if err != nil {
+		log.Error("Error yaml unmarshal trigger")
+		return
+	}
+	byteArr, err := json.Marshal(*trigger)
+	if err != nil {
+		log.Error("Error json marshal trigger")
+		return
+	}
+	URL := config.GetUrlPrefix() + config.TriggersURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply trigger successed")
 }

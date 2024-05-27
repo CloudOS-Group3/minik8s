@@ -35,6 +35,12 @@ const (
 	// usage: /registry/dns/<name>
 	EtcdDNSPath = "/registry/dns/"
 
+	// usage: /registry/trigger/<function_namespace>/<function_name>
+	EtcdTriggerPath = "/registry/trigger/"
+
+	// usage: /trigger/<function_namespace>/<function_name>
+	UserTriggerPath = "/trigger"
+	
 	// usage: /registry/function/<name>
 	FunctionPath = "/registry/function/"
 )

@@ -77,4 +77,8 @@ func (server *apiServer) bind() {
 	server.router.PUT(config.FunctionURL, handlers.UpdateFunction)
 	server.router.POST(config.FunctionURL, handlers.AddFunction)
 	server.router.DELETE(config.FunctionURL, handlers.DeleteFunction)
+
+	server.router.GET(config.TriggersURL, handlers.GetTriggers)
+	server.router.POST(config.TriggersURL, handlers.AddTrigger)
+	server.router.DELETE(config.TriggerURL, handlers.DeleteTrigger)
 }
