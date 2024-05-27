@@ -67,3 +67,8 @@ type DNSMsg struct {
 	NewDNS api.DNS `json:"new_dns,omitempty"`
 	OldDNS api.DNS `json:"old_dns,omitempty"`
 }
+
+type TriggerMsg struct {
+	Function api.Function `json:"function,omitempty"`
+	Params   string       `json:"params,omitempty"`
+}
