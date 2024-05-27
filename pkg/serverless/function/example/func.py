@@ -1,6 +1,7 @@
 import numpy as np
 
-def main():
+# add args
+def main(x, y):
     matrix1 = np.array([[1, 2], [3, 4]])
     matrix2 = np.array([[5, 6], [7, 8]])
 
@@ -14,7 +15,4 @@ def main():
     print("mutiply (matrix1 * matrix2):")
     print(matrix_product)
 
-    return "Done"
-
-if __name__ == "__main__":
-    main()
+    return x + y
