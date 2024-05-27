@@ -24,7 +24,7 @@ COPY ${SOURCE_DIR} /app/
 # Find the .py file and rename it to main.py
 RUN cd /app && \
     py_file=$(ls *.py) && \
-    mv "$py_file" main.py
+    mv "$py_file" my_function.py
 
 COPY server.py /app
 

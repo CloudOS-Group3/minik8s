@@ -1,24 +1,38 @@
 from flask import Flask, request
-import subprocess
-
+import my_function as func
 app = Flask(__name__)
 
-@app.route('/run', methods=['GET', 'POST'])
+
+# curl -X POST -H "Content-Type: application/json" -d '{"uuid":"1234", "params": {"x": 8, "y": 9}}}' http://localhost:8080/run
+# {"uuid": "123",
+#  "params":
+#      {
+#          "param1": 8
+#      }
+#  }
+@app.route('/run', methods=['POST'])
 def run_script():
-    if request.method == 'GET':
-        params = request.args
-    elif request.method == 'POST':
-        params = request.json
+    data = request.json
+    uuid = data.get('uuid')
+    params = data.get('params', {})
 
     print(f"Received parameters: {params}")
 
-    result = subprocess.run(['python', 'main.py'], capture_output=True, text=True)
-
+    try:
+        result = func.main(**params)
+    except Exception as e:
+        return {
+            'uuid': uuid,
+            'output': '',
+            'error': str(e)
+        }
+    print(result)
     return {
-        'output': result.stdout,
-        'error': result.stderr,
-        'returncode': result.returncode
+        'uuid': uuid,
+        'output': result,
+        'error': '',
     }
 
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8888)
