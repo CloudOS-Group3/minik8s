@@ -62,10 +62,11 @@ func GetNode(context *gin.Context) {
 		return
 	}
 
-	nodeJson := etcdClient.GetEtcdPair(name)
+	URL := config.EtcdNodePath + name
+	nodeJson := etcdClient.GetEtcdPair(URL)
 
 	var node api.Node
-	json.Unmarshal([]byte(nodeJson), node)
+	json.Unmarshal([]byte(nodeJson), &node)
 
 	log.Info("node info: %+v", node)
 

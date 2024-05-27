@@ -22,6 +22,8 @@ const (
 	DNSTopic = "dns"
 	// trigger topic
 	TriggerTopic = "trigger"
+	// job topic
+	JobTopic = "job"
 	// endpoint topic
 	EndpointTopic = "endpoint"
 	// pod operation
@@ -69,4 +71,10 @@ type DNSMsg struct {
 type TriggerMsg struct {
 	Function api.Function `json:"function,omitempty"`
 	Params   string       `json:"params,omitempty"`
+}
+
+type JobMsg struct {
+	Opt    string  `json:"opt"`
+	NewJob api.Job `json:"new_job,omitempty"`
+	OldJob api.Job `json:"old_job,omitempty"`
 }

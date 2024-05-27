@@ -81,4 +81,12 @@ func (server *apiServer) bind() {
 	server.router.GET(config.TriggersURL, handlers.GetTriggers)
 	server.router.POST(config.TriggersURL, handlers.AddTrigger)
 	server.router.DELETE(config.TriggerURL, handlers.DeleteTrigger)
+	server.router.POST(config.FunctionRunURL, handlers.HttpTriggerFunction)
+
+	server.router.GET(config.JobsURL, handlers.GetJobs)
+	server.router.POST(config.JobsURL, handlers.AddJob)
+	server.router.GET(config.JobURL, handlers.GetJob)
+	server.router.DELETE(config.JobURL, handlers.DeleteJob)
+	server.router.PUT(config.JobURL, handlers.UpdateJob)
+
 }

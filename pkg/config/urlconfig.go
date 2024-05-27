@@ -36,8 +36,8 @@ const (
 	StatefulSetsURL = "/apis/apps/v1/namespaces/:namespace/statefulsets"
 	StatefulSetURL  = "/apis/apps/v1/namespaces/:namespace/statefulsets/:name"
 
-	JobsURL = "/apis/batch/v1/namespaces/:namespace/jobs"
-	JobURL  = "/apis/batch/v1/namespaces/:namespace/jobs/:name"
+	JobsURL = "/apis/batch/v1/jobs"
+	JobURL  = "/apis/batch/v1/jobs/:name"
 
 	CronJobsURL = "/apis/batch/v1/namespaces/:namespace/cronjobs"
 	CronJobURL  = "/apis/batch/v1/namespaces/:namespace/cronjobs/:name"

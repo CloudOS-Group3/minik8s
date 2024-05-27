@@ -59,6 +59,12 @@ func GetCmd() *cobra.Command {
 		Run:   getHPACmdHandler,
 	}
 
+	getJobCmd := &cobra.Command{
+		Use:   "job",
+		Short: "get job",
+		Run:   getJobCmdHandler,
+	}
+
 	getPodCmd.Aliases = []string{"po", "pods"}
 	getNodeCmd.Aliases = []string{"no", "nodes"}
 	getServiceCmd.Aliases = []string{"svc", "service"}
@@ -72,6 +78,7 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getDeploymentCmd)
 	getCmd.AddCommand(getServiceCmd)
 	getCmd.AddCommand(getTriggerCmd)
+	getCmd.AddCommand(getJobCmd)
 
 	return getCmd
 }
@@ -222,6 +229,36 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 			}
 			log.Debug("%+v", node)
 			matchNodes = append(matchNodes, *node)
+		}
+	}
+}
+
+func getJobCmdHandler(cmd *cobra.Command, args []string) {
+	log.Debug("the length of args is: %v", len(args))
+
+	matchJobs := []api.Job{}
+
+	if len(args) == 0 {
+		log.Debug("getting all jobs")
+		URL := config.GetUrlPrefix() + config.JobsURL
+		err := httputil.Get(URL, &matchJobs, "data")
+		if err != nil {
+			log.Error("error getting all jobs: %s", err.Error())
+			return
+		}
+	} else {
+		for _, jobName := range args {
+			log.Debug("%v", jobName)
+			job := &api.Job{}
+			URL := config.GetUrlPrefix() + config.JobURL
+			URL = strings.Replace(URL, config.NamePlaceholder, jobName, -1)
+			err := httputil.Get(URL, job, "data")
+			if err != nil {
+				log.Error("error get node: %s", err.Error())
+				return
+			}
+			log.Debug("%+v", job)
+			matchJobs = append(matchJobs, *job)
 		}
 	}
 }

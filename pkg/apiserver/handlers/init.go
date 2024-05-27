@@ -29,7 +29,10 @@ func WatchHandler(key string, value string) {
 	var function api.Function
 	_ = json.Unmarshal([]byte(str), &function)
 	if function.Trigger.Event == true {
-		jsonString, _ := json.Marshal(function)
+		var msg msg_type.TriggerMsg
+		msg.Function = function
+		msg.Params = value
+		jsonString, _ := json.Marshal(msg)
 		publisher.Publish(msg_type.TriggerTopic, string(jsonString))
 	}
 }
