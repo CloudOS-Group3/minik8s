@@ -42,7 +42,7 @@ func CreateImage(function *api.Function) (string, error) {
 	cmd := exec.Command("docker", "build", "--build-arg", "SOURCE_DIR="+function.Metadata.UUID, "-t",
 		GetImageName(function.Metadata.Name, function.Metadata.NameSpace), curPath)
 	output, err := cmd.CombinedOutput()
-	log.Info("output: %s", string(output))
+	//log.Info("output: %s", string(output))
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +53,7 @@ func CreateImage(function *api.Function) (string, error) {
 		config.Remotehost+":"+RegistryPort+"/"+GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
 	log.Info("cmd: %s", cmd.String())
 	output, err = cmd.CombinedOutput()
-	log.Info("output: %s", string(output))
+	//log.Info("output: %s", string(output))
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +62,7 @@ func CreateImage(function *api.Function) (string, error) {
 	// docker push localhost:5000/myimage:latest
 	cmd = exec.Command("docker", "push",
 		config.Remotehost+":"+RegistryPort+"/"+GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
-	log.Info("cmd: %s", cmd.String())
+	//log.Info("cmd: %s", cmd.String())
 	output, err = cmd.CombinedOutput()
 	log.Info("output: %s", string(output))
 	if err != nil {
@@ -75,7 +75,7 @@ func DeleteFunctionImage(function *api.Function) error {
 	// Step 1: Delete Image
 	cmd := exec.Command("docker", "rmi", GetImageName(function.Metadata.Name, function.Metadata.NameSpace))
 	output, err := cmd.CombinedOutput()
-	log.Info("output: %s", string(output))
+	//log.Info("output: %s", string(output))
 	if err != nil {
 		return err
 	}
