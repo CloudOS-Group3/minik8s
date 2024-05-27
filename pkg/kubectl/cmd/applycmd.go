@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+	function_manager "minik8s/pkg/serverless/function"
 )
 
 func ApplyCmd() *cobra.Command {
@@ -112,7 +113,9 @@ func applyFunctionHandler(content []byte) {
 		log.Error("Error http post function, %s", err.Error())
 		return
 	}
-	log.Info("apply function successed")
+	log.Info("apply function successed, %v", function)
+
+	function_manager.CreatePodFromFunction(function)
 }
 func applyPodHandler(content []byte) {
 	log.Info("Creating or updating pod")
