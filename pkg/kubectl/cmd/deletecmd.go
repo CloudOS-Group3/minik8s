@@ -48,6 +48,12 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteDNSCmdHandler,
 	}
 
+	deleteJobCmd := &cobra.Command{
+		Use:   "job [job name]",
+		Short: "delete job",
+		Run:   deleteJobCmdHandler,
+	}
+
 	deleteFunctionCmd := &cobra.Command{
 		Use:   "function [function name]",
 		Short: "delete function",
@@ -72,6 +78,7 @@ func DeleteCmd() *cobra.Command {
 	deleteCmd.AddCommand(deleteDNSCmd)
 	deleteCmd.AddCommand(deleteFunctionCmd)
 	deleteCmd.AddCommand(deleteTriggerCmd)
+	deleteCmd.AddCommand(deleteJobCmd)
 
 	return deleteCmd
 }
@@ -170,6 +177,17 @@ func deleteHPACmdHandler(cmd *cobra.Command, args []string) {
 func deleteDNSCmdHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
 	URL := config.GetUrlPrefix() + config.DNSURL
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
+	err := httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
+}
+
+func deleteJobCmdHandler(cmd *cobra.Command, args []string) {
+	name := args[0]
+	URL := config.GetUrlPrefix() + config.JobURL
 	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
 	err := httputil.Delete(URL)
 	if err != nil {

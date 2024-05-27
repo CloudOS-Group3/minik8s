@@ -20,9 +20,6 @@ const (
 	// usage: /registry/endpoints/namespace/<label-key>
 	EndpointPath = "/registry/endpoints/"
 
-	// usage: /registry/jobs/<namespace>/<job-name>
-	EtcdJobPath = "/registry/jobs/"
-
 	// usage: /registry/labelIndex/<label>
 	LabelIndexPath = "/registry/labelIndex/"
 
@@ -40,7 +37,10 @@ const (
 
 	// usage: /trigger/<function_namespace>/<function_name>
 	UserTriggerPath = "/trigger"
-	
+
 	// usage: /registry/function/<name>
 	FunctionPath = "/registry/function/"
+
+	// usage: /registry/job/<job_id>
+	EtcdJobPath = "/registry/jobs/"
 )
