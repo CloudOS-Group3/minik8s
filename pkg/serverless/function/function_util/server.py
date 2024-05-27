@@ -23,13 +23,13 @@ def run_script():
     except Exception as e:
         return {
             'uuid': uuid,
-            'output': '',
+            'result': '',
             'error': str(e)
         }
     print(result)
     return {
         'uuid': uuid,
-        'output': result,
+        'result': result,
         'error': '',
     }
 
