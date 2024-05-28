@@ -1,5 +1,11 @@
 package api
 
+const (
+	JOB_CREATED = "CREATED"
+	JOB_RUNNING = "RUNNING"
+	JOB_DELETED = "DELETED"
+)
+
 type Job struct {
 	// Metadata: name, namespace, uuid
 	JobID      string `json:"jobID,omitempty" yaml:"jobID,omitempty"`
