@@ -10,6 +10,7 @@ import (
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/kubeproxy/ipvs"
 	"minik8s/util/log"
+	"os"
 	"sync"
 )
 
@@ -96,7 +97,13 @@ func (e *KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sara
 	return nil
 }
 
-func NewKubeProxy() *KubeProxy {
+func NewKubeProxy(name string) *KubeProxy {
+	if name == "" {
+		content, _ := os.ReadFile("/etc/hostname")
+		config.Nodename = string(content)
+	} else {
+		config.Nodename = name
+	}
 	group := "kube-proxy" + "-" + config.Nodename
 	return &KubeProxy{
 		ready:      make(chan bool),
