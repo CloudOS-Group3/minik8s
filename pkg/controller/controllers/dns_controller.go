@@ -152,12 +152,12 @@ func (s *DNSController) WriteDNS() {
 	os.WriteFile("/etc/hosts", []byte(str), 0644)
 	for _, host := range s.RegisteredDNS {
 		NginxStr := "server {\n\tlisten 80;\n"
-		hostStr := fmt.Sprintf("\tserver_name %s\n", host.Host)
+		hostStr := fmt.Sprintf("\tserver_name %s;\n", host.Host)
 		NginxStr += hostStr
 		for _, path := range host.Paths {
 			pathStr := fmt.Sprintf("\tlocation %s {\n", path.Path)
 			NginxStr += pathStr
-			proxyStr := fmt.Sprintf("\t\tproxy_pass %s:%s\n", path.ServiceIP, path.ServicePort)
+			proxyStr := fmt.Sprintf("\t\tproxy_pass %s:%s;\n", path.ServiceIP, path.ServicePort)
 			NginxStr += proxyStr
 			NginxStr += "\t}\n"
 		}

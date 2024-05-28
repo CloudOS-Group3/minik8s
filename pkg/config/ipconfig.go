@@ -6,10 +6,11 @@ const (
 	Local      = false
 	localhost  = "localhost"
 	Remotehost = "192.168.3.8" // IP of master
-	Nodename   = "node1"
 	port       = 6443
 	protocol   = "http://"
 )
+
+var Nodename = ""
 
 const (
 	EtcdDefaultPort = 9092

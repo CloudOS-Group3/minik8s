@@ -11,6 +11,7 @@ import (
 	"minik8s/pkg/kubelet/node"
 	"minik8s/pkg/kubelet/pod"
 	"minik8s/util/log"
+	"os"
 	"sync"
 )
 
@@ -21,7 +22,13 @@ type KubeletSubscriber struct {
 	done        chan bool
 }
 
-func NewKubeletSubscriber() *KubeletSubscriber {
+func NewKubeletSubscriber(name string) *KubeletSubscriber {
+	if name == "" {
+		content, _ := os.ReadFile("/etc/hostname")
+		config.Nodename = string(content)
+	} else {
+		config.Nodename = name
+	}
 	group := "kubelet" + "-" + config.Nodename
 	return &KubeletSubscriber{
 		ready:       make(chan bool),
@@ -37,6 +44,7 @@ func (k *KubeletSubscriber) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (k *KubeletSubscriber) Cleanup(_ sarama.ConsumerGroupSession) error {
+	k.ready = make(chan bool)
 	return nil
 }
 

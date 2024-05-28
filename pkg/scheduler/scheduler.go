@@ -69,9 +69,14 @@ func (s *Scheduler) PodHandler(msg []byte) {
 	if pod.Spec.NodeName != "" {
 		return
 	} else {
-		index := s.count % len(s.nodes)
-		s.count = s.count + 1
-		pod.Spec.NodeName = s.nodes[index].Metadata.Name
+		for {
+			index := s.count % len(s.nodes)
+			s.count = s.count + 1
+			if s.nodes[index].Status.Condition.Status == api.NodeReady {
+				pod.Spec.NodeName = s.nodes[index].Metadata.Name
+				break
+			}
+		}
 	}
 	fmt.Printf("pod %s has assigned to node %s\n", pod.Metadata.Name, pod.Spec.NodeName)
 
