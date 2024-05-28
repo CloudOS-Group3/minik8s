@@ -1,9 +1,9 @@
 package api
 
 const (
-	JOB_CREATED = "CREATED"
-	JOB_RUNNING = "RUNNING"
-	JOB_DELETED = "DELETED"
+	JOB_CREATED = "Created"
+	JOB_RUNNING = "Running"
+	JOB_ENDED   = "Ended"
 )
 
 type Job struct {

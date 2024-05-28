@@ -36,7 +36,7 @@ func NewJobController() *JobController {
 	var initialJob []api.Job
 	_ = httputil.Get(URL, &initialJob, "data")
 	for _, job := range initialJob {
-		if job.Status == "Created" {
+		if job.Status == api.JOB_CREATED {
 			initialJob = append(initialJob, job)
 		}
 	}
@@ -75,7 +75,7 @@ func (s *JobController) JobHandler(msg []byte) {
 		if message.NewJob.Instance.Status.PodIP != "" {
 			s.CallFunction(message.NewJob)
 			job := message.NewJob
-			job.Status = "Running"
+			job.Status = api.JOB_RUNNING
 			URL := config.GetUrlPrefix() + config.JobURL
 			URL = strings.Replace(URL, config.NamePlaceholder, job.JobID, -1)
 			byteArr, _ := json.Marshal(job)
@@ -101,7 +101,7 @@ func (s *JobController) PodHandler(msg []byte) {
 			if message.NewPod.Status.PodIP != "" {
 				s.CallFunction(job)
 				job.Instance = message.NewPod
-				job.Status = "Running"
+				job.Status = api.JOB_RUNNING
 				URL := config.GetUrlPrefix() + config.JobURL
 				URL = strings.Replace(URL, config.NamePlaceholder, job.JobID, -1)
 				byteArr, _ := json.Marshal(job)

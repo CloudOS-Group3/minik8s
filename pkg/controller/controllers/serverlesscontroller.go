@@ -131,7 +131,7 @@ func (this *ServerlessController) updateJob(content []byte) {
 		for index, podWithStatus := range this.freePods {
 			if podWithStatus.pod.Metadata.Name == jobMsg.OldJob.Instance.Metadata.Name {
 				switch jobMsg.NewJob.Status {
-				case api.JOB_DELETED:
+				case api.JOB_ENDED:
 					this.freePods[index].isFree = true
 					this.freePods[index].freeTime = 0
 				case api.JOB_RUNNING:
