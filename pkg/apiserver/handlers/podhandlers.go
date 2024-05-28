@@ -44,7 +44,7 @@ func AddPod(context *gin.Context) {
 
 	newPod.Status.StartTime = time.Now()
 	newPod.Metadata.UUID = uuid.NewString()
-	newPod.Status.Phase = "Pending"
+	newPod.Status.Phase = string(api.PodPending)
 
 	// check if the pod already exists
 	oldPod, exited := etcdClient.GetPod(newPod.Metadata.NameSpace, newPod.Metadata.Name)

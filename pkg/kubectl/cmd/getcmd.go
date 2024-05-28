@@ -69,7 +69,6 @@ func GetCmd() *cobra.Command {
 	return getCmd
 }
 
-// TODO: all of these handlers have got the data, but they dont show it in the terminal
 func getPodCmdHandler(cmd *cobra.Command, args []string) {
 
 	namespace := cmd.Flag("namespace").Value.String()
@@ -111,12 +110,12 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 	}
 
 	header := []string{"name", "status", "age", "usage", "ip"}
-	data := [][]string{}
+	var data [][]string
 
 	for _, matchPod := range matchPods {
 		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
-		metric_string := fmt.Sprintf("cpu: %.2f%%, memory: %.2f%%", matchPod.Status.CPUPercentage*100, matchPod.Status.MemoryPercentage*100)
-		data = append(data, []string{matchPod.Metadata.Name, "RUNNING", age, metric_string, matchPod.Status.PodIP})
+		metricString := fmt.Sprintf("cpu: %.2f%%, memory: %.2f%%", matchPod.Status.CPUPercentage*100, matchPod.Status.MemoryPercentage*100)
+		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age, metricString, matchPod.Status.PodIP})
 	}
 
 	prettyprint.PrintTable(header, data)
