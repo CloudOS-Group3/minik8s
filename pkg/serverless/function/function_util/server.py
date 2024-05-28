@@ -1,9 +1,9 @@
+import requests
 from flask import Flask, request
 import my_function as func
 app = Flask(__name__)
 
-
-# curl -X POST -H "Content-Type: application/json" -d '{"uuid":"1234", "params": {"x": 8, "y": 9}}}' http://localhost:8080/run
+# curl -X POST -H "Content-Type: application/json" -d '{"uuid":"1234", "params": {"x": 8, "y": 9}}' http://localhost:8080/run
 # {"uuid": "123",
 #  "params":
 #      {
@@ -20,19 +20,28 @@ def run_script():
 
     try:
         result = func.main(**params)
+        response_data = {
+            'uuid': uuid,
+            'result': result,
+            'error': '',
+        }
     except Exception as e:
-        return {
+        response_data = {
             'uuid': uuid,
             'result': '',
             'error': str(e)
         }
-    print(result)
-    return {
-        'uuid': uuid,
-        'result': result,
-        'error': '',
-    }
+    print(response_data)
+
+    try:
+        response = requests.post('http://192.168.3.8:6443/result', json=response_data)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending data to http://192.168.3.8:6443/result: {e}")
+        response_data['error'] = str(e)
+
+    return response_data
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8888)
+    app.run(host='0.0.0.0', port=8080)
