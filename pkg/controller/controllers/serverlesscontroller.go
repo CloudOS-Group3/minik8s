@@ -58,6 +58,7 @@ func (this *ServerlessController) Cleanup(_ sarama.ConsumerGroupSession) error {
 func (this *ServerlessController) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		if msg.Topic == msg_type.TriggerTopic {
+			log.Info("trigger received")
 			sess.MarkMessage(msg, "")
 			this.triggerNewJob(msg.Value)
 		} else if msg.Topic == msg_type.JobTopic {
@@ -167,6 +168,7 @@ func (this *ServerlessController) clearExpirePod() {
 					return
 				}
 				this.freePods = append(this.freePods[:index], this.freePods[index+1:]...)
+				continue
 			}
 			this.freePods[index].freeTime += CheckInterval
 		}
@@ -174,6 +176,7 @@ func (this *ServerlessController) clearExpirePod() {
 }
 
 func (this *ServerlessController) Run() {
+	go this.clearExpirePod()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	topics := []string{msg_type.TriggerTopic, msg_type.JobTopic}

@@ -9,6 +9,7 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/util/httputil"
+	"minik8s/util/log"
 	"strings"
 	"sync"
 )
@@ -73,6 +74,7 @@ func (s *JobController) JobHandler(msg []byte) {
 	_ = json.Unmarshal(msg, &message)
 	if message.Opt == msg_type.Add {
 		if message.NewJob.Instance.Status.PodIP != "" {
+			log.Info("call function")
 			s.CallFunction(message.NewJob)
 			job := message.NewJob
 			job.Status = api.JOB_RUNNING
@@ -99,6 +101,7 @@ func (s *JobController) PodHandler(msg []byte) {
 	for index, job := range s.WaitingJob {
 		if job.Instance.Metadata.NameSpace == message.NewPod.Metadata.NameSpace && job.Instance.Metadata.Name == message.NewPod.Metadata.Name {
 			if message.NewPod.Status.PodIP != "" {
+				log.Info("call function")
 				s.CallFunction(job)
 				job.Instance = message.NewPod
 				job.Status = api.JOB_RUNNING
@@ -113,6 +116,7 @@ func (s *JobController) PodHandler(msg []byte) {
 }
 
 func (s *JobController) CallFunction(job api.Job) {
+	log.Info("call function")
 	URL := "http://" + job.Instance.Status.PodIP + ":8080/run"
 	param := FunctionParam{
 		uuid:   job.JobID,

@@ -46,7 +46,7 @@ func AddJob(context *gin.Context) {
 		return
 	}
 
-	URL := config.EtcdNodePath + newJob.JobID
+	URL := config.EtcdJobPath + newJob.JobID
 	etcdClient.PutEtcdPair(URL, string(jobByteArray))
 
 	context.JSON(http.StatusOK, gin.H{
@@ -158,6 +158,40 @@ func UpdateJob(context *gin.Context) {
 			OldJob: job,
 			NewJob: newJob,
 		}
+	}
+	msg_json, _ := json.Marshal(message)
+	publisher.Publish(msg.JobTopic, string(msg_json))
+}
+
+func JobResultHandler(context *gin.Context) {
+	log.Info("received job result request")
+	var newResult api.JobResult
+	if err := context.ShouldBind(&newResult); err != nil {
+		log.Error("decode job result failed: %s", err.Error())
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrong",
+		})
+	}
+	URL := config.EtcdJobPath + newResult.UUID
+	jobJson := etcdClient.GetEtcdPair(URL)
+	var job api.Job
+	_ = json.Unmarshal([]byte(jobJson), &job)
+	oldJob := job
+	job.Status = api.JOB_ENDED
+	if newResult.Error != "" {
+		job.Result = newResult.Result
+		log.Info("job result info: %+v", job.Result)
+	} else {
+		job.Result = newResult.Error
+		log.Info("job result info: %+v", job.Result)
+	}
+	jobByteArr, _ := json.Marshal(job)
+	etcdClient.PutEtcdPair(URL, string(jobByteArr))
+	var message msg.JobMsg
+	message = msg.JobMsg{
+		Opt:    msg.Update,
+		OldJob: oldJob,
+		NewJob: job,
 	}
 	msg_json, _ := json.Marshal(message)
 	publisher.Publish(msg.JobTopic, string(msg_json))
