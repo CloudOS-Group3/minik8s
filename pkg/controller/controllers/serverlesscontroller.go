@@ -12,6 +12,7 @@ import (
 	"minik8s/pkg/serverless/function"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
+	"minik8s/util/stringutil"
 	"strings"
 	"sync"
 	"time"
@@ -57,6 +58,7 @@ func (this *ServerlessController) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (this *ServerlessController) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
+		log.Info("Message claimed: value %s", string(msg.Value))
 		switch msg.Topic {
 		case msg_type.TriggerTopic:
 			sess.MarkMessage(msg, "")
@@ -104,6 +106,9 @@ func (this *ServerlessController) triggerNewJob(content []byte) {
 		return
 	}
 
+	var randomString = stringutil.GenerateRandomString(5)
+	freePod.Metadata.Name += "-" + randomString
+	freePod.Spec.Containers[0].Name += "-" + randomString
 	var job api.Job
 	job.JobID = uuid.NewString()
 	job.CreateTime = time.Now().String()
@@ -210,6 +215,7 @@ func (this *ServerlessController) clearExpirePod() {
 						return
 					}
 					this.functionFreePods[functionName] = append(this.functionFreePods[functionName][:index], this.functionFreePods[functionName][index+1:]...)
+					continue
 				}
 				this.functionFreePods[functionName][index].freeTime += CheckInterval
 			}
