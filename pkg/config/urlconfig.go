@@ -59,6 +59,11 @@ const (
 	FunctionURL     = "/api/v1/namespaces/:namespace/functions/:name"
 	FunctionRunURL  = "/api/v1/namespaces/:namespace/functions/:name/run"
 
+	WorkflowsAllURL = "/api/v1/workflows"
+	WorkflowsURL    = "/api/v1/namespaces/:namespace/workflows"
+	WorkflowURL     = "/api/v1/namespaces/:namespace/workflows/:name"
+	WorkflowRunURL  = "/api/v1/namespaces/:namespace/workflows/:name/run"
+
 	TriggersURL = "/api/v1/triggers"
 	TriggerURL  = "/api/v1/namespace/:namespace/trigger/:name"
 )

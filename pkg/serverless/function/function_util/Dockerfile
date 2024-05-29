@@ -31,6 +31,7 @@ COPY server.py /app
 RUN cd /app && ls && \
     pip install --no-cache-dir -r requirement.txt
 RUN pip install flask
+RUN pip install requests
 EXPOSE 8080
 
 CMD ["python", "server.py"]
