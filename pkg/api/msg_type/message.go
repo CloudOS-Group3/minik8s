@@ -24,6 +24,8 @@ const (
 	TriggerTopic = "trigger"
 	// job topic
 	JobTopic = "job"
+	// function topic
+	FunctionTopic = "function"
 	// endpoint topic
 	EndpointTopic = "endpoint"
 	// pod operation
@@ -77,4 +79,9 @@ type JobMsg struct {
 	Opt    string  `json:"opt"`
 	NewJob api.Job `json:"new_job,omitempty"`
 	OldJob api.Job `json:"old_job,omitempty"`
+}
+
+type FunctionMsg struct {
+	Opt             string `json:"opt"`
+	OldFunctionName string `json:"old_function_name,omitempty"`
 }

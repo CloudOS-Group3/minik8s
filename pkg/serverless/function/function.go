@@ -1,11 +1,16 @@
 package function
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"minik8s/pkg/api"
+	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/kafka"
 	"minik8s/pkg/serverless/function/function_util"
 	"minik8s/util/log"
 )
+
+var publisher kafka.Publisher
 
 // This file handles:
 // 1. create pod from function
@@ -66,7 +71,11 @@ func DeleteFunction(name string, namespace string) {
 	// Delete function
 	log.Info("Delete function")
 	// Step 1: delete all pods(replicas)
-
+	var functionMsg msg_type.FunctionMsg
+	functionMsg.Opt = msg_type.Delete
+	functionMsg.OldFunctionName = name
+	byteArr, _ := json.Marshal(functionMsg)
+	publisher.Publish(msg_type.FunctionTopic, string(byteArr))
 	// Step 2: delete images
 	err := function_util.DeleteFunctionImage(name, namespace)
 	if err != nil {
