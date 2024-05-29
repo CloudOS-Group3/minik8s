@@ -106,7 +106,7 @@ func CreatePauseContainer(pod *api.Pod) (string, error) {
 	return fmt.Sprintf("%d", pid), nil
 }
 
-func CreateContainer(config api.Container, namespace string, pause_pid string, hostMount map[string]string) containerd.Container {
+func CreateContainer(config api.Container, namespace string, pause_pid string, hostMount map[string]string, volumes []api.Volume) containerd.Container {
 	client, err := util.CreateClient()
 	if err != nil {
 		log.Error("Failed to create containerd client: %v", err.Error())
@@ -174,7 +174,7 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 		return nil
 	}
 
-	task, err := container.Task(context.Background(), nil)
+	task, err := container.NewTask(ctx, cio.NewCreator(cio.WithStdio))
 	if err != nil {
 		log.Error("failed to create container task: %v", err)
 		return nil
@@ -191,31 +191,45 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 		Cwd:  "/",
 		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
 	}
-	execResult, err := task.Exec(ctx, "apt update", &process1, cio.NewCreator(cio.WithStdio))
+	execResult, err := task.Exec(ctx, "apt-update", &process1, cio.NewCreator(cio.WithStdio))
 	if err != nil {
-		log.Error("failed to execResult task: %v", err.Error())
+		log.Error("failed apt update: %v", err.Error())
 		return nil
 	}
 	execResult.Wait(ctx)
+
 	process2 := specs.Process{
 		Args: []string{"apt", "install", "nfs-common"},
 		Cwd:  "/",
 		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
 	}
-	execResult, err = task.Exec(ctx, "apt install nfs-common", &process2, cio.NewCreator(cio.WithStdio))
+	execResult, err = task.Exec(ctx, "apt-install-nfs-common", &process2, cio.NewCreator(cio.WithStdio))
 	if err != nil {
-		log.Error("failed to execResult task: %v", err.Error())
+		log.Error("failed apt install nfs-common: %v", err.Error())
 		return nil
 	}
 	execResult.Wait(ctx)
+
 	process3 := specs.Process{
-		Args: []string{"mkdir", "install", "nfs-common"},
+		Args: []string{"mkdir", "-p", volumes[0].NFS.Path},
 		Cwd:  "/",
 		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
 	}
-	execResult, err = task.Exec(ctx, "make mount dir", &process3, cio.NewCreator(cio.WithStdio))
+	execResult, err = task.Exec(ctx, "make-mount-dir", &process3, cio.NewCreator(cio.WithStdio))
 	if err != nil {
-		log.Error("failed to execResult task: %v", err.Error())
+		log.Error("failed make mount dir: %v", err.Error())
+		return nil
+	}
+	execResult.Wait(ctx)
+
+	process4 := specs.Process{
+		Args: []string{"mount", "-t", "nfs", "192.168.3.6:/nfsroot", volumes[0].NFS.Path},
+		Cwd:  "/",
+		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
+	}
+	execResult, err = task.Exec(ctx, "mount-nfs", &process4, cio.NewCreator(cio.WithStdio))
+	if err != nil {
+		log.Error("failed mount nfs: %v", err.Error())
 		return nil
 	}
 	execResult.Wait(ctx)

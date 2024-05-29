@@ -27,11 +27,11 @@ func CreatePod(pod *api.Pod) bool {
 	// create other containers
 	ctx := namespaces.WithNamespace(context.Background(), pod.Metadata.NameSpace)
 	for _, container_ := range pod.Spec.Containers {
-		new_container := container.CreateContainer(container_, pod.Metadata.NameSpace, pause_container_pid, hostMount)
-		if new_container == nil {
+		newContainer := container.CreateContainer(container_, pod.Metadata.NameSpace, pause_container_pid, hostMount, pod.Spec.Volumes)
+		if newContainer == nil {
 			log.Error("Failed to create container %s", container_.Name)
 		}
-		if container.StartContainer(new_container, ctx) == false {
+		if container.StartContainer(newContainer, ctx) == false {
 			return false
 		}
 	}
