@@ -106,6 +106,10 @@ func NewEndPointController() *EndPointController {
 }
 func OnPodAdd(pod *api.Pod) {
 	log.Info("OnPodAdd")
+	// deal with empty label
+	if pod.Metadata.Labels == nil || len(pod.Metadata.Labels) == 0 {
+		return
+	}
 	labelIndex, _ := GetLabelIndex(pod.Metadata.Labels)
 	log.Info("GetLabelIndex: %v", labelIndex)
 	// Step 1: Deal with new label
