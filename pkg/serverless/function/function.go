@@ -36,7 +36,7 @@ func CreatePythonPod(function *api.Function) *api.Pod {
 		Spec: api.PodSpec{
 			Containers: []api.Container{
 				{
-					Name:            "python",
+					Name:            "python-" + function.Metadata.NameSpace + "-" + function.Metadata.Name,
 					Image:           imageName,
 					ImagePullPolicy: api.PullFromRegistry,
 				},
