@@ -6,9 +6,9 @@ import (
 	"github.com/spf13/cobra"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	"minik8s/pkg/serverless/function/function_util"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
-	"strconv"
 	"strings"
 )
 
@@ -64,26 +64,11 @@ func httpFuncHandler(cmd *cobra.Command, args []string) {
 		log.Error("Can't find function: %s", functionName)
 		return
 	}
-	// Create a map to hold the arguments and their values
-	paramTemp := function.Params
-	if len(paramTemp) != len(args)-1 {
-		log.Error("Wrong number of arguments, should be %d", len(paramTemp))
+
+	params, err := function_util.CheckParams(function.Params, args[1:])
+	if err != nil {
+		log.Error("Error checking params: %s", err)
 		return
-	}
-	params := make(map[string]interface{})
-	for i := 1; i < len(args); i++ {
-		value := args[i]
-		if paramTemp[i-1].Type == "int" {
-			// convert to int
-			intValue, err := strconv.Atoi(value)
-			if err != nil {
-				log.Info("Wrong type of arg %s, should be int", value)
-				return
-			}
-			params[paramTemp[i-1].Name] = intValue
-		} else {
-			params[paramTemp[i-1].Name] = value
-		}
 	}
 
 	//Create the payload
