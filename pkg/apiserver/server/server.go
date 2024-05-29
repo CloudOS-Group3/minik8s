@@ -74,9 +74,15 @@ func (server *apiServer) bind() {
 	server.router.GET(config.DNSURL, handlers.GetDNS)
 
 	server.router.GET(config.FunctionURL, handlers.GetFunction)
+	server.router.GET(config.FunctionsURL, handlers.GetFunctions)
 	server.router.PUT(config.FunctionURL, handlers.UpdateFunction)
 	server.router.POST(config.FunctionURL, handlers.AddFunction)
 	server.router.DELETE(config.FunctionURL, handlers.DeleteFunction)
+
+	server.router.GET(config.WorkflowURL, handlers.GetWorkflow)
+	server.router.PUT(config.WorkflowURL, handlers.UpdateWorkflow)
+	server.router.POST(config.WorkflowURL, handlers.AddWorkflow)
+	server.router.DELETE(config.WorkflowURL, handlers.DeleteWorkflow)
 
 	server.router.GET(config.TriggersURL, handlers.GetTriggers)
 	server.router.POST(config.TriggersURL, handlers.AddTrigger)

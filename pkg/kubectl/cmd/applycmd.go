@@ -84,9 +84,42 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyFunctionHandler(content)
 	case "Trigger":
 		applyTriggerHandler(content)
+	case "Workflow":
+		applyWorkflowHandler(content)
 	default:
 		log.Warn("Unknown resource kind")
 	}
+
+}
+
+func applyWorkflowHandler(content []byte) {
+	log.Info("Creating or updating workflow")
+	workflow := &api.Workflow{}
+	err := yaml.Unmarshal(content, workflow)
+	if err != nil {
+		log.Error("Error yaml unmarshal workflow, %s", err.Error())
+		return
+	}
+
+	workflow.Metadata.UUID = uuid.NewString()
+	if workflow.Metadata.NameSpace == "" {
+		workflow.Metadata.NameSpace = "default"
+	}
+
+	byteArr, err := json.Marshal(*workflow)
+	if err != nil {
+		log.Error("Error json marshal workflow, %s", err.Error())
+		return
+	}
+	URL := config.GetUrlPrefix() + config.WorkflowURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, workflow.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, workflow.Metadata.Name, -1)
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post workflow, %s", err.Error())
+		return
+	}
+	log.Info("apply workflow successed, %v", workflow)
 
 }
 
@@ -101,6 +134,9 @@ func applyFunctionHandler(content []byte) {
 
 	//Generate
 	function.Metadata.UUID = uuid.NewString()
+	if function.Metadata.NameSpace == "" {
+		function.Metadata.NameSpace = "default"
+	}
 
 	byteArr, err := json.Marshal(*function)
 	if err != nil {
