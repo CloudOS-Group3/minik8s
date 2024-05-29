@@ -94,5 +94,6 @@ func (server *apiServer) bind() {
 	server.router.GET(config.JobURL, handlers.GetJob)
 	server.router.DELETE(config.JobURL, handlers.DeleteJob)
 	server.router.PUT(config.JobURL, handlers.UpdateJob)
+	server.router.POST(config.JobResultURL, handlers.JobResultHandler)
 
 }

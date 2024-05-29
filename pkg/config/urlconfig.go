@@ -66,6 +66,8 @@ const (
 
 	TriggersURL = "/api/v1/triggers"
 	TriggerURL  = "/api/v1/namespace/:namespace/trigger/:name"
+
+	JobResultURL = "/result"
 )
 
 // const used to send and parse url

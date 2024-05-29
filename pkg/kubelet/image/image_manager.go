@@ -46,7 +46,7 @@ func PullImage(imageName string, pullPolicy string, client *containerd.Client, n
 }
 
 func pullFromRegistry(imageName string, client *containerd.Client, namespace string) containerd.Image {
-	cmd := exec.Command("nerdctl", "-n", namespace, "pull", imageName)
+	cmd := exec.Command("nerdctl", "-n", namespace, "pull", imageName, "--insecure-registry")
 	log.Info("cmd: %v", cmd)
 	output, err := cmd.CombinedOutput()
 	log.Info("output: %s", string(output))

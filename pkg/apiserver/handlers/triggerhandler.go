@@ -106,6 +106,7 @@ func HttpTriggerFunction(context *gin.Context) {
 	}
 	var function api.Function
 	_ = json.Unmarshal([]byte(str), &function)
+	log.Info("function: %v", function)
 	if function.Trigger.Http == true {
 		var msg msg_type.TriggerMsg
 		msg.Function = function

@@ -22,7 +22,7 @@ def run_script():
         result = func.main(**params)
         response_data = {
             'uuid': uuid,
-            'result': result,
+            'result': str(result),
             'error': '',
         }
     except Exception as e:
