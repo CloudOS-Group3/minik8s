@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/serverless/function/function_util"
 	"minik8s/util/log"
@@ -41,7 +42,7 @@ func CreatePodFromFunction(function *api.Function) *api.Pod {
 
 func CreatePythonPod(function *api.Function) *api.Pod {
 	log.Info("Create python pod")
-	imageName := function_util.GetImageName(function.Metadata.Name, function.Metadata.NameSpace)
+	imageName := config.Remotehost + ":" + function_util.RegistryPort + "/" + function_util.GetImageName(function.Metadata.Name, function.Metadata.NameSpace)
 	pod := &api.Pod{
 		Metadata: api.ObjectMeta{
 			Name:      function_util.GeneratePodName(function.Metadata.Name),
