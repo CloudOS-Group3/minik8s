@@ -73,7 +73,7 @@ func CreateImage(function *api.Function) (string, error) {
 
 func DeleteFunctionImage(name string, namespace string) error {
 	// Step 0: Delete Image in namespace
-	cmd := exec.Command("nerdctl", "-n", namespace, "rm",
+	cmd := exec.Command("nerdctl", "-n", namespace, "image", "rm",
 		config.Remotehost+":"+RegistryPort+"/"+GetImageName(name, namespace))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
