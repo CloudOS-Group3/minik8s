@@ -8,6 +8,7 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/pkg/etcd"
 	"minik8s/pkg/kafka"
+	"minik8s/util/log"
 	"strings"
 	"sync"
 )
@@ -17,6 +18,7 @@ var etcdClient etcd.Store
 
 func WatchHandler(key string, value string) {
 	// "/trigger/function_namespace/function_name"
+	log.Info("etcd trigger")
 	str := key[9:]
 	strList := strings.Split(str, "/")
 	functionNamespace := strList[0]
@@ -46,7 +48,7 @@ func init() {
 		wg := &sync.WaitGroup{}
 		prefix := config.UserTriggerPath
 		etcdClient.PrefixWatch(wg, ctx, prefix, WatchHandler)
-		cancel()
 		wg.Wait()
+		cancel()
 	}()
 }

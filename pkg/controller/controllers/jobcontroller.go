@@ -22,8 +22,8 @@ type JobController struct {
 }
 
 type FunctionParam struct {
-	uuid   string
-	params string
+	UUID   string `json:"uuid"`
+	Params []byte `json:"params"`
 }
 
 func NewJobController() *JobController {
@@ -101,6 +101,7 @@ func (s *JobController) PodHandler(msg []byte) {
 	for index, job := range s.WaitingJob {
 		if job.Instance.Metadata.NameSpace == message.NewPod.Metadata.NameSpace && job.Instance.Metadata.Name == message.NewPod.Metadata.Name {
 			if message.NewPod.Status.PodIP != "" {
+				job.Instance = message.NewPod
 				log.Info("call function")
 				s.CallFunction(job)
 				job.Instance = message.NewPod
@@ -118,12 +119,12 @@ func (s *JobController) PodHandler(msg []byte) {
 func (s *JobController) CallFunction(job api.Job) {
 	log.Info("call function")
 	URL := "http://" + job.Instance.Status.PodIP + ":8080/run"
-	param := FunctionParam{
-		uuid:   job.JobID,
-		params: job.Params,
+	str := "{\"uuid\":\"" + job.JobID + "\", \"params\":" + job.Params + "}"
+	log.Info("params: %s", str)
+	err := httputil.Post(URL, []byte(str))
+	if err != nil {
+		log.Info("call function error: %s", err.Error())
 	}
-	bytes, _ := json.Marshal(param)
-	httputil.Post(URL, bytes)
 }
 
 func (s *JobController) Run() {

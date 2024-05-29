@@ -210,6 +210,7 @@ func (this *ServerlessController) clearExpirePod() {
 						return
 					}
 					this.functionFreePods[functionName] = append(this.functionFreePods[functionName][:index], this.functionFreePods[functionName][index+1:]...)
+					continue
 				}
 				this.functionFreePods[functionName][index].freeTime += CheckInterval
 			}

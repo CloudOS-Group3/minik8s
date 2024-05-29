@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"io/ioutil"
 	"minik8s/pkg/api"
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
@@ -172,6 +173,8 @@ func JobResultHandler(context *gin.Context) {
 			"status": "wrong",
 		})
 	}
+	bytes, _ := ioutil.ReadAll(context.Request.Body)
+	log.Info("job result: %s", string(bytes))
 	URL := config.EtcdJobPath + newResult.UUID
 	jobJson := etcdClient.GetEtcdPair(URL)
 	var job api.Job

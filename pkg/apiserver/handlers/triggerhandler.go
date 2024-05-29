@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
@@ -17,13 +16,14 @@ func AddTrigger(context *gin.Context) {
 	log.Info("Add trigger")
 	var trigger api.Trigger
 	if err := context.ShouldBind(&trigger); err != nil {
+		log.Info("trigger unmarshal error")
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
 		})
 		return
 	}
 
-	funcURL := config.FunctionPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionNamespace
+	funcURL := config.FunctionPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionName
 	str := etcdClient.GetEtcdPair(funcURL)
 	if str == "" {
 		context.JSON(http.StatusBadRequest, gin.H{
@@ -92,10 +92,6 @@ func HttpTriggerFunction(context *gin.Context) {
 	log.Info("Http trigger function")
 	name := context.Param(config.NameParam)
 	namespace := context.Param(config.NamespaceParam)
-	var resMap map[string]interface{}
-	_ = json.NewDecoder(context.Request.Body).Decode(&resMap)
-	res, _ := resMap["params"]
-	dataStr := fmt.Sprint(res)
 	funcURL := config.FunctionPath + namespace + "/" + name
 	str := etcdClient.GetEtcdPair(funcURL)
 	if str == "" {
@@ -110,7 +106,12 @@ func HttpTriggerFunction(context *gin.Context) {
 	if function.Trigger.Http == true {
 		var msg msg_type.TriggerMsg
 		msg.Function = function
-		msg.Params = dataStr
+		if err := context.ShouldBind(&msg); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{
+				"status": err.Error(),
+			})
+			return
+		}
 		jsonString, _ := json.Marshal(msg)
 		publisher.Publish(msg_type.TriggerTopic, string(jsonString))
 	} else {
