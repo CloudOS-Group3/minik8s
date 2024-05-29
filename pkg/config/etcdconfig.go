@@ -41,6 +41,9 @@ const (
 	// usage: /registry/function/<name>
 	FunctionPath = "/registry/function/"
 
+	// usage: /registry/workflow/<name>
+	WorkflowPath = "/registry/workflow/"
+
 	// usage: /registry/job/<job_id>
 	EtcdJobPath = "/registry/jobs/"
 )
