@@ -75,13 +75,13 @@ func (s *JobController) JobHandler(msg []byte) {
 	if message.Opt == msg_type.Add {
 		if message.NewJob.Instance.Status.PodIP != "" {
 			log.Info("call function")
-			s.CallFunction(message.NewJob)
 			job := message.NewJob
 			job.Status = api.JOB_RUNNING
 			URL := config.GetUrlPrefix() + config.JobURL
 			URL = strings.Replace(URL, config.NamePlaceholder, job.JobID, -1)
 			byteArr, _ := json.Marshal(job)
 			httputil.Put(URL, byteArr)
+			s.CallFunction(job)
 		} else {
 			s.WaitingJob = append(s.WaitingJob, message.NewJob)
 		}
@@ -103,13 +103,13 @@ func (s *JobController) PodHandler(msg []byte) {
 			if message.NewPod.Status.PodIP != "" {
 				job.Instance = message.NewPod
 				log.Info("call function")
-				s.CallFunction(job)
 				job.Instance = message.NewPod
 				job.Status = api.JOB_RUNNING
 				URL := config.GetUrlPrefix() + config.JobURL
 				URL = strings.Replace(URL, config.NamePlaceholder, job.JobID, -1)
 				byteArr, _ := json.Marshal(job)
 				httputil.Put(URL, byteArr)
+				s.CallFunction(job)
 				s.WaitingJob = append(s.WaitingJob[:index], s.WaitingJob[index+1:]...)
 			}
 		}

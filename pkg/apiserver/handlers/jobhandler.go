@@ -167,21 +167,18 @@ func UpdateJob(context *gin.Context) {
 func JobResultHandler(context *gin.Context) {
 	log.Info("received job result request")
 	var newResult api.JobResult
-	if err := context.ShouldBind(&newResult); err != nil {
-		log.Error("decode job result failed: %s", err.Error())
-		context.JSON(http.StatusBadRequest, gin.H{
-			"status": "wrong",
-		})
-	}
 	bytes, _ := ioutil.ReadAll(context.Request.Body)
-	log.Info("job result: %s", string(bytes))
+	log.Info("received job result request : %s", string(bytes))
+	_ = json.Unmarshal(bytes, &newResult)
+	log.Info("job result info: %+v", newResult)
 	URL := config.EtcdJobPath + newResult.UUID
 	jobJson := etcdClient.GetEtcdPair(URL)
 	var job api.Job
 	_ = json.Unmarshal([]byte(jobJson), &job)
+	log.Info("job info: %+v", job)
 	oldJob := job
 	job.Status = api.JOB_ENDED
-	if newResult.Error != "" {
+	if newResult.Error == "" {
 		job.Result = newResult.Result
 		log.Info("job result info: %+v", job.Result)
 	} else {
@@ -189,6 +186,7 @@ func JobResultHandler(context *gin.Context) {
 		log.Info("job result info: %+v", job.Result)
 	}
 	jobByteArr, _ := json.Marshal(job)
+	log.Info("job result: %v", job)
 	etcdClient.PutEtcdPair(URL, string(jobByteArr))
 	var message msg.JobMsg
 	message = msg.JobMsg{
