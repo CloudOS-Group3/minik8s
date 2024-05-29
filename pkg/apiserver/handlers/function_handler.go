@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
+	function_manager "minik8s/pkg/serverless/function"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
@@ -15,6 +16,16 @@ func AddFunction(context *gin.Context) {
 	log.Info("Add function")
 	var function api.Function
 	if err := context.ShouldBind(&function); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrong",
+		})
+		return
+	}
+	// Build image
+
+	err := function_manager.CreateImageFromFunction(&function)
+	if err != nil {
+		log.Error("Error create image: %s", err.Error())
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
 		})
