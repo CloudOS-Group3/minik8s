@@ -203,7 +203,8 @@ func (this *ServerlessController) clearExpirePod() {
 	for {
 		<-time.After(CheckInterval)
 		for functionName, freePods := range this.functionFreePods {
-			for index, freePod := range freePods {
+			for index := 0; index < len(freePods); index++ {
+				freePod := freePods[index]
 				if freePod.freeTime >= MaxFreeTime {
 					URL := config.GetUrlPrefix() + config.PodURL
 					URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
@@ -215,6 +216,7 @@ func (this *ServerlessController) clearExpirePod() {
 						return
 					}
 					this.functionFreePods[functionName] = append(this.functionFreePods[functionName][:index], this.functionFreePods[functionName][index+1:]...)
+					index--
 					continue
 				}
 				this.functionFreePods[functionName][index].freeTime += CheckInterval

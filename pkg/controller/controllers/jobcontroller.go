@@ -90,6 +90,7 @@ func (s *JobController) JobHandler(msg []byte) {
 		for index, job := range s.WaitingJob {
 			if job.JobID == message.OldJob.JobID {
 				s.WaitingJob = append(s.WaitingJob[:index], s.WaitingJob[index+1:]...)
+				break
 			}
 		}
 	}
@@ -98,7 +99,8 @@ func (s *JobController) JobHandler(msg []byte) {
 func (s *JobController) PodHandler(msg []byte) {
 	var message msg_type.PodMsg
 	_ = json.Unmarshal(msg, &message)
-	for index, job := range s.WaitingJob {
+	for index := 0; index < len(s.WaitingJob); index++ {
+		job := s.WaitingJob[index]
 		if job.Instance.Metadata.NameSpace == message.NewPod.Metadata.NameSpace && job.Instance.Metadata.Name == message.NewPod.Metadata.Name {
 			if message.NewPod.Status.PodIP != "" {
 				job.Instance = message.NewPod
@@ -111,6 +113,7 @@ func (s *JobController) PodHandler(msg []byte) {
 				httputil.Put(URL, byteArr)
 				s.CallFunction(job)
 				s.WaitingJob = append(s.WaitingJob[:index], s.WaitingJob[index+1:]...)
+				index--
 			}
 		}
 	}
