@@ -6,6 +6,7 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
+	"minik8s/util/stringutil"
 	"net/http"
 )
 
@@ -59,6 +60,17 @@ func GetFunction(context *gin.Context) {
 	})
 }
 
+func GetFunctions(context *gin.Context) {
+	log.Info("received get pods request")
+
+	URL := config.FunctionPath
+	functions := etcdClient.PrefixGet(URL)
+
+	jsonString := stringutil.EtcdResEntryToJSON(functions)
+	context.JSON(http.StatusOK, gin.H{
+		"data": jsonString,
+	})
+}
 func UpdateFunction(context *gin.Context) {
 	// Update function
 	log.Info("Update function")

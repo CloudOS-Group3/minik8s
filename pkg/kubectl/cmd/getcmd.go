@@ -65,6 +65,12 @@ func GetCmd() *cobra.Command {
 		Run:   getJobCmdHandler,
 	}
 
+	getFunctionCmd := &cobra.Command{
+		Use:   "function",
+		Short: "get function",
+		Run:   getFunctionCmdHandler,
+	}
+
 	getPodCmd.Aliases = []string{"po", "pods"}
 	getNodeCmd.Aliases = []string{"no", "nodes"}
 	getServiceCmd.Aliases = []string{"svc", "service"}
@@ -72,15 +78,59 @@ func GetCmd() *cobra.Command {
 	getHPACmd.Aliases = []string{"hpas"}
 
 	getPodCmd.Flags().StringP("namespace", "n", "default", "namespace of the pod")
-	getServiceCmd.Flags().StringP("namespace", "n", "default", "namespace of the pod")
+	getServiceCmd.Flags().StringP("namespace", "n", "default", "namespace of the service")
+	getFunctionCmd.Flags().StringP("namespace", "n", "default", "namespace of the function")
 	getCmd.AddCommand(getPodCmd)
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
 	getCmd.AddCommand(getServiceCmd)
 	getCmd.AddCommand(getTriggerCmd)
 	getCmd.AddCommand(getJobCmd)
+	getCmd.AddCommand(getFunctionCmd)
 
 	return getCmd
+}
+
+func getFunctionCmdHandler(cmd *cobra.Command, args []string) {
+	namespace := cmd.Flag("namespace").Value.String()
+	matchFunctions := []api.Function{}
+	if len(args) == 0 {
+		log.Info("getting all functions")
+		URL := config.GetUrlPrefix() + config.FunctionsURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+		err := httputil.Get(URL, &matchFunctions, "data")
+		if err != nil {
+			log.Error("error get all functions: %s", err.Error())
+			return
+		}
+	} else {
+		for _, functionName := range args {
+			function := &api.Function{}
+			URL := config.GetUrlPrefix() + config.FunctionURL
+			URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+			URL = strings.Replace(URL, config.NamePlaceholder, functionName, -1)
+			err := httputil.Get(URL, function, "data")
+			if err != nil {
+				log.Error("error get function: %s", err.Error())
+				return
+			}
+			matchFunctions = append(matchFunctions, *function)
+		}
+	}
+
+	header := []string{"name", "namespace", "path", "trigger"}
+	data := [][]string{}
+	for _, matchFunction := range matchFunctions {
+		trigger := "http"
+		if matchFunction.Trigger.Event {
+			trigger = "event"
+		}
+		if matchFunction.Trigger.Http && matchFunction.Trigger.Event {
+			trigger = "http & event"
+		}
+		data = append(data, []string{matchFunction.Metadata.Name, matchFunction.Metadata.NameSpace, matchFunction.FilePath, trigger})
+	}
+	prettyprint.PrintTable(header, data)
 }
 
 // TODO: all of these handlers have got the data, but they dont show it in the terminal
