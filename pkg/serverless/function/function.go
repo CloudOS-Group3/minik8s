@@ -62,3 +62,16 @@ func CreatePythonPod(function *api.Function) *api.Pod {
 	pod_manager.CreatePod(pod)
 	return pod
 }
+
+func DeleteFunction(name string, namespace string) {
+	// Delete function
+	log.Info("Delete function")
+	// Step 1: delete all pods(replicas)
+
+	// Step 2: delete images
+	err := function_util.DeleteFunctionImage(name, namespace)
+	if err != nil {
+		log.Error("error delete function image: %s", err.Error())
+		return
+	}
+}

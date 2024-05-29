@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"minik8s/pkg/config"
+	"minik8s/pkg/serverless/function"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"strings"
@@ -103,6 +104,8 @@ func deleteFunctionCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 	log.Info("function name: %s, namespace: %s", name, namespace)
+
+	function.DeleteFunction(name, namespace)
 }
 
 func deletePodCmdHandler(cmd *cobra.Command, args []string) {
