@@ -1,3 +1,4 @@
+import json
 import requests
 from flask import Flask, request
 import my_function as func
@@ -22,7 +23,7 @@ def run_script():
         result = func.main(**params)
         response_data = {
             'uuid': uuid,
-            'result': str(result),
+            'result': json.dumps(result),
             'error': '',
         }
     except Exception as e:
