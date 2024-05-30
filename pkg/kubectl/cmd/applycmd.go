@@ -85,6 +85,8 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyTriggerHandler(content)
 	case "Workflow":
 		applyWorkflowHandler(content)
+	case "Node":
+		applyNodeHandler(content)
 	default:
 		log.Warn("Unknown resource kind")
 	}
@@ -323,4 +325,26 @@ func applyTriggerHandler(content []byte) {
 		return
 	}
 	log.Info("apply trigger successed")
+}
+
+func applyNodeHandler(content []byte) {
+	log.Info("creating or updating node")
+	node := &api.Node{}
+	err := yaml.Unmarshal(content, node)
+	if err != nil {
+		log.Error("Error yaml unmarshal node")
+		return
+	}
+	byteArr, err := json.Marshal(*node)
+	if err != nil {
+		log.Error("Error json marshal node")
+		return
+	}
+	URL := config.GetUrlPrefix() + config.NodesURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply node successed")
 }

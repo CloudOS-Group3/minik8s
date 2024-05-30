@@ -5,6 +5,7 @@ import (
 	"minik8s/pkg/api"
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
+	"minik8s/util/consul"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
@@ -51,6 +52,12 @@ func AddNode(context *gin.Context) {
 		"statas": "ok",
 	})
 
+	ID := "node-exporter-" + newNode.Metadata.Name
+	name := "node-exporter-" + newNode.Metadata.Name
+	port := 9100
+	addr := context.ClientIP()
+	consul.RegisterService(ID, name, addr, port)
+
 }
 
 func GetNode(context *gin.Context) {
@@ -86,13 +93,10 @@ func DeleteNode(context *gin.Context) {
 	log.Info("received delete node request")
 	name := context.Param(config.NameParam)
 
-	if name == "" {
-		log.Error("node name empty")
-		return
-	}
-
 	URL := config.EtcdNodePath + name
 	etcdClient.DeleteEtcdPair(URL)
+	ID := "node-exporter-" + name
+	consul.DeRegisterService(ID)
 }
 
 func UpdateNode(context *gin.Context) {
@@ -127,6 +131,11 @@ func UpdateNode(context *gin.Context) {
 			Opt:     msg.Add,
 			NewNode: newNode,
 		}
+		ID := "node-exporter-" + newNode.Metadata.Name
+		name := "node-exporter-" + newNode.Metadata.Name
+		port := 9100
+		addr := context.ClientIP()
+		consul.RegisterService(ID, name, addr, port)
 	} else {
 		var node api.Node
 		if err := json.Unmarshal([]byte(oldNode), &node); err != nil {
