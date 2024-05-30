@@ -23,6 +23,7 @@ func CreateImage(function *api.Function) (string, error) {
 	tempPath := filepath.Join(curPath, function.Metadata.UUID)
 	err := os.Mkdir(tempPath, os.ModePerm)
 	if err != nil {
+		log.Error("Failed to create temp directory")
 		return "", err
 	}
 	defer func(path string) {
@@ -44,6 +45,7 @@ func CreateImage(function *api.Function) (string, error) {
 	output, err := cmd.CombinedOutput()
 	//log.Info("output: %s", string(output))
 	if err != nil {
+		log.Error("failed to run build: %s", string(output))
 		return "", err
 	}
 
@@ -55,6 +57,7 @@ func CreateImage(function *api.Function) (string, error) {
 	output, err = cmd.CombinedOutput()
 	//log.Info("output: %s", string(output))
 	if err != nil {
+		log.Error("failed to run tag: %s", string(output))
 		return "", err
 	}
 
@@ -66,6 +69,7 @@ func CreateImage(function *api.Function) (string, error) {
 	output, err = cmd.CombinedOutput()
 	log.Info("output: %s", string(output))
 	if err != nil {
+		log.Error("failed to run push: %s", string(output))
 		return "", err
 	}
 	return config.Remotehost + ":" + RegistryPort + "/" + GetImageName(function.Metadata.Name, function.Metadata.NameSpace), nil

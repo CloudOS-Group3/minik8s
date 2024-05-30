@@ -5,6 +5,7 @@ import my_function as func
 app = Flask(__name__)
 
 # curl -X POST -H "Content-Type: application/json" -d '{"uuid":"1234", "params": {"x": 8, "y": 9}}' http://localhost:8080/run
+# curl -X POST -H "Content-Type: application/json" -d '{"uuid":"1234", "params": {"x": 8, "y": 9}}' http://localhost:6443/api/v1/namespaces/default/functions/matrix-calculate/run
 # {"uuid": "123",
 #  "params":
 #      {

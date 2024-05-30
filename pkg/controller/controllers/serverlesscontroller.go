@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	MaxFreeTime   time.Duration = 30 * time.Second
+	MaxFreeTime   time.Duration = 60 * time.Second
 	CheckInterval time.Duration = 10 * time.Second
 )
 
@@ -132,6 +132,7 @@ func (this *ServerlessController) triggerNewJob(content []byte) {
 }
 
 func (this *ServerlessController) updateJob(content []byte) {
+	log.Debug("updating job")
 	var jobMsg msg_type.JobMsg
 	err := json.Unmarshal(content, &jobMsg)
 	if err != nil {
@@ -171,6 +172,7 @@ func (this *ServerlessController) updateJob(content []byte) {
 }
 
 func (this *ServerlessController) DeleteFunction(content []byte) {
+	log.Debug("deleting function")
 	var functionMsg msg_type.FunctionMsg
 	err := json.Unmarshal(content, &functionMsg)
 	if err != nil {
@@ -202,10 +204,12 @@ func (this *ServerlessController) DeleteFunction(content []byte) {
 func (this *ServerlessController) clearExpirePod() {
 	for {
 		<-time.After(CheckInterval)
+		log.Debug("checking expire pod")
 		for functionName, freePods := range this.functionFreePods {
-			for index := 0; index < len(freePods); index++ {
+			for index := 0; index < len(this.functionFreePods[functionName]); index++ {
 				freePod := freePods[index]
 				if freePod.freeTime >= MaxFreeTime {
+					log.Debug("pod %s is expired", freePod.pod.Metadata.Name)
 					URL := config.GetUrlPrefix() + config.PodURL
 					URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 					URL = strings.Replace(URL, config.NamePlaceholder, freePod.pod.Metadata.Name, -1)
@@ -229,7 +233,7 @@ func (this *ServerlessController) Run() {
 	go this.clearExpirePod()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{msg_type.TriggerTopic, msg_type.JobTopic}
+	topics := []string{msg_type.TriggerTopic, msg_type.JobTopic, msg_type.FunctionTopic}
 	this.subscriber.Subscribe(wg, ctx, topics, this)
 	<-this.ready
 	<-this.done
