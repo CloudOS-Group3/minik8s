@@ -6,9 +6,11 @@ import (
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	"minik8s/util/consul"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -94,9 +96,27 @@ func DeleteNode(context *gin.Context) {
 	name := context.Param(config.NameParam)
 
 	URL := config.EtcdNodePath + name
+	oldNode := etcdClient.GetEtcdPair(URL)
 	etcdClient.DeleteEtcdPair(URL)
 	ID := "node-exporter-" + name
 	consul.DeRegisterService(ID)
+	var node api.Node
+	_ = json.Unmarshal([]byte(oldNode), &node)
+	var message msg.NodeMsg
+	message = msg.NodeMsg{
+		Opt:     msg.Delete,
+		OldNode: node,
+	}
+	msgJson, _ := json.Marshal(message)
+	publisher.Publish(msg.NodeTopic, string(msgJson))
+	for _, pod := range node.Status.Pods {
+		pod.Spec.NodeName = ""
+		URL = config.GetUrlPrefix() + config.PodURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
+		URL = strings.Replace(URL, config.NamePlaceholder, pod.Metadata.Name, -1)
+		podJson, _ := json.Marshal(pod)
+		httputil.Put(URL, podJson)
+	}
 }
 
 func UpdateNode(context *gin.Context) {

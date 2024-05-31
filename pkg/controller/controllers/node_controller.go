@@ -64,7 +64,7 @@ func (s *NodeController) CheckNode() {
 			heartBeatTime := node.Status.Condition.LastHeartbeatTime
 			currentTime := time.Now()
 			TimeDiff := currentTime.Sub(heartBeatTime)
-			if TimeDiff > time.Minute*3 {
+			if TimeDiff > time.Minute*1 {
 				log.Info("Node dead: %s", node.Metadata.Name)
 				node.Status.Condition.Status = api.NodeUnknown
 				URL := config.GetUrlPrefix() + config.NodeURL
@@ -79,6 +79,13 @@ func (s *NodeController) CheckNode() {
 					log.Error("Error putting node: %s", err.Error())
 				}
 				s.RegisteredNode[index] = node
+			}
+		}
+		for _, node := range s.RegisteredNode {
+			if node.Status.Condition.Status == api.NodeUnknown {
+				URL := config.GetUrlPrefix() + config.NodeURL
+				URL = strings.Replace(URL, config.NamePlaceholder, node.Metadata.Name, -1)
+				httputil.Delete(URL)
 			}
 		}
 		time.Sleep(time.Second * 30)
