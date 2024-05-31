@@ -71,6 +71,12 @@ func GetCmd() *cobra.Command {
 		Run:   getFunctionCmdHandler,
 	}
 
+	getResultCmd := &cobra.Command{
+		Use:   "result",
+		Short: "get trigger result",
+		Run:   getResultCmdHandler,
+	}
+
 	getPodCmd.Aliases = []string{"po", "pods"}
 	getNodeCmd.Aliases = []string{"no", "nodes"}
 	getServiceCmd.Aliases = []string{"svc", "service"}
@@ -87,8 +93,26 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getTriggerCmd)
 	getCmd.AddCommand(getJobCmd)
 	getCmd.AddCommand(getFunctionCmd)
+	getCmd.AddCommand(getResultCmd)
 
 	return getCmd
+}
+
+func getResultCmdHandler(cmd *cobra.Command, args []string) {
+	matchResults := []api.WorkflowResult{}
+	log.Info("getting all results")
+	URL := config.GetUrlPrefix() + config.TriggerResultsURL
+	err := httputil.Get(URL, &matchResults, "data")
+	if err != nil {
+		log.Error("error get all results: %s", err.Error())
+		return
+	}
+	header := []string{"name", "namespace", "result", "invoke time", "end time"}
+	data := [][]string{}
+	for _, matchResult := range matchResults {
+		data = append(data, []string{matchResult.Metadata.Name, matchResult.Metadata.NameSpace, strings.Join(matchResult.Result, ","), matchResult.InvokeTime, matchResult.EndTime})
+	}
+	prettyprint.PrintTable(header, data)
 }
 
 func getFunctionCmdHandler(cmd *cobra.Command, args []string) {
