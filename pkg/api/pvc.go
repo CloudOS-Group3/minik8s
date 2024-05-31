@@ -18,7 +18,8 @@ type PVCSpec struct {
 }
 
 type PVCStatus struct {
-	AccessModes        []string `yaml:"accessModes" json:"accessModes"`
-	AllocatedResources struct{} `yaml:"allocatedResources" json:"allocatedResources"`
-	Capacity           struct{} `yaml:"capacity" json:"capacity"`
+	AccessModes        []string     `yaml:"accessModes" json:"accessModes"`
+	AllocatedResources struct{}     `yaml:"allocatedResources" json:"allocatedResources"`
+	Capacity           CapacitySpec `yaml:"capacity" json:"capacity"`
+	TargetPV           PV           `yaml:"targetPV" json:"targetPV"`
 }

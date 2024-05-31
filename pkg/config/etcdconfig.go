@@ -37,4 +37,7 @@ const (
 
 	// usage: /registry/pv/<name>
 	EtcdPVPath = "/registry/pv/"
+
+	// usage: /registry/pvc/<name>
+	ETcdPVCPath = "/registry/pvc/"
 )

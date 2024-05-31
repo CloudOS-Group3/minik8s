@@ -5,11 +5,10 @@ import (
 	"minik8s/pkg/config"
 )
 
-
 func main() {
-	
+
 	host, port := config.GetHostAndPort()
-	server := server.NewApiserver(host, port)
+	server := server.NewAPIserver(host, port)
 
 	server.Run()
 }

@@ -14,7 +14,7 @@ type apiServer struct {
 	port   int
 }
 
-func NewApiserver(host string, port int) *apiServer {
+func NewAPIserver(host string, port int) *apiServer {
 	return &apiServer{
 		router: gin.Default(),
 		host:   host,
@@ -74,4 +74,12 @@ func (server *apiServer) bind() {
 	server.router.GET(config.DNSURL, handlers.GetDNS)
 
 	server.router.POST(config.PersistentVolumesURL, handlers.AddPV)
+	server.router.GET(config.PersistentVolumesURL, handlers.GetPVs)
+	server.router.GET(config.PersistentVolumeURL, handlers.GetPV)
+	server.router.DELETE(config.PersistentVolumeURL, handlers.DeletePV)
+
+	server.router.POST(config.PersistentVolumeClaimsURL, handlers.AddPVC)
+	server.router.GET(config.PersistentVolumeClaimsURL, handlers.GetPVCs)
+	server.router.GET(config.PersistentVolumeClaimURL, handlers.GetPVC)
+	server.router.DELETE(config.PersistentVolumeClaimURL, handlers.DeletePVC)
 }

@@ -115,9 +115,14 @@ type VolumeMount struct {
 }
 
 type Volume struct {
-	Name     string          `json:"name,omitempty" yaml:"name,omitempty"`
-	HostPath string          `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
-	NFS      NFSVolumeSource `json:"nfs,omitempty" yaml:"nfs,omitempty"`
+	Name                  string                            `json:"name,omitempty" yaml:"name,omitempty"`
+	HostPath              string                            `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
+	NFS                   NFSVolumeSource                   `json:"nfs,omitempty" yaml:"nfs,omitempty"`
+	PersistentVolumeClaim PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty" yaml:"persistentVolumeClaim,omitempty"`
+}
+
+type PersistentVolumeClaimVolumeSource struct {
+	ClaimName string `json:"claimName,omitempty" yaml:"claimName,omitempty"`
 }
 
 const (

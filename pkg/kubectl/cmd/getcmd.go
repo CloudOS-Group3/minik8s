@@ -53,6 +53,18 @@ func GetCmd() *cobra.Command {
 		Run:   getHPACmdHandler,
 	}
 
+	getPVCmd := &cobra.Command{
+		Use:   "pv",
+		Short: "get pv",
+		Run:   getPVCmdHandler,
+	}
+
+	getPVCCmd := &cobra.Command{
+		Use:   "pvc",
+		Short: "get pvc",
+		Run:   getPVCCmdHandler,
+	}
+
 	getPodCmd.Aliases = []string{"po", "pods"}
 	getNodeCmd.Aliases = []string{"no", "nodes"}
 	getServiceCmd.Aliases = []string{"svc", "service"}
@@ -65,6 +77,9 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
 	getCmd.AddCommand(getServiceCmd)
+	getCmd.AddCommand(getHPACmd)
+	getCmd.AddCommand(getPVCmd)
+	getCmd.AddCommand(getPVCCmd)
 
 	return getCmd
 }
@@ -253,4 +268,50 @@ func getHPACmdHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
+}
+
+func getPVCmdHandler(cmd *cobra.Command, args []string) {
+	log.Debug("getting all PVs")
+
+	var matchPVs []api.PV
+	URL := config.GetUrlPrefix() + config.PersistentVolumesURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	err := httputil.Get(URL, &matchPVs, "data")
+	if err != nil {
+		log.Error("error getting all PVs: %s", err.Error())
+		return
+	}
+
+	header := []string{"name", "capacity"}
+	data := [][]string{}
+	for _, matchPV := range matchPVs {
+		data = append(data, []string{matchPV.Metadata.Name, matchPV.Spec.Capacity.Storage})
+	}
+
+	prettyprint.PrintTable(header, data)
+
+	log.Debug("successfully get all PVs")
+}
+
+func getPVCCmdHandler(cmd *cobra.Command, args []string) {
+	log.Debug("getting all PVCs")
+
+	var matchPVCs []api.PVC
+	URL := config.GetUrlPrefix() + config.PersistentVolumeClaimsURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	err := httputil.Get(URL, &matchPVCs, "data")
+	if err != nil {
+		log.Error("error getting all PVs: %s", err.Error())
+		return
+	}
+
+	header := []string{"name", "request resource"}
+	data := [][]string{}
+	for _, matchPVC := range matchPVCs {
+		data = append(data, []string{matchPVC.Metadata.Name, matchPVC.Spec.Resources.Requests.Storage})
+	}
+
+	prettyprint.PrintTable(header, data)
+
+	log.Debug("successfully get all PVCs")
 }

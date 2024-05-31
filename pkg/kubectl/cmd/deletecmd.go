@@ -48,6 +48,18 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteDNSCmdHandler,
 	}
 
+	deletePVCmd := &cobra.Command{
+		Use:   "pv",
+		Short: "delete PV",
+		Run:   deletePVCmdHandler,
+	}
+
+	deletePVCCmd := &cobra.Command{
+		Use:   "pvc",
+		Short: "delete PVC",
+		Run:   deletePVCCmdHandler,
+	}
+
 	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 
@@ -56,6 +68,8 @@ func DeleteCmd() *cobra.Command {
 	deleteCmd.AddCommand(deleteServiceCmd)
 	deleteCmd.AddCommand(deleteHPACmd)
 	deleteCmd.AddCommand(deleteDNSCmd)
+	deleteCmd.AddCommand(deletePVCmd)
+	deleteCmd.AddCommand(deletePVCCmd)
 
 	return deleteCmd
 }
@@ -138,4 +152,34 @@ func deleteDNSCmdHandler(cmd *cobra.Command, args []string) {
 		log.Error("error http post: %s", err.Error())
 		return
 	}
+}
+
+func deletePVCmdHandler(cmd *cobra.Command, args []string) {
+	log.Info("deleting pv")
+	for _, name := range args {
+		URL := config.GetUrlPrefix() + config.PersistentVolumeURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
+		err := httputil.Delete(URL)
+		if err != nil {
+			log.Error("error http post: %s", err.Error())
+			continue
+		}
+	}
+	log.Info("successfully deleted pv")
+}
+
+func deletePVCCmdHandler(cmd *cobra.Command, args []string) {
+	log.Info("deleting pvc")
+	for _, name := range args {
+		URL := config.GetUrlPrefix() + config.PersistentVolumeClaimURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
+		err := httputil.Delete(URL)
+		if err != nil {
+			log.Error("error http post: %s", err.Error())
+			continue
+		}
+	}
+	log.Info("successfully deleted pvc")
 }

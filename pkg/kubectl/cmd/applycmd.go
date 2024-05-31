@@ -81,6 +81,8 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyDNSHandler(content)
 	case "PV":
 		applyPVHandler(content)
+	case "PVC":
+		applyPVCHandler(content)
 	default:
 		log.Warn("Unknown resource kind")
 	}
@@ -257,4 +259,26 @@ func applyPVHandler(content []byte) {
 		return
 	}
 	log.Info("apply PV successed")
+}
+
+func applyPVCHandler(content []byte) {
+	log.Info("creating or updating PV")
+	pvc := &api.PVC{}
+	err := yaml.Unmarshal(content, pvc)
+	if err != nil {
+		log.Error("Error yaml unmarshal PVC")
+		return
+	}
+	byteArr, err := json.Marshal(*pvc)
+	if err != nil {
+		log.Error("Error json marshal PVC")
+		return
+	}
+	URL := config.GetUrlPrefix() + config.PersistentVolumeClaimsURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply PVC successed")
 }

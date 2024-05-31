@@ -12,8 +12,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"minik8s/pkg/api"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kubelet/image"
 	"minik8s/pkg/util"
+	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"os"
 	"os/exec"
@@ -107,42 +109,6 @@ func CreatePauseContainer(pod *api.Pod) (string, error) {
 	return fmt.Sprintf("%d", pid), nil
 }
 
-func ExecuteCommandInContainer(ctx context.Context, task containerd.Task, command []string) error {
-	execID := command[0]
-	execProcessSpec := specs.Process{
-		Args: command,
-		Cwd:  "/",
-		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
-	}
-
-	execTask, err := task.Exec(ctx, execID, &execProcessSpec, cio.NewCreator(cio.WithStdio))
-	if err != nil {
-		return err
-	}
-	defer execTask.Delete(ctx)
-
-	if err := execTask.Start(ctx); err != nil {
-		return err
-	}
-
-	statusC, err := execTask.Wait(ctx)
-	if err != nil {
-		return err
-	}
-
-	status := <-statusC
-	code, _, err := status.Result()
-	if err != nil {
-		return err
-	}
-
-	if code != 0 {
-		return fmt.Errorf("command %s exited with status %d", command, code)
-	}
-
-	return nil
-}
-
 func runCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 
@@ -158,7 +124,7 @@ func runCommand(name string, args ...string) error {
 	return cmd.Run()
 }
 
-func CreateContainer(config api.Container, namespace string, pause_pid string, hostMount map[string]string, volumes []api.Volume) containerd.Container {
+func CreateContainer(containerConfig api.Container, namespace string, pause_pid string, hostMount map[string]string, volumes []api.Volume) containerd.Container {
 	client, err := util.CreateClient()
 	if err != nil {
 		log.Error("Failed to create containerd client: %v", err.Error())
@@ -168,18 +134,18 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 
 	// pull image
 
-	image_ := image.PullImage(config.Image, config.ImagePullPolicy, client, namespace)
+	image_ := image.PullImage(containerConfig.Image, containerConfig.ImagePullPolicy, client, namespace)
 	if image_ == nil {
-		log.Error("Failed to pull image %s", config.Image)
+		log.Error("Failed to pull image %s", containerConfig.Image)
 		return nil
 	}
 
 	// create container
 
 	// check if exists
-	container_, err := client.LoadContainer(ctx, config.Name)
+	container_, err := client.LoadContainer(ctx, containerConfig.Name)
 	if err == nil {
-		log.Info("Container %s already exists", config.Name)
+		log.Info("Container %s already exists", containerConfig.Name)
 		return container_
 	}
 	opt := []oci.SpecOpts{oci.WithImageConfig(image_)}
@@ -197,7 +163,7 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 
 	/* Manage volume: mount host path to container */
 	log.Info("hostMount: %v", hostMount)
-	for _, volume := range config.VolumeMounts {
+	for _, volume := range containerConfig.VolumeMounts {
 		permission := "rw"
 		if volume.ReadOnly {
 			permission = "ro"
@@ -213,16 +179,16 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 	}
 	opt_ := []containerd.NewContainerOpts{
 		//containerd.WithImage(image_),
-		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
+		containerd.WithNewSnapshot(containerConfig.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
 		containerd.WithNewSpec(opt...),
 	}
 	container, err := client.NewContainer(
 		ctx,
-		config.Name,
+		containerConfig.Name,
 		opt_...,
 	)
 	if err != nil {
-		log.Error("Failed to create container %s: %v", config.Name, err.Error())
+		log.Error("Failed to create container %s: %v", containerConfig.Name, err.Error())
 		return nil
 	}
 
@@ -238,27 +204,44 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 		return nil
 	}
 
-	//ExecuteCommandInContainer(ctx, task, []string{"apt", "update"})
-	//ExecuteCommandInContainer(ctx, task, []string{"apt", "install", "nfs-common"})
-	//ExecuteCommandInContainer(ctx, task, []string{"mkdir", "-p", volumes[0].NFS.Path})
-	//ExecuteCommandInContainer(ctx, task, []string{"mount", "-t", "nfs", "192.168.3.7:/nfsroot", volumes[0].NFS.Path})
+	if len(volumes) > 0 {
 
-	if len(volumes) > 0 && volumes[0].NFS.Path != "" {
-		if err = runCommand("nerdctl", "exec", "-it", config.Name, "apt", "update"); err != nil {
+		URL := config.GetUrlPrefix() + config.PersistentVolumeClaimURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+		URL = strings.Replace(URL, config.NamePlaceholder, volumes[0].PersistentVolumeClaim.ClaimName, -1)
+
+		var pvc api.PVC
+		err := httputil.Get(URL, &pvc, "data")
+		if err != nil {
+			log.Error("Failed to get PVC: %v", err)
+			return nil
+		}
+
+		mountPoint := ""
+		for _, volumeMount := range containerConfig.VolumeMounts {
+			if volumeMount.Name == volumes[0].Name {
+				mountPoint = volumeMount.MountPath
+			}
+		}
+
+		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "apt", "update"); err != nil {
 			log.Error("error apt update")
 		}
-		if err = runCommand("nerdctl", "exec", "-it", config.Name, "apt", "install", "nfs-common", "-y"); err != nil {
+		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "apt", "install", "nfs-common", "-y"); err != nil {
 			log.Error("error apt install")
 		}
-		if err = runCommand("nerdctl", "exec", "-it", config.Name, "mkdir", "-p", volumes[0].NFS.Path); err != nil {
+		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "mkdir", "-p", mountPoint); err != nil {
 			log.Error("error mkdir")
 		}
-		if err = runCommand("nerdctl", "exec", "-it", config.Name, "mount", "-t", "nfs", "-o", "nolock", "192.168.3.6:/nfsroot/test", volumes[0].NFS.Path); err != nil {
+		serverMountPoint := pvc.Status.TargetPV.Spec.NFS.Server + ":" + pvc.Status.TargetPV.Spec.NFS.Path
+
+		log.Debug("local mount point: %s, server mount point: %s", mountPoint, serverMountPoint)
+		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "mount", "-t", "nfs", "-o", "nolock", serverMountPoint, mountPoint); err != nil {
 			log.Error("error mount")
 		}
 	}
 
-	log.Info("Container %s created", config.Name)
+	log.Info("Container %s created", containerConfig.Name)
 	return container
 
 }
