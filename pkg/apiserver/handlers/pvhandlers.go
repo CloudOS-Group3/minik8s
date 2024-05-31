@@ -151,7 +151,7 @@ func DeletePV(context *gin.Context) {
 	}
 	execRemoteCommand(client, fmt.Sprintf("rm -rf %s", pv.Spec.NFS.Path))
 	mountPathEscaped := strings.Replace(pv.Spec.NFS.Path, "/", "\\/", -1)
-	execRemoteCommand(client, fmt.Sprintf(`sed -i "/%s *(rw,sync,no_root_squash)/d" /etc/exports`, mountPathEscaped))
+	execRemoteCommand(client, fmt.Sprintf(`sed -i "/%s \*(rw,sync,no_root_squash)/d" /etc/exports`, mountPathEscaped))
 	execRemoteCommand(client, "exportfs -rav")
 	execRemoteCommand(client, "systemctl restart nfs-kernel-server")
 

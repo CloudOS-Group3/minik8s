@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PVC
 metadata:
-  name: my-pvc
+  name: test-pvc
   namespace: default
 spec:
   accessModes:
