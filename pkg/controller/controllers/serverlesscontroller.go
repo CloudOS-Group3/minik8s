@@ -53,6 +53,7 @@ func (this *ServerlessController) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (this *ServerlessController) Cleanup(_ sarama.ConsumerGroupSession) error {
+	this.ready = make(chan bool)
 	return nil
 }
 

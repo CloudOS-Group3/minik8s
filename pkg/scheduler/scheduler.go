@@ -43,6 +43,7 @@ func (s *Scheduler) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (s *Scheduler) Cleanup(_ sarama.ConsumerGroupSession) error {
+	s.ready = make(chan bool)
 	return nil
 }
 

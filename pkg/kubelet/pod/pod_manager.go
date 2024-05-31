@@ -8,6 +8,7 @@ import (
 	"minik8s/pkg/kubelet/node"
 	"minik8s/util/consul"
 	"minik8s/util/log"
+	"strconv"
 )
 
 func CreatePod(pod *api.Pod) bool {
@@ -45,7 +46,7 @@ func CreatePod(pod *api.Pod) bool {
 		for _, port := range cont.Ports {
 			if port.Prometheus == true {
 				assigned = true
-				ID := "user-pod-" + pod.Metadata.NameSpace + "-" + pod.Metadata.Name + "-" + string(rune(count)) + "-" + string(rune(portCount))
+				ID := "user-pod-" + pod.Metadata.NameSpace + "-" + pod.Metadata.Name + "-" + strconv.Itoa(count) + "-" + strconv.Itoa(portCount)
 				name := ID
 				addr := pod.Status.PodIP
 				watchPort := port.ContainerPort
@@ -71,7 +72,7 @@ func DeletePod(pod *api.Pod) bool {
 		for _, port := range cont.Ports {
 			if port.Prometheus == true {
 				assigned = true
-				ID := "user-pod-" + pod.Metadata.NameSpace + "-" + pod.Metadata.Name + "-" + string(rune(count)) + "-" + string(rune(portCount))
+				ID := "user-pod-" + pod.Metadata.NameSpace + "-" + pod.Metadata.Name + "-" + strconv.Itoa(count) + "-" + strconv.Itoa(portCount)
 				consul.DeRegisterService(ID)
 				portCount++
 			}
