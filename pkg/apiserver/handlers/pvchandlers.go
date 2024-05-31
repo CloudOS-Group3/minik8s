@@ -34,7 +34,7 @@ func AddPVC(context *gin.Context) {
 	found := false
 	for _, keyValuePair := range pvs {
 		var pv api.PV
-		if err := json.Unmarshal([]byte(keyValuePair.Key), &pv); err != nil {
+		if err := json.Unmarshal([]byte(keyValuePair.Value), &pv); err != nil {
 			log.Error("error json unmarshalling pv")
 			continue
 		}
