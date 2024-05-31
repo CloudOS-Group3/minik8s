@@ -71,6 +71,7 @@ type DNSMsg struct {
 }
 
 type TriggerMsg struct {
+	UUID     string       `json:"uuid,omitempty"`
 	Function api.Function `json:"function,omitempty"`
 	Params   string       `json:"params,omitempty"`
 }

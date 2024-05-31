@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/IBM/sarama"
-	"github.com/google/uuid"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
@@ -110,7 +109,7 @@ func (this *ServerlessController) triggerNewJob(content []byte) {
 	freePod.Metadata.Name += "-" + randomString
 	freePod.Spec.Containers[0].Name += "-" + randomString
 	var job api.Job
-	job.JobID = uuid.NewString()
+	job.JobID = triggerMsg.UUID
 	job.CreateTime = time.Now().String()
 	job.Instance = *freePod
 	job.Params = triggerMsg.Params

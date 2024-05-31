@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
@@ -106,6 +107,7 @@ func HttpTriggerFunction(context *gin.Context) {
 	if function.Trigger.Http == true {
 		var msg msg_type.TriggerMsg
 		msg.Function = function
+		msg.UUID = uuid.NewString()
 		if err := context.ShouldBind(&msg); err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{
 				"status": err.Error(),

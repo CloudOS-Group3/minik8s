@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/uuid"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
@@ -34,6 +35,7 @@ func WatchHandler(key string, value string) {
 		var msg msg_type.TriggerMsg
 		msg.Function = function
 		msg.Params = value
+		msg.UUID = uuid.NewString()
 		jsonString, _ := json.Marshal(msg)
 		publisher.Publish(msg_type.TriggerTopic, string(jsonString))
 	}
