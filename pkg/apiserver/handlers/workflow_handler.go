@@ -13,7 +13,8 @@ func GetWorkflow(context *gin.Context) {
 	// Get workflow
 	log.Info("Get workflow")
 	name := context.Param(config.NameParam)
-	URL := config.WorkflowPath + name
+	namespace := context.Param(config.NamespaceParam)
+	URL := config.WorkflowPath + namespace + "/" + name
 	workflow := etcdClient.GetEtcdPair(URL)
 	var workflow_ api.Workflow
 	if len(workflow) == 0 {
@@ -49,7 +50,7 @@ func AddWorkflow(context *gin.Context) {
 	// Add workflow to etcd
 	log.Info("Add workflow %s", workflow.Metadata.Name)
 
-	URL := config.WorkflowPath + workflow.Metadata.Name
+	URL := config.WorkflowPath + workflow.Metadata.NameSpace + "/" + workflow.Metadata.Name
 	workflowByteArr, err := json.Marshal(workflow)
 	if err != nil {
 		log.Error("Error marshal workflow: %s", err.Error())
@@ -62,7 +63,8 @@ func DeleteWorkflow(context *gin.Context) {
 	// Delete workflow
 	log.Info("Delete workflow")
 	name := context.Param(config.NameParam)
-	URL := config.WorkflowPath + name
+	namespace := context.Param(config.NamespaceParam)
+	URL := config.WorkflowPath + namespace + "/" + name
 	etcdClient.DeleteEtcdPair(URL)
 }
 
@@ -80,7 +82,7 @@ func UpdateWorkflow(context *gin.Context) {
 	// Update workflow to etcd
 	log.Info("Update workflow %s", workflow.Metadata.Name)
 
-	URL := config.WorkflowPath + workflow.Metadata.Name
+	URL := config.WorkflowPath + workflow.Metadata.NameSpace + "/" + workflow.Metadata.Name
 	workflowByteArr, err := json.Marshal(workflow)
 	if err != nil {
 		log.Error("Error marshal workflow: %s", err.Error())
