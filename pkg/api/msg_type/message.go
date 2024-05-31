@@ -22,6 +22,8 @@ const (
 	DNSTopic = "dns"
 	// trigger topic
 	TriggerTopic = "trigger"
+	// workflow trigger topic
+	TriggerWorkflowTopic = "triggerWorkflow"
 	// job topic
 	JobTopic = "job"
 	// function topic
@@ -75,7 +77,11 @@ type TriggerMsg struct {
 	Function api.Function `json:"function,omitempty"`
 	Params   string       `json:"params,omitempty"`
 }
-
+type WorkflowTriggerMsg struct {
+	UUID     string       `json:"uuid,omitempty"`
+	Workflow api.Workflow `json:"function,omitempty"`
+	Params   string       `json:"params,omitempty"`
+}
 type JobMsg struct {
 	Opt    string  `json:"opt"`
 	NewJob api.Job `json:"new_job,omitempty"`

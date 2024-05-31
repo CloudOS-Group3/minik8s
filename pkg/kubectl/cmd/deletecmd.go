@@ -71,6 +71,7 @@ func DeleteCmd() *cobra.Command {
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteFunctionCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteTriggerCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
+	deleteCmd.Flags().BoolP("workflow", "w", false, "Indicates if the trigger is a workflow")
 
 	deleteCmd.AddCommand(deletePodCmd)
 	deleteCmd.AddCommand(deleteDeploymentCmd)
@@ -206,8 +207,20 @@ func deleteTriggerCmdHandler(cmd *cobra.Command, args []string) {
 	}
 	name := args[0]
 	namespace, err := cmd.Flags().GetString("namespace")
+	isWorkflow, err := cmd.Flags().GetBool("workflow")
 	if err != nil {
 		log.Error("Error getting flags: %s", err)
+		return
+	}
+	if isWorkflow {
+		path := strings.Replace(config.TriggerWorkflowURL, config.NamespacePlaceholder, namespace, -1)
+		path = strings.Replace(path, config.NamePlaceholder, name, -1)
+		URL := config.GetUrlPrefix() + path
+		err = httputil.Delete(URL)
+		if err != nil {
+			log.Error("error http post: %s", err.Error())
+			return
+		}
 		return
 	}
 	path := strings.Replace(config.TriggerURL, config.NamespacePlaceholder, namespace, -1)

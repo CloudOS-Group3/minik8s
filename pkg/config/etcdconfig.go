@@ -35,8 +35,14 @@ const (
 	// usage: /registry/trigger/<function_namespace>/<function_name>
 	EtcdTriggerPath = "/registry/trigger/"
 
+	// usage: /registry/trigger/workflow/<wf_namespace>/<wf_name>
+	EtcdTriggerWorkflowPath = "/registry/trigger/workflow/"
+
 	// usage: /trigger/<function_namespace>/<function_name>
 	UserTriggerPath = "/trigger"
+
+	// usage: /workflowtrigger/<function_namespace>/<function_name>
+	UserTriggerWorkflowPath = "/workflowtrigger"
 
 	// usage: /registry/function/<name>
 	FunctionPath = "/registry/function/"

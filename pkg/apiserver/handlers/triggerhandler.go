@@ -24,6 +24,26 @@ func AddTrigger(context *gin.Context) {
 		return
 	}
 
+	if trigger.IsWorkflow {
+		wfURL := config.WorkflowPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionName
+		str := etcdClient.GetEtcdPair(wfURL)
+		if str == "" {
+			context.JSON(http.StatusBadRequest, gin.H{
+				"status": "unknown workflow",
+			})
+			return
+		}
+
+		var workflow api.Workflow
+		_ = json.Unmarshal([]byte(str), &workflow)
+		workflow.Trigger.Event = true
+		byteArr, _ := json.Marshal(workflow)
+		etcdClient.PutEtcdPair(wfURL, string(byteArr))
+		TriggerURL := config.EtcdTriggerWorkflowPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionNamespace
+		byteArr, _ = json.Marshal(trigger)
+		etcdClient.PutEtcdPair(TriggerURL, string(byteArr))
+		return
+	}
 	funcURL := config.FunctionPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionName
 	str := etcdClient.GetEtcdPair(funcURL)
 	if str == "" {
@@ -88,6 +108,37 @@ func DeleteTrigger(context *gin.Context) {
 	etcdClient.PutEtcdPair(funcURL, string(byteArr))
 	etcdClient.DeleteEtcdPair(TriggerURL)
 }
+func DeleteWorkflowTrigger(context *gin.Context) {
+	// Delete workflow trigger
+	log.Info("Delete workflow trigger")
+	name := context.Param(config.NameParam)
+	namespace := context.Param(config.NamespaceParam)
+	TriggerURL := config.EtcdTriggerWorkflowPath + namespace + "/" + name
+	str := etcdClient.GetEtcdPair(TriggerURL)
+	if str == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrong",
+		})
+		return
+	}
+	var trigger api.Trigger
+	_ = json.Unmarshal([]byte(str), &trigger)
+	wfURL := config.WorkflowPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionNamespace
+	str = etcdClient.GetEtcdPair(wfURL)
+	if str == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "unknown workflow",
+		})
+		return
+	}
+
+	var workflow api.Workflow
+	_ = json.Unmarshal([]byte(str), &workflow)
+	workflow.Trigger.Event = false
+	byteArr, _ := json.Marshal(workflow)
+	etcdClient.PutEtcdPair(wfURL, string(byteArr))
+	etcdClient.DeleteEtcdPair(TriggerURL)
+}
 
 func HttpTriggerFunction(context *gin.Context) {
 	log.Info("Http trigger function")
@@ -119,6 +170,40 @@ func HttpTriggerFunction(context *gin.Context) {
 	} else {
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "function doesn't allow http trigger",
+		})
+		return
+	}
+}
+func HttpTriggerWorkflow(context *gin.Context) {
+	log.Info("Http trigger workflow")
+	name := context.Param(config.NameParam)
+	namespace := context.Param(config.NamespaceParam)
+	wfURL := config.WorkflowPath + namespace + "/" + name
+	str := etcdClient.GetEtcdPair(wfURL)
+	if str == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "unknown workflow",
+		})
+		return
+	}
+	var workflow api.Workflow
+	_ = json.Unmarshal([]byte(str), &workflow)
+	log.Info("workflow: %v", workflow)
+	if workflow.Trigger.Http == true {
+		var msg msg_type.WorkflowTriggerMsg
+		msg.Workflow = workflow
+		msg.UUID = uuid.NewString()
+		if err := context.ShouldBind(&msg); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{
+				"status": err.Error(),
+			})
+			return
+		}
+		jsonString, _ := json.Marshal(msg)
+		publisher.Publish(msg_type.TriggerWorkflowTopic, string(jsonString))
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrokflow doesn't allow http trigger",
 		})
 		return
 	}

@@ -40,6 +40,29 @@ func WatchHandler(key string, value string) {
 		publisher.Publish(msg_type.TriggerTopic, string(jsonString))
 	}
 }
+func WatchWorkflowHandler(key string, value string) {
+	// "/workflowtrigger/function_namespace/function_name"
+	log.Info("etcd trigger")
+	str := key[17:]
+	strList := strings.Split(str, "/")
+	wfNamespace := strList[0]
+	wfName := strList[1]
+	URL := config.WorkflowPath + wfNamespace + "/" + wfName
+	str = etcdClient.GetEtcdPair(URL)
+	if str == "" {
+		return
+	}
+	var workflow api.Workflow
+	_ = json.Unmarshal([]byte(str), &workflow)
+	if workflow.Trigger.Event == true {
+		var msg msg_type.WorkflowTriggerMsg
+		msg.Workflow = workflow
+		msg.Params = value
+		msg.UUID = uuid.NewString()
+		jsonString, _ := json.Marshal(msg)
+		publisher.Publish(msg_type.TriggerWorkflowTopic, string(jsonString))
+	}
+}
 
 func init() {
 	KafkaURL := config.Remotehost + ":9092"
@@ -50,6 +73,8 @@ func init() {
 		wg := &sync.WaitGroup{}
 		prefix := config.UserTriggerPath
 		etcdClient.PrefixWatch(wg, ctx, prefix, WatchHandler)
+		prefix = config.UserTriggerWorkflowPath
+		etcdClient.PrefixWatch(wg, ctx, prefix, WatchWorkflowHandler)
 		wg.Wait()
 		cancel()
 	}()
