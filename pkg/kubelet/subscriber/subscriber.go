@@ -75,16 +75,16 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 	}
 	switch podMsg.Opt {
 	case msg_type.Add:
-		//if podMsg.NewPod.Spec.NodeName != config.Nodename {
-		//	break
-		//}
+		if podMsg.NewPod.Spec.NodeName != config.Nodename {
+			break
+		}
 		log.Info("create pod: %v", podMsg.NewPod)
 		pod.CreatePod(&podMsg.NewPod)
 		break
 	case msg_type.Delete:
-		//if podMsg.OldPod.Spec.NodeName != config.Nodename {
-		//	break
-		//}
+		if podMsg.OldPod.Spec.NodeName != config.Nodename {
+			break
+		}
 		log.Info("delete pod: %v", podMsg.OldPod)
 		pod.DeletePod(&podMsg.OldPod)
 		break
@@ -93,12 +93,12 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 		NewSpec, _ := json.Marshal(podMsg.NewPod.Spec)
 		if string(OldSpec) != string(NewSpec) {
 			log.Info("update pod: %v", podMsg.NewPod)
-			//if podMsg.OldPod.Spec.NodeName == config.Nodename {
-			pod.DeletePod(&podMsg.OldPod)
-			//}
-			//if podMsg.NewPod.Spec.NodeName == config.Nodename {
-			pod.CreatePod(&podMsg.NewPod)
-			//}
+			if podMsg.OldPod.Spec.NodeName == config.Nodename {
+				pod.DeletePod(&podMsg.OldPod)
+			}
+			if podMsg.NewPod.Spec.NodeName == config.Nodename {
+				pod.CreatePod(&podMsg.NewPod)
+			}
 		}
 		break
 	}
