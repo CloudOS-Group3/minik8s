@@ -15,6 +15,7 @@ import (
 	"minik8s/pkg/kubelet/image"
 	"minik8s/pkg/util"
 	"minik8s/util/log"
+	"os"
 	"os/exec"
 	"reflect"
 	"strings"
@@ -106,6 +107,57 @@ func CreatePauseContainer(pod *api.Pod) (string, error) {
 	return fmt.Sprintf("%d", pid), nil
 }
 
+func ExecuteCommandInContainer(ctx context.Context, task containerd.Task, command []string) error {
+	execID := command[0]
+	execProcessSpec := specs.Process{
+		Args: command,
+		Cwd:  "/",
+		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
+	}
+
+	execTask, err := task.Exec(ctx, execID, &execProcessSpec, cio.NewCreator(cio.WithStdio))
+	if err != nil {
+		return err
+	}
+	defer execTask.Delete(ctx)
+
+	if err := execTask.Start(ctx); err != nil {
+		return err
+	}
+
+	statusC, err := execTask.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	status := <-statusC
+	code, _, err := status.Result()
+	if err != nil {
+		return err
+	}
+
+	if code != 0 {
+		return fmt.Errorf("command %s exited with status %d", command, code)
+	}
+
+	return nil
+}
+
+func runCommand(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+
+	// Redirect stdout and stderr to os.Stdout and os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Check if we need to provide stdin as a console
+	if name == "nerdctl" && len(args) > 0 && args[0] == "exec" {
+		cmd.Stdin = os.Stdin
+	}
+
+	return cmd.Run()
+}
+
 func CreateContainer(config api.Container, namespace string, pause_pid string, hostMount map[string]string, volumes []api.Volume) containerd.Container {
 	client, err := util.CreateClient()
 	if err != nil {
@@ -186,53 +238,25 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 		return nil
 	}
 
-	process1 := specs.Process{
-		Args: []string{"apt", "update"},
-		Cwd:  "/",
-		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
-	}
-	execResult, err := task.Exec(ctx, "apt-update", &process1, cio.NewCreator(cio.WithStdio))
-	if err != nil {
-		log.Error("failed apt update: %v", err.Error())
-		return nil
-	}
-	execResult.Wait(ctx)
+	//ExecuteCommandInContainer(ctx, task, []string{"apt", "update"})
+	//ExecuteCommandInContainer(ctx, task, []string{"apt", "install", "nfs-common"})
+	//ExecuteCommandInContainer(ctx, task, []string{"mkdir", "-p", volumes[0].NFS.Path})
+	//ExecuteCommandInContainer(ctx, task, []string{"mount", "-t", "nfs", "192.168.3.7:/nfsroot", volumes[0].NFS.Path})
 
-	process2 := specs.Process{
-		Args: []string{"apt", "install", "nfs-common"},
-		Cwd:  "/",
-		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
+	if len(volumes) > 0 && volumes[0].NFS.Path != "" {
+		if err = runCommand("nerdctl", "exec", "-it", config.Name, "apt", "update"); err != nil {
+			log.Error("error apt update")
+		}
+		if err = runCommand("nerdctl", "exec", "-it", config.Name, "apt", "install", "nfs-common", "-y"); err != nil {
+			log.Error("error apt install")
+		}
+		if err = runCommand("nerdctl", "exec", "-it", config.Name, "mkdir", "-p", volumes[0].NFS.Path); err != nil {
+			log.Error("error mkdir")
+		}
+		if err = runCommand("nerdctl", "exec", "-it", config.Name, "mount", "-t", "nfs", "-o", "nolock", "192.168.3.6:/nfsroot/test", volumes[0].NFS.Path); err != nil {
+			log.Error("error mount")
+		}
 	}
-	execResult, err = task.Exec(ctx, "apt-install-nfs-common", &process2, cio.NewCreator(cio.WithStdio))
-	if err != nil {
-		log.Error("failed apt install nfs-common: %v", err.Error())
-		return nil
-	}
-	execResult.Wait(ctx)
-
-	process3 := specs.Process{
-		Args: []string{"mkdir", "-p", volumes[0].NFS.Path},
-		Cwd:  "/",
-		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
-	}
-	execResult, err = task.Exec(ctx, "make-mount-dir", &process3, cio.NewCreator(cio.WithStdio))
-	if err != nil {
-		log.Error("failed make mount dir: %v", err.Error())
-		return nil
-	}
-	execResult.Wait(ctx)
-
-	process4 := specs.Process{
-		Args: []string{"mount", "-t", "nfs", "192.168.3.6:/nfsroot", volumes[0].NFS.Path},
-		Cwd:  "/",
-		Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
-	}
-	execResult, err = task.Exec(ctx, "mount-nfs", &process4, cio.NewCreator(cio.WithStdio))
-	if err != nil {
-		log.Error("failed mount nfs: %v", err.Error())
-		return nil
-	}
-	execResult.Wait(ctx)
 
 	log.Info("Container %s created", config.Name)
 	return container
