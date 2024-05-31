@@ -12,6 +12,7 @@ import (
 	"minik8s/util/log"
 	"strings"
 	"sync"
+	"time"
 )
 
 var publisher kafka.Publisher
@@ -61,6 +62,15 @@ func WatchWorkflowHandler(key string, value string) {
 		msg.UUID = uuid.NewString()
 		jsonString, _ := json.Marshal(msg)
 		publisher.Publish(msg_type.TriggerWorkflowTopic, string(jsonString))
+
+		// store a empty result
+		var result api.WorkflowResult
+		result.Metadata = workflow.Metadata
+		result.InvokeTime = time.Now().Format("2006-01-02 15:04:05")
+		result.EndTime = "Running"
+		URL := config.TriggerResultPath + msg.UUID
+		byteArr, _ := json.Marshal(result)
+		etcdClient.PutEtcdPair(URL, string(byteArr))
 	}
 }
 

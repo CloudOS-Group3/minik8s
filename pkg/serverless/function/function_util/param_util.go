@@ -41,3 +41,11 @@ func CheckParams(paramTemp []api.Template, args []string) (map[string]interface{
 	}
 	return params, nil
 }
+
+func ConvertToStringList(res []interface{}) []string {
+	result := []string{}
+	for _, value := range res {
+		result = append(result, value.(string))
+	}
+	return result
+}

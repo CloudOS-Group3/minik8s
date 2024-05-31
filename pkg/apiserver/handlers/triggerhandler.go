@@ -10,6 +10,7 @@ import (
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
+	"time"
 )
 
 func AddTrigger(context *gin.Context) {
@@ -201,10 +202,68 @@ func HttpTriggerWorkflow(context *gin.Context) {
 		}
 		jsonString, _ := json.Marshal(msg)
 		publisher.Publish(msg_type.TriggerWorkflowTopic, string(jsonString))
+
+		// store a empty result
+		var result api.WorkflowResult
+		result.Metadata = workflow.Metadata
+		result.InvokeTime = time.Now().Format("2006-01-02 15:04:05")
+		result.EndTime = "Running"
+		URL := config.TriggerResultPath + msg.UUID
+		byteArr, _ := json.Marshal(result)
+		etcdClient.PutEtcdPair(URL, string(byteArr))
 	} else {
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrokflow doesn't allow http trigger",
 		})
 		return
 	}
+}
+
+func UpdateTriggerResult(context *gin.Context) {
+	// Add workflow
+	log.Info("update workflow result")
+	uuid := context.Param(config.UUIDParam)
+	var res api.WorkflowResult
+	if err := context.ShouldBind(&res); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrong",
+		})
+		return
+	}
+
+	URL := config.TriggerResultPath + uuid
+	workflowByteArr, err := json.Marshal(res)
+	if err != nil {
+		log.Error("Error marshal workflow: %s", err.Error())
+		return
+	}
+	etcdClient.PutEtcdPair(URL, string(workflowByteArr))
+}
+func GetTriggerResult(context *gin.Context) {
+	// Get function
+	log.Info("Get trigger result")
+	uuid := context.Param(config.UUIDParam)
+	URL := config.TriggerResultPath + uuid
+	str := etcdClient.GetEtcdPair(URL)
+	if str == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrong",
+		})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{
+		"data": str,
+	})
+}
+func GetTriggerResults(context *gin.Context) {
+	// Get function
+	log.Info("Get trigger results")
+	URL := config.TriggerResultPath
+	results := etcdClient.PrefixGet(URL)
+
+	log.Debug("get all results are: %+v", results)
+	jsonString := stringutil.EtcdResEntryToJSON(results)
+	context.JSON(http.StatusOK, gin.H{
+		"data": jsonString,
+	})
 }
