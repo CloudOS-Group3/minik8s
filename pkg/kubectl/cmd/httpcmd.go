@@ -42,7 +42,36 @@ func HttpCmd() *cobra.Command {
 }
 
 func httpWorkflowHandler(cmd *cobra.Command, args []string) {
+	//curl -X POST -H "Content-Type: application/json" -d '{"params": {"x": 8, "y": 9}}' localhost:6443/api/v1/namespaces/default/functions/matrix-calculate/run
+	namespace := cmd.Flag("namespace").Value.String()
+	if len(args) < 1 {
+		log.Fatal("Usage: http function -n namespace name arg1 arg2 ...")
+		return
+	}
+	wfName := args[0]
 
+	// Get the function
+	workflow := api.Workflow{}
+	URL := config.GetUrlPrefix() + config.WorkflowURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, wfName, -1)
+	err := httputil.Get(URL, &workflow, "data")
+	if err != nil || workflow.Metadata.Name == "" {
+		log.Error("Can't find function: %s", wfName)
+		return
+	}
+
+	// Send the request
+	URL = config.GetUrlPrefix() + config.WorkflowRunURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, wfName, -1)
+
+	byteArr, err := json.Marshal(workflow)
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error sending request: %s", err)
+		return
+	}
 }
 
 func httpFuncHandler(cmd *cobra.Command, args []string) {
