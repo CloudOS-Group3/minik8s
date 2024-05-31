@@ -137,6 +137,7 @@ func (this *WorkflowController) execNextNode(job api.Job) {
 	var result []interface{}
 	if err := json.Unmarshal([]byte(job.Result), &result); err != nil {
 		log.Error("Error unmarshaling Result: %s", err.Error())
+		this.errorEnd(job.JobID, "Error unmarshaling Result in function "+workflowStatus.currNode.Function.Name)
 		return
 	}
 	result_str := function_util.ConvertToStringList(result)
@@ -145,28 +146,79 @@ func (this *WorkflowController) execNextNode(job api.Job) {
 	succssor := workflow_util.CheckRule(workflowStatus.currNode.Rule, resWithName)
 	if succssor == nil {
 		// get result
-		res := &api.WorkflowResult{}
-		URL := config.GetUrlPrefix() + config.TriggerResultURL
-		URL = strings.Replace(URL, config.UUIDPlaceholder, workflowStatus.waitJob, -1)
-		err := httputil.Get(URL, res, "data")
-		if err != nil {
-			log.Error("Error get result: %s", err.Error())
-			return
-		}
-
-		res.EndTime = time.Now().Format("2006-01-02 15:04:05")
-		res.Result = result_str
-
-		// store result
-		byteArr, _ := json.Marshal(res)
-		err = httputil.Put(URL, byteArr)
-		if err != nil {
-			log.Error("Error put result: %s", err.Error())
-			return
-		}
-
+		updateResult(result_str, workflowStatus)
 		// workflow end
-		delete(this.jobList, workflowStatus.waitJob)
+		delete(this.jobList, job.JobID)
+		return
+	}
+
+	// Get next function
+	function, err := workflow_util.GetFunction(succssor.Function.Name, succssor.Function.NameSpace)
+	if err != nil {
+		log.Error("Can't find function: %s. %s", succssor.Function.Name, err.Error())
+		this.errorEnd(job.JobID, "Can't find function "+succssor.Function.Name)
+		return
+	}
+
+	// Make params
+	params_str, err := workflow_util.MakeParamsFromRet(function.Params, resWithName)
+	if err != nil {
+		log.Error("Can't Make params: %s. %s", succssor.Function.Name, err.Error())
+		this.errorEnd(job.JobID, err.Error())
+		return
+	}
+	paramsWithName, err := function_util.CheckParams(function.Params, params_str)
+	if err != nil {
+		log.Error("Can't check params: %s. %s", succssor.Function.Name, err.Error())
+		this.errorEnd(job.JobID, err.Error())
+		return
+	}
+	jsonData, err := json.Marshal(paramsWithName)
+	if err != nil {
+		log.Error("Can't make json: %s. %s", succssor.Function.Name, err.Error())
+		this.errorEnd(job.JobID, err.Error())
+		return
+	}
+
+	trigger_uuid := uuid.NewString()
+	// create trigger msg to exec function
+	triggerMsg := &msg_type.TriggerMsg{
+		Function: *function,
+		UUID:     trigger_uuid,
+		Params:   string(jsonData), // TODO
+	}
+	workflowStatus.waitJob = trigger_uuid
+	workflowStatus.currNode = *succssor
+	this.jobList[trigger_uuid] = workflowStatus
+	jsonString, _ := json.Marshal(triggerMsg)
+	this.publisher.Publish(msg_type.TriggerTopic, string(jsonString))
+	delete(this.jobList, job.JobID)
+}
+
+func (this *WorkflowController) errorEnd(jobUUID string, err string) {
+	updateResult([]string{"Error", err}, this.jobList[jobUUID])
+	delete(this.jobList, jobUUID)
+}
+
+func updateResult(result_str []string, workflowStatus *WorkflowStatus) {
+	// get result
+	res := &api.WorkflowResult{}
+	URL := config.GetUrlPrefix() + config.TriggerResultURL
+	URL = strings.Replace(URL, config.UUIDPlaceholder, workflowStatus.resultUUID, -1)
+	err := httputil.Get(URL, res, "data")
+	if err != nil {
+		log.Error("Error get result: %s", err.Error())
+		return
+	}
+
+	res.EndTime = time.Now().Format("2006-01-02 15:04:05")
+	res.Result = result_str
+
+	// store result
+	byteArr, _ := json.Marshal(res)
+	err = httputil.Put(URL, byteArr)
+	if err != nil {
+		log.Error("Error put result: %s", err.Error())
 		return
 	}
 }
