@@ -112,8 +112,13 @@ func (s *JobController) PodHandler(msg []byte) {
 				byteArr, _ := json.Marshal(job)
 				httputil.Put(URL, byteArr)
 				s.CallFunction(job)
-				s.WaitingJob = append(s.WaitingJob[:index], s.WaitingJob[index+1:]...)
-				index--
+				if index == len(s.WaitingJob)-1 {
+					s.WaitingJob = s.WaitingJob[:index]
+					index--
+				} else {
+					s.WaitingJob = append(s.WaitingJob[:index], s.WaitingJob[index+1:]...)
+					index--
+				}
 			}
 		}
 	}

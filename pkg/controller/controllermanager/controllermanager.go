@@ -13,6 +13,7 @@ type ControllerManager struct {
 	ServerlessController *controllers.ServerlessController
 	DNSController        *controllers.DNSController
 	JobController        *controllers.JobController
+	WorkflowController   *controllers.WorkflowController
 }
 
 func NewControllerManager() *ControllerManager {
@@ -23,6 +24,7 @@ func NewControllerManager() *ControllerManager {
 	newSC := controllers.NewServerlessController()
 	newDNSController := controllers.NewDnsController()
 	newJobController := controllers.NewJobController()
+	newWorkflowController := controllers.NewWorkflowController()
 
 	return &ControllerManager{
 		DeploymentController: newDC,
@@ -32,6 +34,7 @@ func NewControllerManager() *ControllerManager {
 		ServerlessController: newSC,
 		DNSController:        newDNSController,
 		JobController:        newJobController,
+		WorkflowController:   newWorkflowController,
 	}
 }
 
@@ -44,6 +47,7 @@ func (CM *ControllerManager) Run(stop chan bool) {
 	go CM.NodeController.Run()
 	//go CM.DNSController.Run()
 	go CM.JobController.Run()
+	go CM.WorkflowController.Run()
 
 	_, ok := <-stop
 	if !ok {

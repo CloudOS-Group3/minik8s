@@ -67,10 +67,17 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteTriggerCmdHandler,
 	}
 
+	deleteNodeCmd := &cobra.Command{
+		Use:   "node [node name]",
+		Short: "delete node",
+		Run:   deleteNodeCmdHandler,
+	}
+
 	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteFunctionCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteTriggerCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
+	deleteCmd.Flags().BoolP("workflow", "w", false, "Indicates if the trigger is a workflow")
 
 	deleteCmd.AddCommand(deletePodCmd)
 	deleteCmd.AddCommand(deleteDeploymentCmd)
@@ -80,6 +87,7 @@ func DeleteCmd() *cobra.Command {
 	deleteCmd.AddCommand(deleteFunctionCmd)
 	deleteCmd.AddCommand(deleteTriggerCmd)
 	deleteCmd.AddCommand(deleteJobCmd)
+	deleteCmd.AddCommand(deleteNodeCmd)
 
 	return deleteCmd
 }
@@ -199,6 +207,17 @@ func deleteJobCmdHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
+func deleteNodeCmdHandler(cmd *cobra.Command, args []string) {
+	name := args[0]
+	URL := config.GetUrlPrefix() + config.NodeURL
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
+	err := httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
+}
+
 func deleteTriggerCmdHandler(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		log.Error("function name is required")
@@ -206,8 +225,20 @@ func deleteTriggerCmdHandler(cmd *cobra.Command, args []string) {
 	}
 	name := args[0]
 	namespace, err := cmd.Flags().GetString("namespace")
+	isWorkflow, err := cmd.Flags().GetBool("workflow")
 	if err != nil {
 		log.Error("Error getting flags: %s", err)
+		return
+	}
+	if isWorkflow {
+		path := strings.Replace(config.TriggerWorkflowURL, config.NamespacePlaceholder, namespace, -1)
+		path = strings.Replace(path, config.NamePlaceholder, name, -1)
+		URL := config.GetUrlPrefix() + path
+		err = httputil.Delete(URL)
+		if err != nil {
+			log.Error("error http post: %s", err.Error())
+			return
+		}
 		return
 	}
 	path := strings.Replace(config.TriggerURL, config.NamespacePlaceholder, namespace, -1)

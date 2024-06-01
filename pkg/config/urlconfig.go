@@ -64,8 +64,11 @@ const (
 	WorkflowURL     = "/api/v1/namespaces/:namespace/workflows/:name"
 	WorkflowRunURL  = "/api/v1/namespaces/:namespace/workflows/:name/run"
 
-	TriggersURL = "/api/v1/triggers"
-	TriggerURL  = "/api/v1/namespace/:namespace/trigger/:name"
+	TriggersURL        = "/api/v1/triggers"
+	TriggerURL         = "/api/v1/namespace/:namespace/trigger/:name"
+	TriggerWorkflowURL = "/api/v1/namespace/:namespace/trigger/workflow/:name"
+	TriggerResultURL   = "/api/v1/triggers/result/:uuid"
+	TriggerResultsURL  = "/api/v1/triggers/result"
 
 	JobResultURL = "/result"
 )
@@ -78,6 +81,8 @@ const (
 	NamespaceParam       = "namespace"
 	LabelPlaceholder     = ":label"
 	LabelParam           = "label"
+	UUIDPlaceholder      = ":uuid"
+	UUIDParam            = "uuid"
 )
 
 const (

@@ -30,6 +30,7 @@ func (e *EndPointController) Setup(session sarama.ConsumerGroupSession) error {
 }
 
 func (e *EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
+	e.ready = make(chan bool)
 	return nil
 }
 

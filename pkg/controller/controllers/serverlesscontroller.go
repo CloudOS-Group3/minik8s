@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/IBM/sarama"
-	"github.com/google/uuid"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
@@ -53,6 +52,7 @@ func (this *ServerlessController) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (this *ServerlessController) Cleanup(_ sarama.ConsumerGroupSession) error {
+	this.ready = make(chan bool)
 	return nil
 }
 
@@ -110,11 +110,12 @@ func (this *ServerlessController) triggerNewJob(content []byte) {
 	freePod.Metadata.Name += "-" + randomString
 	freePod.Spec.Containers[0].Name += "-" + randomString
 	var job api.Job
-	job.JobID = uuid.NewString()
+	job.JobID = triggerMsg.UUID
 	job.CreateTime = time.Now().String()
 	job.Instance = *freePod
 	job.Params = triggerMsg.Params
 	job.Status = api.JOB_CREATED
+	job.Function = functionName
 
 	URL := config.GetUrlPrefix() + config.JobsURL
 	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
@@ -206,7 +207,8 @@ func (this *ServerlessController) clearExpirePod() {
 		<-time.After(CheckInterval)
 		log.Debug("checking expire pod")
 		for functionName, freePods := range this.functionFreePods {
-			for index := 0; index < len(this.functionFreePods[functionName]); index++ {
+			for index := 0; index < len(freePods); index++ {
+				log.Info("freepod: %d, array length: %d", index, len(freePods))
 				freePod := freePods[index]
 				if freePod.freeTime >= MaxFreeTime {
 					log.Debug("pod %s is expired", freePod.pod.Metadata.Name)
@@ -219,9 +221,17 @@ func (this *ServerlessController) clearExpirePod() {
 						log.Error("delete pod err %v", err)
 						return
 					}
-					this.functionFreePods[functionName] = append(this.functionFreePods[functionName][:index], this.functionFreePods[functionName][index+1:]...)
-					index--
-					continue
+					if index == len(freePods)-1 {
+						log.Info("delete")
+						this.functionFreePods[functionName] = this.functionFreePods[functionName][:index]
+						break
+					} else {
+						log.Info("detele")
+						this.functionFreePods[functionName] = append(this.functionFreePods[functionName][:index], this.functionFreePods[functionName][index+1:]...)
+						index--
+						continue
+					}
+
 				}
 				this.functionFreePods[functionName][index].freeTime += CheckInterval
 			}

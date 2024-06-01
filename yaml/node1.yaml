@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: Node
-spec:
-  hostname: node1
+metadata:
+  name: node1

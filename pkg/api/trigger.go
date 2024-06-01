@@ -4,6 +4,7 @@ type Trigger struct {
 	APIVersion string      `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
 	Kind       string      `json:"kind,omitempty" yaml:"kind,omitempty"`
 	Spec       TriggerSpec `json:"spec,omitempty" yaml:"spec,omitempty"`
+	IsWorkflow bool        `json:"isWorkflow,omitempty" yaml:"isWorkflow,omitempty"`
 }
 
 type TriggerSpec struct {

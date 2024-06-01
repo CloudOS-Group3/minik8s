@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/uuid"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
@@ -11,6 +12,7 @@ import (
 	"minik8s/util/log"
 	"strings"
 	"sync"
+	"time"
 )
 
 var publisher kafka.Publisher
@@ -34,8 +36,41 @@ func WatchHandler(key string, value string) {
 		var msg msg_type.TriggerMsg
 		msg.Function = function
 		msg.Params = value
+		msg.UUID = uuid.NewString()
 		jsonString, _ := json.Marshal(msg)
 		publisher.Publish(msg_type.TriggerTopic, string(jsonString))
+	}
+}
+func WatchWorkflowHandler(key string, value string) {
+	// "/workflowtrigger/function_namespace/function_name"
+	log.Info("etcd trigger")
+	str := key[17:]
+	strList := strings.Split(str, "/")
+	wfNamespace := strList[0]
+	wfName := strList[1]
+	URL := config.WorkflowPath + wfNamespace + "/" + wfName
+	str = etcdClient.GetEtcdPair(URL)
+	if str == "" {
+		return
+	}
+	var workflow api.Workflow
+	_ = json.Unmarshal([]byte(str), &workflow)
+	if workflow.Trigger.Event == true {
+		var msg msg_type.WorkflowTriggerMsg
+		msg.Workflow = workflow
+		msg.Params = value
+		msg.UUID = uuid.NewString()
+		jsonString, _ := json.Marshal(msg)
+		publisher.Publish(msg_type.TriggerWorkflowTopic, string(jsonString))
+
+		// store a empty result
+		var result api.WorkflowResult
+		result.Metadata = workflow.Metadata
+		result.InvokeTime = time.Now().Format("2006-01-02 15:04:05")
+		result.EndTime = "Running"
+		URL := config.TriggerResultPath + msg.UUID
+		byteArr, _ := json.Marshal(result)
+		etcdClient.PutEtcdPair(URL, string(byteArr))
 	}
 }
 
@@ -48,6 +83,8 @@ func init() {
 		wg := &sync.WaitGroup{}
 		prefix := config.UserTriggerPath
 		etcdClient.PrefixWatch(wg, ctx, prefix, WatchHandler)
+		prefix = config.UserTriggerWorkflowPath
+		etcdClient.PrefixWatch(wg, ctx, prefix, WatchWorkflowHandler)
 		wg.Wait()
 		cancel()
 	}()

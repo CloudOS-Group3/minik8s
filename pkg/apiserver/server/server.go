@@ -83,11 +83,18 @@ func (server *apiServer) bind() {
 	server.router.PUT(config.WorkflowURL, handlers.UpdateWorkflow)
 	server.router.POST(config.WorkflowURL, handlers.AddWorkflow)
 	server.router.DELETE(config.WorkflowURL, handlers.DeleteWorkflow)
+	server.router.GET(config.WorkflowsURL, handlers.GetAllWorkflow)
 
 	server.router.GET(config.TriggersURL, handlers.GetTriggers)
 	server.router.POST(config.TriggersURL, handlers.AddTrigger)
 	server.router.DELETE(config.TriggerURL, handlers.DeleteTrigger)
+	server.router.DELETE(config.TriggerWorkflowURL, handlers.DeleteWorkflowTrigger)
 	server.router.POST(config.FunctionRunURL, handlers.HttpTriggerFunction)
+	server.router.POST(config.WorkflowRunURL, handlers.HttpTriggerWorkflow)
+
+	server.router.PUT(config.TriggerResultURL, handlers.UpdateTriggerResult)
+	server.router.GET(config.TriggerResultURL, handlers.GetTriggerResult)
+	server.router.GET(config.TriggerResultsURL, handlers.GetTriggerResults)
 
 	server.router.GET(config.JobsURL, handlers.GetJobs)
 	server.router.POST(config.JobsURL, handlers.AddJob)

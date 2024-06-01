@@ -42,6 +42,7 @@ func (s *NodeController) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (s *NodeController) Cleanup(_ sarama.ConsumerGroupSession) error {
+	s.ready = make(chan bool)
 	return nil
 }
 
@@ -64,7 +65,7 @@ func (s *NodeController) CheckNode() {
 			heartBeatTime := node.Status.Condition.LastHeartbeatTime
 			currentTime := time.Now()
 			TimeDiff := currentTime.Sub(heartBeatTime)
-			if TimeDiff > time.Minute*3 {
+			if TimeDiff > time.Minute*2 {
 				log.Info("Node dead: %s", node.Metadata.Name)
 				node.Status.Condition.Status = api.NodeUnknown
 				URL := config.GetUrlPrefix() + config.NodeURL
@@ -79,6 +80,13 @@ func (s *NodeController) CheckNode() {
 					log.Error("Error putting node: %s", err.Error())
 				}
 				s.RegisteredNode[index] = node
+			}
+		}
+		for _, node := range s.RegisteredNode {
+			if node.Status.Condition.Status == api.NodeUnknown {
+				URL := config.GetUrlPrefix() + config.NodeURL
+				URL = strings.Replace(URL, config.NamePlaceholder, node.Metadata.Name, -1)
+				httputil.Delete(URL)
 			}
 		}
 		time.Sleep(time.Second * 30)

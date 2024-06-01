@@ -45,6 +45,7 @@ func (s *DNSController) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (s *DNSController) Cleanup(_ sarama.ConsumerGroupSession) error {
+	s.ready = make(chan bool)
 	return nil
 }
 

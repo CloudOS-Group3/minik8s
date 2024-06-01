@@ -66,3 +66,14 @@ const (
 	// Bool
 	Bool = "bool"
 )
+
+type WorkflowResult struct {
+	// Metadata: name, namespace, uuid
+	Metadata ObjectMeta `json:"metadata,omitempty"`
+	// Result: the result of the workflow
+	Result []string `json:"result,omitempty"`
+	// EndTime: the status of the workflow
+	EndTime string `json:"status,omitempty"`
+	// InvokeTime: the time of the workflow invoked
+	InvokeTime string `json:"invokeTime,omitempty"`
+}
