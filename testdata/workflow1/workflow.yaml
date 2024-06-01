@@ -3,7 +3,8 @@ kind: Workflow
 metadata:
   name: my-workflow
   namespace: default
-
+triggerType:
+  http: true
 graph:
   function:
     name: function1

@@ -200,6 +200,7 @@ func HttpTriggerWorkflow(context *gin.Context) {
 			})
 			return
 		}
+		log.Info("msg: %v", msg)
 		jsonString, _ := json.Marshal(msg)
 		publisher.Publish(msg_type.TriggerWorkflowTopic, string(jsonString))
 

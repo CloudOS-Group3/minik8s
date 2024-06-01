@@ -6,6 +6,7 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/pkg/config"
 	"minik8s/util/log"
+	"minik8s/util/stringutil"
 	"net/http"
 )
 
@@ -89,4 +90,18 @@ func UpdateWorkflow(context *gin.Context) {
 		return
 	}
 	etcdClient.PutEtcdPair(URL, string(workflowByteArr))
+}
+
+func GetAllWorkflow(context *gin.Context) {
+	// Get all workflows
+	log.Info("received get pods request")
+
+	URL := config.WorkflowPath
+	workflows := etcdClient.PrefixGet(URL)
+
+	jsonString := stringutil.EtcdResEntryToJSON(workflows)
+	context.JSON(http.StatusOK, gin.H{
+		"data": jsonString,
+	})
+
 }

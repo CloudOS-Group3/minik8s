@@ -70,6 +70,11 @@ func GetCmd() *cobra.Command {
 		Short: "get function",
 		Run:   getFunctionCmdHandler,
 	}
+	getWorkflowCmd := &cobra.Command{
+		Use:   "workflow",
+		Short: "get workflow",
+		Run:   getWorkflowCmdHandler,
+	}
 
 	getResultCmd := &cobra.Command{
 		Use:   "result",
@@ -82,10 +87,12 @@ func GetCmd() *cobra.Command {
 	getServiceCmd.Aliases = []string{"svc", "service"}
 	getDeploymentCmd.Aliases = []string{"deployments"}
 	getHPACmd.Aliases = []string{"hpas"}
+	getWorkflowCmd.Aliases = []string{"wf"}
 
 	getPodCmd.Flags().StringP("namespace", "n", "default", "namespace of the pod")
 	getServiceCmd.Flags().StringP("namespace", "n", "default", "namespace of the service")
 	getFunctionCmd.Flags().StringP("namespace", "n", "default", "namespace of the function")
+	getWorkflowCmd.Flags().StringP("namespace", "n", "default", "namespace of the workflow")
 	getCmd.AddCommand(getPodCmd)
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
@@ -94,8 +101,52 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getJobCmd)
 	getCmd.AddCommand(getFunctionCmd)
 	getCmd.AddCommand(getResultCmd)
+	getCmd.AddCommand(getWorkflowCmd)
 
 	return getCmd
+}
+
+func getWorkflowCmdHandler(cmd *cobra.Command, args []string) {
+	namespace := cmd.Flag("namespace").Value.String()
+	matchWorkflows := []api.Workflow{}
+	if len(args) == 0 {
+		log.Info("getting all workflows")
+		URL := config.GetUrlPrefix() + config.WorkflowsURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+		err := httputil.Get(URL, &matchWorkflows, "data")
+		if err != nil {
+			log.Error("error get all workflows: %s", err.Error())
+			return
+		}
+	} else {
+		for _, workflowName := range args {
+			workflow := &api.Workflow{}
+			URL := config.GetUrlPrefix() + config.WorkflowURL
+			URL = strings.Replace(URL, config.NamespacePlaceholder, namespace, -1)
+			URL = strings.Replace(URL, config.NamePlaceholder, workflowName, -1)
+			err := httputil.Get(URL, workflow, "data")
+			if err != nil {
+				log.Error("error get workflow: %s", err.Error())
+				return
+			}
+			matchWorkflows = append(matchWorkflows, *workflow)
+		}
+	}
+
+	header := []string{"name", "namespace", "function", "trigger"}
+	data := [][]string{}
+	for _, matchWorkflow := range matchWorkflows {
+		trigger := "http"
+		if matchWorkflow.Trigger.Event {
+			trigger = "event"
+		}
+		if matchWorkflow.Trigger.Http && matchWorkflow.Trigger.Event {
+			trigger = "http & event"
+		}
+		data = append(data, []string{matchWorkflow.Metadata.Name, matchWorkflow.Metadata.NameSpace, matchWorkflow.Graph.Function.Name, trigger})
+	}
+	prettyprint.PrintTable(header, data)
+
 }
 
 func getResultCmdHandler(cmd *cobra.Command, args []string) {
