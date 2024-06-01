@@ -5,7 +5,7 @@ import "strconv"
 const (
 	Local      = false
 	localhost  = "localhost"
-	Remotehost = "localhost" // IP of master
+	Remotehost = "192.168.3.8" // IP of master
 	port       = 6443
 	protocol   = "http://"
 )
