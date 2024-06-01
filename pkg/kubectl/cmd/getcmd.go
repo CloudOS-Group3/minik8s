@@ -82,6 +82,12 @@ func GetCmd() *cobra.Command {
 		Run:   getResultCmdHandler,
 	}
 
+	getDNSCmd := &cobra.Command{
+		Use:   "dns",
+		Short: "get dns",
+		Run:   getDNSCmdHandler,
+	}
+
 	getPodCmd.Aliases = []string{"po", "pods"}
 	getNodeCmd.Aliases = []string{"no", "nodes"}
 	getServiceCmd.Aliases = []string{"svc", "service"}
@@ -102,6 +108,7 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getFunctionCmd)
 	getCmd.AddCommand(getResultCmd)
 	getCmd.AddCommand(getWorkflowCmd)
+	getCmd.AddCommand(getDNSCmd)
 
 	return getCmd
 }
@@ -356,6 +363,12 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 			matchNodes = append(matchNodes, *node)
 		}
 	}
+	header := []string{"name", "status"}
+	data := [][]string{}
+	for _, matchNode := range matchNodes {
+		data = append(data, []string{matchNode.Metadata.Name, matchNode.Status.Condition.Status})
+	}
+	prettyprint.PrintTable(header, data)
 }
 
 func getJobCmdHandler(cmd *cobra.Command, args []string) {
@@ -386,6 +399,45 @@ func getJobCmdHandler(cmd *cobra.Command, args []string) {
 			matchJobs = append(matchJobs, *job)
 		}
 	}
+	header := []string{"function", "params", "createtime", "status", "result"}
+	data := [][]string{}
+	for _, matchJob := range matchJobs {
+		data = append(data, []string{matchJob.Function, matchJob.Params, matchJob.CreateTime, matchJob.Status, matchJob.Result})
+	}
+	prettyprint.PrintTable(header, data)
+}
+
+func getDNSCmdHandler(cmd *cobra.Command, args []string) {
+	log.Debug("the length of args is: %v", len(args))
+	matchDNS := []api.DNS{}
+	if len(args) == 0 {
+		log.Debug("getting all DNS")
+		URL := config.GetUrlPrefix() + config.DNSsURL
+		err := httputil.Get(URL, &matchDNS, "data")
+		if err != nil {
+			log.Error("error getting all DNS: %s", err.Error())
+			return
+		}
+	} else {
+		for _, dnsName := range args {
+			log.Debug("%v", dnsName)
+			dns := &api.DNS{}
+			URL := config.GetUrlPrefix() + config.DNSURL
+			URL = strings.Replace(URL, config.NamePlaceholder, dnsName, -1)
+			err := httputil.Get(URL, dns, "data")
+			if err != nil {
+				log.Error("error get DNS: %s", err.Error())
+				return
+			}
+			matchDNS = append(matchDNS, *dns)
+		}
+	}
+	header := []string{"name", "host"}
+	data := [][]string{}
+	for _, matched := range matchDNS {
+		data = append(data, []string{matched.Host, matched.Name})
+	}
+	prettyprint.PrintTable(header, data)
 }
 
 func getTriggerCmdHandler(cmd *cobra.Command, args []string) {
