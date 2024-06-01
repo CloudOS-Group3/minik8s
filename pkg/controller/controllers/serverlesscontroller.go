@@ -188,7 +188,7 @@ func (this *ServerlessController) DeleteFunction(content []byte) {
 
 	functionName := functionMsg.OldFunctionName
 	for _, functionFreePod := range this.functionFreePods[functionName] {
-		URL := config.GetUrlPrefix() + config.FunctionURL
+		URL := config.GetUrlPrefix() + config.PodURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 		URL = strings.Replace(URL, config.NamePlaceholder, functionFreePod.pod.Metadata.Name, -1)
 
@@ -198,6 +198,17 @@ func (this *ServerlessController) DeleteFunction(content []byte) {
 			return
 		}
 	}
+
+	URL := config.GetUrlPrefix() + config.FunctionURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, functionName, -1)
+
+	err = httputil.Delete(URL)
+	if err != nil {
+		log.Error("delete err %v", err)
+		return
+	}
+
 	delete(this.functionFreePods, functionName)
 	log.Info("successfully delete function in serverless controller")
 }
@@ -231,9 +242,11 @@ func (this *ServerlessController) clearExpirePod() {
 						index--
 						continue
 					}
-
 				}
 				this.functionFreePods[functionName][index].freeTime += CheckInterval
+			}
+			if len(this.functionFreePods[functionName]) == 0 {
+				delete(this.functionFreePods, functionName)
 			}
 		}
 	}
@@ -243,7 +256,8 @@ func (this *ServerlessController) Run() {
 	go this.clearExpirePod()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{msg_type.TriggerTopic, msg_type.JobTopic, msg_type.FunctionTopic}
+	//topics := []string{msg_type.TriggerTopic, msg_type.JobTopic, msg_type.FunctionTopic}
+	topics := []string{msg_type.TriggerTopic, msg_type.JobTopic}
 	this.subscriber.Subscribe(wg, ctx, topics, this)
 	<-this.ready
 	<-this.done

@@ -161,6 +161,7 @@ func HttpTriggerFunction(context *gin.Context) {
 		msg.Function = function
 		msg.UUID = uuid.NewString()
 		if err := context.ShouldBind(&msg); err != nil {
+			log.Error("error decode msg: %s", err.Error())
 			context.JSON(http.StatusBadRequest, gin.H{
 				"status": err.Error(),
 			})
