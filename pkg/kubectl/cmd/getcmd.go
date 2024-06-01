@@ -417,6 +417,8 @@ func getJobCmdHandler(cmd *cobra.Command, args []string) {
 	})
 	for _, matchJob := range matchJobs {
 		data = append(data, []string{matchJob.JobID, matchJob.Instance.Metadata.Name, matchJob.Instance.Metadata.NameSpace, matchJob.CreateTime, matchJob.Status, matchJob.Result})
+	}
+	prettyprint.PrintTable(header, data)
 }
 
 func getDNSCmdHandler(cmd *cobra.Command, args []string) {
