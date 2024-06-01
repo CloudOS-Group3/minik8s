@@ -74,8 +74,8 @@ func DoHeartBeat() {
 			PodInList.Status.Metrics = *Metrics
 			PodInList.Status.CPUPercentage = (Metrics.CpuUsage - Heartbeat.Node.Status.Pods[index].Status.Metrics.CpuUsage) / float64(30*time.Second)
 			PodInList.Status.MemoryPercentage = Metrics.MemoryUsage / (2 * 1024 * 1024 * 1024) // total: 2G
-			PodInList.Status.Phase = "Running"
-			URL = config.GetUrlPrefix() + config.PodURL
+			PodInList.Status.Phase = string(api.PodRunning)
+			URL := config.GetUrlPrefix() + config.PodURL
 			URL = strings.Replace(URL, config.NamespacePlaceholder, PodInList.Metadata.NameSpace, -1)
 			URL = strings.Replace(URL, config.NamePlaceholder, PodInList.Metadata.Name, -1)
 			byteArr, err := json.Marshal(PodInList)

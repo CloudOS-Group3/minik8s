@@ -40,12 +40,12 @@ func NewControllerManager() *ControllerManager {
 
 func (CM *ControllerManager) Run(stop chan bool) {
 
-	//go CM.DeploymentController.Run()
-	//go CM.EndpointController.Run()
+	go CM.DeploymentController.Run()
+	go CM.EndpointController.Run()
 	go CM.ServerlessController.Run()
-	//go CM.HPAController.Run()
+	go CM.HPAController.Run()
 	go CM.NodeController.Run()
-	//go CM.DNSController.Run()
+	go CM.DNSController.Run()
 	go CM.JobController.Run()
 	go CM.WorkflowController.Run()
 
