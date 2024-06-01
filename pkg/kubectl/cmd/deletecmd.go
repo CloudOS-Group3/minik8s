@@ -67,6 +67,12 @@ func DeleteCmd() *cobra.Command {
 		Run:   deleteTriggerCmdHandler,
 	}
 
+	deleteNodeCmd := &cobra.Command{
+		Use:   "node [node name]",
+		Short: "delete node",
+		Run:   deleteNodeCmdHandler,
+	}
+
 	deletePodCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteFunctionCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
@@ -81,6 +87,7 @@ func DeleteCmd() *cobra.Command {
 	deleteCmd.AddCommand(deleteFunctionCmd)
 	deleteCmd.AddCommand(deleteTriggerCmd)
 	deleteCmd.AddCommand(deleteJobCmd)
+	deleteCmd.AddCommand(deleteNodeCmd)
 
 	return deleteCmd
 }
@@ -192,6 +199,17 @@ func deleteDNSCmdHandler(cmd *cobra.Command, args []string) {
 func deleteJobCmdHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
 	URL := config.GetUrlPrefix() + config.JobURL
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
+	err := httputil.Delete(URL)
+	if err != nil {
+		log.Error("error http post: %s", err.Error())
+		return
+	}
+}
+
+func deleteNodeCmdHandler(cmd *cobra.Command, args []string) {
+	name := args[0]
+	URL := config.GetUrlPrefix() + config.NodeURL
 	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
 	err := httputil.Delete(URL)
 	if err != nil {

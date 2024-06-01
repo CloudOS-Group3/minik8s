@@ -85,6 +85,7 @@ type ContainerPort struct {
 	ContainerPort int32  `json:"containerPort,omitempty" yaml:"containerPort,omitempty"`
 	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
 	Protocol      string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Prometheus    bool   `json:"prometheus,omitempty" yaml:"prometheus,omitempty"`
 }
 
 type EnvVar struct {

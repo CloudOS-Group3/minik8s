@@ -42,6 +42,7 @@ func (e *KubeProxy) Setup(session sarama.ConsumerGroupSession) error {
 }
 
 func (e *KubeProxy) Cleanup(session sarama.ConsumerGroupSession) error {
+	e.ready = make(chan bool)
 	return nil
 }
 

@@ -52,6 +52,7 @@ func (this *ServerlessController) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (this *ServerlessController) Cleanup(_ sarama.ConsumerGroupSession) error {
+	this.ready = make(chan bool)
 	return nil
 }
 
@@ -203,6 +204,7 @@ func (this *ServerlessController) clearExpirePod() {
 		<-time.After(CheckInterval)
 		for functionName, freePods := range this.functionFreePods {
 			for index := 0; index < len(freePods); index++ {
+				log.Info("freepod: %d, array length: %d", index, len(freePods))
 				freePod := freePods[index]
 				if freePod.freeTime >= MaxFreeTime {
 					URL := config.GetUrlPrefix() + config.PodURL
@@ -214,9 +216,17 @@ func (this *ServerlessController) clearExpirePod() {
 						log.Error("delete pod err %v", err)
 						return
 					}
-					this.functionFreePods[functionName] = append(this.functionFreePods[functionName][:index], this.functionFreePods[functionName][index+1:]...)
-					index--
-					continue
+					if index == len(freePods)-1 {
+						log.Info("delete")
+						this.functionFreePods[functionName] = this.functionFreePods[functionName][:index]
+						break
+					} else {
+						log.Info("detele")
+						this.functionFreePods[functionName] = append(this.functionFreePods[functionName][:index], this.functionFreePods[functionName][index+1:]...)
+						index--
+						continue
+					}
+
 				}
 				this.functionFreePods[functionName][index].freeTime += CheckInterval
 			}
