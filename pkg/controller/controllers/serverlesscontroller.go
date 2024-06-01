@@ -115,6 +115,7 @@ func (this *ServerlessController) triggerNewJob(content []byte) {
 	job.Instance = *freePod
 	job.Params = triggerMsg.Params
 	job.Status = api.JOB_CREATED
+	job.Function = functionName
 
 	URL := config.GetUrlPrefix() + config.JobsURL
 	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
