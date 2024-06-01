@@ -2,6 +2,7 @@ package function_util
 
 import (
 	"errors"
+	"fmt"
 	"minik8s/pkg/api"
 	"strconv"
 )
@@ -45,7 +46,7 @@ func CheckParams(paramTemp []api.Template, args []string) (map[string]interface{
 func ConvertToStringList(res []interface{}) []string {
 	result := []string{}
 	for _, value := range res {
-		result = append(result, value.(string))
+		result = append(result, fmt.Sprintf("%v", value))
 	}
 	return result
 }

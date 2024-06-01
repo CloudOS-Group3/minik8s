@@ -58,7 +58,7 @@ func (this *WorkflowController) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (this *WorkflowController) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		log.Info("Message claimed: value %s", string(msg.Value))
+		log.Debug("Message claimed: value %s", string(msg.Value))
 		switch msg.Topic {
 		case msg_type.TriggerWorkflowTopic:
 			sess.MarkMessage(msg, "")
@@ -84,7 +84,7 @@ func (this *WorkflowController) ConsumeClaim(sess sarama.ConsumerGroupSession, c
 func (this *WorkflowController) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{msg_type.TriggerTopic, msg_type.JobTopic}
+	topics := []string{msg_type.TriggerWorkflowTopic, msg_type.JobTopic}
 	this.subscriber.Subscribe(wg, ctx, topics, this)
 	<-this.ready
 	<-this.done
@@ -99,11 +99,12 @@ func (this *WorkflowController) triggerNewWorkflow(value []byte) {
 	workflow := msg.Workflow
 
 	// Get first function
-	function, err := workflow_util.GetFunction(workflow.Graph.Function.NameSpace, workflow.Graph.Function.Name)
+	function, err := workflow_util.GetFunction(workflow.Graph.Function.Name, workflow.Graph.Function.NameSpace)
 	if err != nil {
 		log.Error("Can't find function: %s. %s", workflow.Graph.Function.Name, err.Error())
 		return
 	}
+	log.Debug("Get function: %v", function)
 
 	trigger_uuid := uuid.NewString()
 	// create trigger msg to exec function
