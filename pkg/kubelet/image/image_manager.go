@@ -63,3 +63,14 @@ func pullFromRegistry(imageName string, client *containerd.Client, namespace str
 	}
 	return image
 }
+
+func DeleteRegistryImage(imageName string, namespace string) {
+	// We delete it wherever it is
+	cmd := exec.Command("nerdctl", "-n", namespace, "rmi", imageName)
+	//log.Info("cmd: %v", cmd)
+	output, err := cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		log.Error("Failed to delete image %s: %s", imageName, err.Error())
+	}
+}

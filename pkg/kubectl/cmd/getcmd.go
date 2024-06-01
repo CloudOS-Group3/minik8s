@@ -8,6 +8,7 @@ import (
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/prettyprint"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -408,12 +409,14 @@ func getJobCmdHandler(cmd *cobra.Command, args []string) {
 			matchJobs = append(matchJobs, *job)
 		}
 	}
-	header := []string{"function", "params", "createtime", "status", "result"}
+	header := []string{"jobID", "pod-name", "namespace", "create-time", "status", "result"}
 	data := [][]string{}
+	// sort by create time
+	sort.Slice(matchJobs, func(i, j int) bool {
+		return matchJobs[i].CreateTime < matchJobs[j].CreateTime
+	})
 	for _, matchJob := range matchJobs {
-		data = append(data, []string{matchJob.Function, matchJob.Params, matchJob.CreateTime, matchJob.Status, matchJob.Result})
-	}
-	prettyprint.PrintTable(header, data)
+		data = append(data, []string{matchJob.JobID, matchJob.Instance.Metadata.Name, matchJob.Instance.Metadata.NameSpace, matchJob.CreateTime, matchJob.Status, matchJob.Result})
 }
 
 func getDNSCmdHandler(cmd *cobra.Command, args []string) {

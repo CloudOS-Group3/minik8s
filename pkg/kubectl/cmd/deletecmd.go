@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"minik8s/pkg/config"
-	"minik8s/pkg/serverless/function"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"strings"
@@ -108,12 +107,11 @@ func deleteFunctionCmdHandler(cmd *cobra.Command, args []string) {
 	URL := config.GetUrlPrefix() + path
 	err = httputil.Delete(URL)
 	if err != nil {
-		log.Error("error http post: %s", err.Error())
+		log.Error("Wait for all related pods to be deleted first: %s", err.Error())
 		return
 	}
 	log.Info("function name: %s, namespace: %s", name, namespace)
 
-	function.DeleteFunction(name, namespace)
 }
 
 func deletePodCmdHandler(cmd *cobra.Command, args []string) {
