@@ -9,6 +9,7 @@ import (
 	"minik8s/util/log"
 	"minik8s/util/prettyprint"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -83,6 +84,12 @@ func GetCmd() *cobra.Command {
 		Run:   getResultCmdHandler,
 	}
 
+	getDNSCmd := &cobra.Command{
+		Use:   "dns",
+		Short: "get dns",
+		Run:   getDNSCmdHandler,
+	}
+
 	getPodCmd.Aliases = []string{"po", "pods"}
 	getNodeCmd.Aliases = []string{"no", "nodes"}
 	getServiceCmd.Aliases = []string{"svc", "service"}
@@ -97,12 +104,14 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getPodCmd)
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
+	getCmd.AddCommand(getHPACmd)
 	getCmd.AddCommand(getServiceCmd)
 	getCmd.AddCommand(getTriggerCmd)
 	getCmd.AddCommand(getJobCmd)
 	getCmd.AddCommand(getFunctionCmd)
 	getCmd.AddCommand(getResultCmd)
 	getCmd.AddCommand(getWorkflowCmd)
+	getCmd.AddCommand(getDNSCmd)
 
 	return getCmd
 }
@@ -209,7 +218,6 @@ func getFunctionCmdHandler(cmd *cobra.Command, args []string) {
 	prettyprint.PrintTable(header, data)
 }
 
-// TODO: all of these handlers have got the data, but they dont show it in the terminal
 func getPodCmdHandler(cmd *cobra.Command, args []string) {
 
 	namespace := cmd.Flag("namespace").Value.String()
@@ -288,6 +296,14 @@ func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 			matchDeployments = append(matchDeployments, *deployment)
 		}
 	}
+
+	header := []string{"name", "replicas", "match labels"}
+	data := [][]string{}
+	for _, matchDeployment := range matchDeployments {
+		data = append(data, []string{matchDeployment.Metadata.Name, strconv.Itoa(matchDeployment.Spec.Replicas), fmt.Sprintf("%+v", matchDeployment.Spec.Selector.MatchLabels)})
+	}
+
+	prettyprint.PrintTable(header, data)
 }
 
 func getServiceCmdHandler(cmd *cobra.Command, args []string) {
@@ -357,6 +373,12 @@ func getNodeCmdHandler(cmd *cobra.Command, args []string) {
 			matchNodes = append(matchNodes, *node)
 		}
 	}
+	header := []string{"name", "status"}
+	data := [][]string{}
+	for _, matchNode := range matchNodes {
+		data = append(data, []string{matchNode.Metadata.Name, matchNode.Status.Condition.Status})
+	}
+	prettyprint.PrintTable(header, data)
 }
 
 func getJobCmdHandler(cmd *cobra.Command, args []string) {
@@ -395,6 +417,37 @@ func getJobCmdHandler(cmd *cobra.Command, args []string) {
 	})
 	for _, matchJob := range matchJobs {
 		data = append(data, []string{matchJob.JobID, matchJob.Instance.Metadata.Name, matchJob.Instance.Metadata.NameSpace, matchJob.CreateTime, matchJob.Status, matchJob.Result})
+}
+
+func getDNSCmdHandler(cmd *cobra.Command, args []string) {
+	log.Debug("the length of args is: %v", len(args))
+	matchDNS := []api.DNS{}
+	if len(args) == 0 {
+		log.Debug("getting all DNS")
+		URL := config.GetUrlPrefix() + config.DNSsURL
+		err := httputil.Get(URL, &matchDNS, "data")
+		if err != nil {
+			log.Error("error getting all DNS: %s", err.Error())
+			return
+		}
+	} else {
+		for _, dnsName := range args {
+			log.Debug("%v", dnsName)
+			dns := &api.DNS{}
+			URL := config.GetUrlPrefix() + config.DNSURL
+			URL = strings.Replace(URL, config.NamePlaceholder, dnsName, -1)
+			err := httputil.Get(URL, dns, "data")
+			if err != nil {
+				log.Error("error get DNS: %s", err.Error())
+				return
+			}
+			matchDNS = append(matchDNS, *dns)
+		}
+	}
+	header := []string{"name", "host"}
+	data := [][]string{}
+	for _, matched := range matchDNS {
+		data = append(data, []string{matched.Host, matched.Name})
 	}
 	prettyprint.PrintTable(header, data)
 }
@@ -420,7 +473,7 @@ func getHPACmdHandler(cmd *cobra.Command, args []string) {
 		log.Debug("getting all HPAs")
 		URL := config.GetUrlPrefix() + config.HPAsURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
-		err := httputil.Get(URL, matchHPAs, "data")
+		err := httputil.Get(URL, &matchHPAs, "data")
 		if err != nil {
 			log.Error("Error http get hpa: %s", err.Error())
 			return
@@ -445,5 +498,14 @@ func getHPACmdHandler(cmd *cobra.Command, args []string) {
 			matchHPAs = append(matchHPAs, *hpa)
 		}
 	}
+
+	header := []string{"name", "max replicas", "min replicas", "scale interval"}
+	data := [][]string{}
+
+	for _, matchHPA := range matchHPAs {
+		data = append(data, []string{matchHPA.Metadata.Name, strconv.Itoa(matchHPA.Spec.MaxReplica), strconv.Itoa(matchHPA.Spec.MinReplica), fmt.Sprintf("%f", matchHPA.Spec.AdjustInterval)})
+	}
+
+	prettyprint.PrintTable(header, data)
 
 }
