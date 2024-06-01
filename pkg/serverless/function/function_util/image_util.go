@@ -75,33 +75,6 @@ func CreateImage(function *api.Function) (string, error) {
 	return config.Remotehost + ":" + RegistryPort + "/" + GetImageName(function.Metadata.Name, function.Metadata.NameSpace), nil
 }
 
-func DeleteFunctionImage(name string, namespace string) error {
-	// Step 0: Delete Image in namespace
-	cmd := exec.Command("nerdctl", "-n", namespace, "image", "rm",
-		config.Remotehost+":"+RegistryPort+"/"+GetImageName(name, namespace))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	// Step 1: Delete Image
-	cmd = exec.Command("docker", "rmi", GetImageName(name, namespace))
-	output, err = cmd.CombinedOutput()
-	//log.Info("output: %s", string(output))
-	if err != nil {
-		return err
-	}
-
-	// Step 2: Delete Image in local registry
-	cmd = exec.Command("docker", "rmi",
-		config.Remotehost+":"+RegistryPort+"/"+GetImageName(name, namespace))
-	log.Info("cmd: %s", cmd.String())
-	output, err = cmd.CombinedOutput()
-	log.Info("output: %s", string(output))
-	if err != nil {
-		return err
-	}
-	return nil
-}
 func copyDirContents(srcDir, dstDir string) error {
 	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

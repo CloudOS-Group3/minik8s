@@ -28,6 +28,8 @@ const (
 	JobTopic = "job"
 	// function topic
 	FunctionTopic = "function"
+	// deleteImage topic
+	DeleteImageTopic = "deleteImage"
 	// endpoint topic
 	EndpointTopic = "endpoint"
 	// pod operation
@@ -91,4 +93,9 @@ type JobMsg struct {
 type FunctionMsg struct {
 	Opt             string `json:"opt"`
 	OldFunctionName string `json:"old_function_name,omitempty"`
+}
+
+type DeleteImageMsg struct {
+	Namespace string `json:"namespace"`
+	ImageName string `json:"imageName"`
 }

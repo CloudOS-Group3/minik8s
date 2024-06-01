@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"minik8s/pkg/api"
+	"minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
 	function_manager "minik8s/pkg/serverless/function"
+	"minik8s/pkg/serverless/function/function_util"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
+	"os/exec"
 )
 
 func AddFunction(context *gin.Context) {
@@ -103,10 +106,51 @@ func UpdateFunction(context *gin.Context) {
 }
 
 func DeleteFunction(context *gin.Context) {
-	// Delete function
-	log.Info("Delete function")
 	name := context.Param(config.NameParam)
 	namespace := context.Param(config.NamespaceParam)
-	URL := config.FunctionPath + namespace + "/" + name
+
+	// Step1 : check running pod
+	// get all related pods
+	podname_prefix := function_util.GeneratePodName(name, namespace)
+	URL := config.EtcdPodPath
+	URL = URL + "/" + podname_prefix
+	pods := etcdClient.PrefixGet(URL)
+	if len(pods) != 0 {
+		log.Error("Pods are still running, please delete them first")
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrong",
+		})
+		return
+	}
+
+	// Step2: delete registry image
+	// And cannot invoke function after delete
+	cmd := exec.Command("docker", "rmi",
+		config.Remotehost+":"+function_util.RegistryPort+"/"+function_util.GetImageName(name, namespace))
+	//log.Info("cmd: %s", cmd.String())
+	output, err := cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		log.Error("Error delete function image in master registry: %s", err.Error())
+	}
+	// The image was built on master, so delete it
+	cmd = exec.Command("docker", "rmi", function_util.GetImageName(name, namespace))
+	//log.Info("cmd: %s", cmd.String())
+	output, err = cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		log.Error("Error delete function image in master registry: %s", err.Error())
+	}
+
+	// Step3: delete etcd key
+	URL = config.FunctionPath + namespace + "/" + name
 	etcdClient.DeleteEtcdPair(URL)
+
+	// Step4: let all kubelet send local image
+	msg := msg_type.DeleteImageMsg{
+		ImageName: config.Remotehost + ":" + function_util.RegistryPort + "/" + function_util.GetImageName(name, namespace),
+		Namespace: namespace,
+	}
+	msg_json, _ := json.Marshal(msg)
+	publisher.Publish(msg_type.DeleteImageTopic, string(msg_json))
 }

@@ -8,6 +8,7 @@ import (
 	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/kubelet/host"
+	"minik8s/pkg/kubelet/image"
 	"minik8s/pkg/kubelet/node"
 	"minik8s/pkg/kubelet/pod"
 	"minik8s/util/log"
@@ -61,6 +62,10 @@ func (k *KubeletSubscriber) ConsumeClaim(sess sarama.ConsumerGroupSession, claim
 		if msg.Topic == msg_type.DNSTopic {
 			sess.MarkMessage(msg, "")
 			k.DNSHandler(msg.Value)
+		}
+		if msg.Topic == msg_type.DeleteImageTopic {
+			sess.MarkMessage(msg, "")
+			k.DeleteImageHandler(msg.Value)
 		}
 	}
 	return nil
@@ -132,10 +137,21 @@ func (k *KubeletSubscriber) Run() {
 	go node.DoHeartBeat()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{msg_type.PodTopic, msg_type.DNSTopic}
+	topics := []string{msg_type.PodTopic, msg_type.DNSTopic, msg_type.DeleteImageTopic}
 	k.subscriber.Subscribe(wg, ctx, topics, k)
 	<-k.ready
 	<-k.done
 	cancel()
 	wg.Wait()
+}
+
+func (k *KubeletSubscriber) DeleteImageHandler(value []byte) {
+	var deleteImageMsg msg_type.DeleteImageMsg
+	err := json.Unmarshal(value, &deleteImageMsg)
+	if err != nil {
+		log.Error("unmarshal delete image message failed, error: %s", err.Error())
+		return
+	}
+	log.Info("Delete image: %s", deleteImageMsg.ImageName)
+	image.DeleteRegistryImage(deleteImageMsg.ImageName, deleteImageMsg.Namespace)
 }
