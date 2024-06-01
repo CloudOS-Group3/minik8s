@@ -6,6 +6,7 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"minik8s/pkg/api"
 	"minik8s/util/log"
+	"os/exec"
 )
 
 // PullImage pulls the image from the registry.
@@ -28,6 +29,8 @@ func PullImage(imageName string, pullPolicy string, client *containerd.Client, n
 		}
 	case api.PullPolicyNever:
 		return nil
+	case api.PullFromRegistry:
+		return pullFromRegistry(imageName, client, namespace)
 	default:
 		break
 	}
@@ -39,5 +42,24 @@ func PullImage(imageName string, pullPolicy string, client *containerd.Client, n
 
 	log.Info("Image %s pulled successfully", image.Name())
 
+	return image
+}
+
+func pullFromRegistry(imageName string, client *containerd.Client, namespace string) containerd.Image {
+	cmd := exec.Command("nerdctl", "-n", namespace, "pull", imageName, "--insecure-registry")
+	log.Info("cmd: %v", cmd)
+	output, err := cmd.CombinedOutput()
+	log.Info("output: %s", string(output))
+	if err != nil {
+		log.Error("Failed to run nerdctl pull: %s", err.Error())
+		return nil
+	}
+	ctx := namespaces.WithNamespace(context.Background(), namespace)
+	//image, err := client.ImageService().Get(ctx, imageName)
+	image, err := client.GetImage(ctx, imageName+":latest")
+	if err != nil {
+		log.Error("Failed to get image %s: %v", imageName, err.Error())
+		return nil
+	}
 	return image
 }

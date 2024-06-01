@@ -72,4 +72,35 @@ func (server *apiServer) bind() {
 	server.router.DELETE(config.DNSURL, handlers.DeleteDNS)
 	server.router.PUT(config.DNSURL, handlers.UpdateDNS)
 	server.router.GET(config.DNSURL, handlers.GetDNS)
+
+	server.router.GET(config.FunctionURL, handlers.GetFunction)
+	server.router.GET(config.FunctionsURL, handlers.GetFunctions)
+	server.router.PUT(config.FunctionURL, handlers.UpdateFunction)
+	server.router.POST(config.FunctionURL, handlers.AddFunction)
+	server.router.DELETE(config.FunctionURL, handlers.DeleteFunction)
+
+	server.router.GET(config.WorkflowURL, handlers.GetWorkflow)
+	server.router.PUT(config.WorkflowURL, handlers.UpdateWorkflow)
+	server.router.POST(config.WorkflowURL, handlers.AddWorkflow)
+	server.router.DELETE(config.WorkflowURL, handlers.DeleteWorkflow)
+	server.router.GET(config.WorkflowsURL, handlers.GetAllWorkflow)
+
+	server.router.GET(config.TriggersURL, handlers.GetTriggers)
+	server.router.POST(config.TriggersURL, handlers.AddTrigger)
+	server.router.DELETE(config.TriggerURL, handlers.DeleteTrigger)
+	server.router.DELETE(config.TriggerWorkflowURL, handlers.DeleteWorkflowTrigger)
+	server.router.POST(config.FunctionRunURL, handlers.HttpTriggerFunction)
+	server.router.POST(config.WorkflowRunURL, handlers.HttpTriggerWorkflow)
+
+	server.router.PUT(config.TriggerResultURL, handlers.UpdateTriggerResult)
+	server.router.GET(config.TriggerResultURL, handlers.GetTriggerResult)
+	server.router.GET(config.TriggerResultsURL, handlers.GetTriggerResults)
+
+	server.router.GET(config.JobsURL, handlers.GetJobs)
+	server.router.POST(config.JobsURL, handlers.AddJob)
+	server.router.GET(config.JobURL, handlers.GetJob)
+	server.router.DELETE(config.JobURL, handlers.DeleteJob)
+	server.router.PUT(config.JobURL, handlers.UpdateJob)
+	server.router.POST(config.JobResultURL, handlers.JobResultHandler)
+
 }

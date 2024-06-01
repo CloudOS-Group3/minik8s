@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Function
+metadata:
+  name: function6
+language: python
+filePath: /root/minik8s/testdata/workflow1/function6/
+triggerType:
+  http: true
+params:
+  - name: x
+    type: int
+result:
+  - name: x
+    type: int
+  - name: greeting
+    type: string

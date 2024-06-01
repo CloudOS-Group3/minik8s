@@ -79,10 +79,80 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyHPAHandler(content)
 	case "DNS":
 		applyDNSHandler(content)
+	case "Function":
+		applyFunctionHandler(content)
+	case "Trigger":
+		applyTriggerHandler(content)
+	case "Workflow":
+		applyWorkflowHandler(content)
+	case "Node":
+		applyNodeHandler(content)
 	default:
 		log.Warn("Unknown resource kind")
 	}
 
+}
+
+func applyWorkflowHandler(content []byte) {
+	log.Info("Creating or updating workflow")
+	workflow := &api.Workflow{}
+	err := yaml.Unmarshal(content, workflow)
+	if err != nil {
+		log.Error("Error yaml unmarshal workflow, %s", err.Error())
+		return
+	}
+
+	workflow.Metadata.UUID = uuid.NewString()
+	if workflow.Metadata.NameSpace == "" {
+		workflow.Metadata.NameSpace = "default"
+	}
+
+	byteArr, err := json.Marshal(*workflow)
+	if err != nil {
+		log.Error("Error json marshal workflow, %s", err.Error())
+		return
+	}
+	URL := config.GetUrlPrefix() + config.WorkflowURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, workflow.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, workflow.Metadata.Name, -1)
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post workflow, %s", err.Error())
+		return
+	}
+	log.Info("apply workflow successed, %v", workflow)
+
+}
+
+func applyFunctionHandler(content []byte) {
+	log.Info("Creating or updating function")
+	function := &api.Function{}
+	err := yaml.Unmarshal(content, function)
+	if err != nil {
+		log.Error("Error yaml unmarshal function, %s", err.Error())
+		return
+	}
+
+	//Generate
+	function.Metadata.UUID = uuid.NewString()
+	if function.Metadata.NameSpace == "" {
+		function.Metadata.NameSpace = "default"
+	}
+
+	byteArr, err := json.Marshal(*function)
+	if err != nil {
+		log.Error("Error json marshal function, %s", err.Error())
+		return
+	}
+	URL := config.GetUrlPrefix() + config.FunctionURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, function.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, function.Metadata.Name, -1)
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post function, %s", err.Error())
+		return
+	}
+	log.Info("apply function successed, %v", function)
 }
 func applyPodHandler(content []byte) {
 	log.Info("Creating or updating pod")
@@ -233,4 +303,48 @@ func applyDNSHandler(content []byte) {
 		return
 	}
 	log.Info("apply DNS successed")
+}
+
+func applyTriggerHandler(content []byte) {
+	log.Info("creating or updating trigger")
+	trigger := &api.Trigger{}
+	err := yaml.Unmarshal(content, trigger)
+	if err != nil {
+		log.Error("Error yaml unmarshal trigger")
+		return
+	}
+	byteArr, err := json.Marshal(*trigger)
+	if err != nil {
+		log.Error("Error json marshal trigger")
+		return
+	}
+	URL := config.GetUrlPrefix() + config.TriggersURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply trigger successed")
+}
+
+func applyNodeHandler(content []byte) {
+	log.Info("creating or updating node")
+	node := &api.Node{}
+	err := yaml.Unmarshal(content, node)
+	if err != nil {
+		log.Error("Error yaml unmarshal node")
+		return
+	}
+	byteArr, err := json.Marshal(*node)
+	if err != nil {
+		log.Error("Error json marshal node")
+		return
+	}
+	URL := config.GetUrlPrefix() + config.NodesURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply node successed")
 }

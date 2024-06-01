@@ -11,6 +11,7 @@ import (
 	"minik8s/pkg/kubeproxy/ipvs"
 	"minik8s/util/log"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -41,6 +42,7 @@ func (e *KubeProxy) Setup(session sarama.ConsumerGroupSession) error {
 }
 
 func (e *KubeProxy) Cleanup(session sarama.ConsumerGroupSession) error {
+	e.ready = make(chan bool)
 	return nil
 }
 
@@ -100,7 +102,9 @@ func (e *KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sara
 func NewKubeProxy(name string) *KubeProxy {
 	if name == "" {
 		content, _ := os.ReadFile("/etc/hostname")
-		config.Nodename = string(content)
+		str := string(content)
+		str = strings.Replace(str, "\n", "", -1)
+		config.Nodename = str
 	} else {
 		config.Nodename = name
 	}

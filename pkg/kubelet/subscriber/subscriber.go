@@ -12,6 +12,7 @@ import (
 	"minik8s/pkg/kubelet/pod"
 	"minik8s/util/log"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -25,7 +26,9 @@ type KubeletSubscriber struct {
 func NewKubeletSubscriber(name string) *KubeletSubscriber {
 	if name == "" {
 		content, _ := os.ReadFile("/etc/hostname")
-		config.Nodename = string(content)
+		str := string(content)
+		str = strings.Replace(str, "\n", "", -1)
+		config.Nodename = str
 	} else {
 		config.Nodename = name
 	}

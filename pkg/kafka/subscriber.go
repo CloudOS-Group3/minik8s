@@ -27,7 +27,8 @@ func NewSubscriber(group string) *Subscriber {
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
 
-	brokers := []string{"192.168.3.8:9092", "192.168.3.11:9092", "192.168.3.12:9092"}
+	//brokers := []string{"192.168.3.8:9092", "192.168.3.11:9092", "192.168.3.12:9092"}
+	brokers := []string{"localhost:9092"}
 
 	// create a consumer group
 	consumerGroup, err := sarama.NewConsumerGroup(brokers, group, config)

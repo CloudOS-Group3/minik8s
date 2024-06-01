@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: Workflow
+metadata:
+  name: my-workflow
+  namespace: default
+
+graph:
+  - function:
+      name: function1
+      namespace: default
+      language: python
+      filePath: /root/minik8s/testdata/workflow1/function1/
+      triggerType:
+        http: true
+      params:
+        - name: x
+          type: int
+        - name: y
+          type: string
+      result:
+        - name: x
+          type: int
+        - name: y
+          type: string
+    rule:
+      case:
+        - expression:
+            - variable: input_value
+              opt: "="
+              value: "10"
+              type: int
+          successor:
+            name: function-1
+            namespace: default
+            uuid: 33333-ccccc-44444-ddddd
+        - expression:
+            - variable: input_value
+              opt: ">"
+              value: "10"
+              type: int
+          successor:
+            name: function-2
+            namespace: default
+            uuid: 55555-eeeee-66666-fffff
+      default:
+        name: default-function
+        namespace: default
+        uuid: 77777-ggggg-88888-hhhhh
+
+  - function:
+      name: function-1
+      namespace: default
+      uuid: 33333-ccccc-44444-ddddd
+    rule:
+      case:
+        - expression:
+            - variable: result
+              opt: "="
+              value: "success"
+              type: string
+          successor:
+            name: end-function
+            namespace: default
+            uuid: 99999-iiiii-00000-jjjjj
+      default:
+        name: error-handler
+        namespace: default
+        uuid: 10101-kkkkk-20202-lllll
+
+  - function:
+      name: function-2
+      namespace: default
+      uuid: 55555-eeeee-66666-fffff
+    rule:
+      case:
+        - expression:
+            - variable: result
+              opt: "="
+              value: "success"
+              type: string
+          successor:
+            name: end-function
+            namespace: default
+            uuid: 99999-iiiii-00000-jjjjj
+      default:
+        name: error-handler
+        namespace: default
+        uuid: 10101-kkkkk-20202-lllll
+
+  - function:
+      name: default-function
+      namespace: default
+      uuid: 77777-ggggg-88888-hhhhh
+    rule:
+      default:
+        name: end-function
+        namespace: default
+        uuid: 99999-iiiii-00000-jjjjj
+
+  - function:
+      name: end-function
+      namespace: default
+      uuid: 99999-iiiii-00000-jjjjj
+
+  - function:
+      name: error-handler
+      namespace: default
+      uuid: 10101-kkkkk-20202-lllll
+    rule:
+      default:
+        name: end-function
+        namespace: default
+        uuid: 99999-iiiii-00000-jjjjj
