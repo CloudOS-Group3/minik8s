@@ -152,6 +152,18 @@ func deletePodCmdHandler(cmd *cobra.Command, args []string) {
 
 func deleteDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 	log.Info("deployment name: %+v", args)
+	name := args[0]
+	URL := config.GetUrlPrefix() + config.DeploymentURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, name, -1)
+
+	err := httputil.Delete(URL)
+	if err != nil {
+		log.Error("error delete deployment: %s", err.Error())
+		return
+	}
+
+	log.Info("delete deployment %s successfully", name)
 }
 
 func deleteServiceCmdHandler(cmd *cobra.Command, args []string) {
@@ -172,6 +184,7 @@ func deleteServiceCmdHandler(cmd *cobra.Command, args []string) {
 }
 
 func deleteHPACmdHandler(cmd *cobra.Command, args []string) {
+	log.Info("deleting hpa")
 	name := args[0]
 
 	URL := config.GetUrlPrefix() + config.HPAURL
@@ -183,6 +196,7 @@ func deleteHPACmdHandler(cmd *cobra.Command, args []string) {
 		log.Error("error http post: %s", err.Error())
 		return
 	}
+	log.Info("successfully deleted hpa")
 }
 
 func deleteDNSCmdHandler(cmd *cobra.Command, args []string) {

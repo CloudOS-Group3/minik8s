@@ -8,6 +8,7 @@ import (
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/prettyprint"
+	"strconv"
 	"strings"
 	"time"
 
@@ -96,6 +97,7 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getPodCmd)
 	getCmd.AddCommand(getNodeCmd)
 	getCmd.AddCommand(getDeploymentCmd)
+	getCmd.AddCommand(getHPACmd)
 	getCmd.AddCommand(getServiceCmd)
 	getCmd.AddCommand(getTriggerCmd)
 	getCmd.AddCommand(getJobCmd)
@@ -208,7 +210,6 @@ func getFunctionCmdHandler(cmd *cobra.Command, args []string) {
 	prettyprint.PrintTable(header, data)
 }
 
-// TODO: all of these handlers have got the data, but they dont show it in the terminal
 func getPodCmdHandler(cmd *cobra.Command, args []string) {
 
 	namespace := cmd.Flag("namespace").Value.String()
@@ -287,6 +288,14 @@ func getDeploymentCmdHandler(cmd *cobra.Command, args []string) {
 			matchDeployments = append(matchDeployments, *deployment)
 		}
 	}
+
+	header := []string{"name", "replicas", "match labels"}
+	data := [][]string{}
+	for _, matchDeployment := range matchDeployments {
+		data = append(data, []string{matchDeployment.Metadata.Name, strconv.Itoa(matchDeployment.Spec.Replicas), fmt.Sprintf("%+v", matchDeployment.Spec.Selector.MatchLabels)})
+	}
+
+	prettyprint.PrintTable(header, data)
 }
 
 func getServiceCmdHandler(cmd *cobra.Command, args []string) {
@@ -409,7 +418,7 @@ func getHPACmdHandler(cmd *cobra.Command, args []string) {
 		log.Debug("getting all HPAs")
 		URL := config.GetUrlPrefix() + config.HPAsURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
-		err := httputil.Get(URL, matchHPAs, "data")
+		err := httputil.Get(URL, &matchHPAs, "data")
 		if err != nil {
 			log.Error("Error http get hpa: %s", err.Error())
 			return
@@ -434,5 +443,14 @@ func getHPACmdHandler(cmd *cobra.Command, args []string) {
 			matchHPAs = append(matchHPAs, *hpa)
 		}
 	}
+
+	header := []string{"name", "max replicas", "min replicas", "scale interval"}
+	data := [][]string{}
+
+	for _, matchHPA := range matchHPAs {
+		data = append(data, []string{matchHPA.Metadata.Name, strconv.Itoa(matchHPA.Spec.MaxReplica), strconv.Itoa(matchHPA.Spec.MinReplica), fmt.Sprintf("%f", matchHPA.Spec.AdjustInterval)})
+	}
+
+	prettyprint.PrintTable(header, data)
 
 }
