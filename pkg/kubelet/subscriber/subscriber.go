@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/kubelet/host"
+	"minik8s/pkg/kubelet/image"
 	"minik8s/pkg/kubelet/node"
 	"minik8s/pkg/kubelet/pod"
 	"minik8s/util/log"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -20,13 +24,20 @@ type KubeletSubscriber struct {
 	done        chan bool
 }
 
-func NewKubeletSubscriber() *KubeletSubscriber {
-	brokers := []string{"127.0.0.1:9092"}
-	group := "kubelet"
+func NewKubeletSubscriber(name string) *KubeletSubscriber {
+	if name == "" {
+		content, _ := os.ReadFile("/etc/hostname")
+		str := string(content)
+		str = strings.Replace(str, "\n", "", -1)
+		config.Nodename = str
+	} else {
+		config.Nodename = name
+	}
+	group := "kubelet" + "-" + config.Nodename
 	return &KubeletSubscriber{
 		ready:       make(chan bool),
 		done:        make(chan bool),
-		subscriber:  kafka.NewSubscriber(brokers, group),
+		subscriber:  kafka.NewSubscriber(group),
 		HostManager: host.NewHostManager(),
 	}
 }
@@ -37,6 +48,7 @@ func (k *KubeletSubscriber) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (k *KubeletSubscriber) Cleanup(_ sarama.ConsumerGroupSession) error {
+	k.ready = make(chan bool)
 	return nil
 }
 
@@ -51,6 +63,10 @@ func (k *KubeletSubscriber) ConsumeClaim(sess sarama.ConsumerGroupSession, claim
 			sess.MarkMessage(msg, "")
 			k.DNSHandler(msg.Value)
 		}
+		if msg.Topic == msg_type.DeleteImageTopic {
+			sess.MarkMessage(msg, "")
+			k.DeleteImageHandler(msg.Value)
+		}
 	}
 	return nil
 }
@@ -64,10 +80,16 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 	}
 	switch podMsg.Opt {
 	case msg_type.Add:
+		if podMsg.NewPod.Spec.NodeName != config.Nodename {
+			break
+		}
 		log.Info("create pod: %v", podMsg.NewPod)
 		pod.CreatePod(&podMsg.NewPod)
 		break
 	case msg_type.Delete:
+		if podMsg.OldPod.Spec.NodeName != config.Nodename {
+			break
+		}
 		log.Info("delete pod: %v", podMsg.OldPod)
 		pod.DeletePod(&podMsg.OldPod)
 		break
@@ -76,8 +98,12 @@ func (k *KubeletSubscriber) PodHandler(msg []byte) {
 		NewSpec, _ := json.Marshal(podMsg.NewPod.Spec)
 		if string(OldSpec) != string(NewSpec) {
 			log.Info("update pod: %v", podMsg.NewPod)
-			pod.DeletePod(&podMsg.OldPod)
-			pod.CreatePod(&podMsg.NewPod)
+			if podMsg.OldPod.Spec.NodeName == config.Nodename {
+				pod.DeletePod(&podMsg.OldPod)
+			}
+			if podMsg.NewPod.Spec.NodeName == config.Nodename {
+				pod.CreatePod(&podMsg.NewPod)
+			}
 		}
 		break
 	}
@@ -111,10 +137,21 @@ func (k *KubeletSubscriber) Run() {
 	go node.DoHeartBeat()
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	topics := []string{msg_type.PodTopic, msg_type.DNSTopic}
+	topics := []string{msg_type.PodTopic, msg_type.DNSTopic, msg_type.DeleteImageTopic}
 	k.subscriber.Subscribe(wg, ctx, topics, k)
 	<-k.ready
 	<-k.done
 	cancel()
 	wg.Wait()
+}
+
+func (k *KubeletSubscriber) DeleteImageHandler(value []byte) {
+	var deleteImageMsg msg_type.DeleteImageMsg
+	err := json.Unmarshal(value, &deleteImageMsg)
+	if err != nil {
+		log.Error("unmarshal delete image message failed, error: %s", err.Error())
+		return
+	}
+	log.Info("Delete image: %s", deleteImageMsg.ImageName)
+	image.DeleteRegistryImage(deleteImageMsg.ImageName, deleteImageMsg.Namespace)
 }

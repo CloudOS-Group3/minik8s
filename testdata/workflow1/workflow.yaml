@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Workflow
+metadata:
+  name: my-workflow
+  namespace: default
+triggerType:
+  http: true
+graph:
+  function:
+    name: function1
+    namespace: default
+  rule:
+    case:
+      - expression:
+          - variable: x
+            opt: ">"
+            value: "10"
+            type: int
+        successor:
+          function:
+            name: function2
+            namespace: default
+          rule:
+            case:
+              - expression:
+                  - variable: x
+                    opt: ">"
+                    value: "20"
+                    type: int
+                successor:
+                  function:
+                    name: function5
+                    namespace: default
+            default:
+              function:
+                name: function6
+                namespace: default
+      - expression:
+          - variable: x
+            opt: "<"
+            value: "1"
+            type: int
+        successor:
+          function:
+            name: function3
+            namespace: default
+    default:
+      function:
+        name: function4
+        namespace: default

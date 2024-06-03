@@ -6,9 +6,12 @@ import (
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
+	"minik8s/pkg/config"
 	"minik8s/pkg/kafka"
 	"minik8s/pkg/kubeproxy/ipvs"
 	"minik8s/util/log"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -26,6 +29,7 @@ type ProxyInterface interface {
 // 2. create Endpoints : ipvsadm -a -t <ClusterIP>:<Port> -r <PodIP>:<PodPort> -m
 // 3. remove Cluster service : ipvsadm -D -t <ClusterIP>:<Port>
 // 4. remove Endpoints : ipvsadm -d -t <ClusterIP>:<Port> -r <PodIP>:<PodPort>
+// 5. show all rules : ipvsadm -L -n
 type KubeProxy struct {
 	subscriber *kafka.Subscriber
 	ready      chan bool
@@ -38,6 +42,7 @@ func (e *KubeProxy) Setup(session sarama.ConsumerGroupSession) error {
 }
 
 func (e *KubeProxy) Cleanup(session sarama.ConsumerGroupSession) error {
+	e.ready = make(chan bool)
 	return nil
 }
 
@@ -61,6 +66,11 @@ func (e *KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sara
 				err := ipvs.UpdateService(&serviceMsg.NewService)
 				if err != nil {
 					log.Fatal("Failed to update service: %s", err.Error())
+					break
+				}
+				err = ipvs.UpdateEndpoints(&serviceMsg.NewService, &serviceMsg.OldService.Status.EndPoints)
+				if err != nil {
+					log.Fatal("Failed to add endpoint: %s", err.Error())
 					break
 				}
 				break
@@ -89,13 +99,20 @@ func (e *KubeProxy) ConsumeClaim(session sarama.ConsumerGroupSession, claim sara
 	return nil
 }
 
-func NewKubeProxy() *KubeProxy {
-	brokers := []string{"127.0.0.1:9092"}
-	group := "kube-proxy"
+func NewKubeProxy(name string) *KubeProxy {
+	if name == "" {
+		content, _ := os.ReadFile("/etc/hostname")
+		str := string(content)
+		str = strings.Replace(str, "\n", "", -1)
+		config.Nodename = str
+	} else {
+		config.Nodename = name
+	}
+	group := "kube-proxy" + "-" + config.Nodename
 	return &KubeProxy{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -29,6 +30,7 @@ func (e *EndPointController) Setup(session sarama.ConsumerGroupSession) error {
 }
 
 func (e *EndPointController) Cleanup(session sarama.ConsumerGroupSession) error {
+	e.ready = make(chan bool)
 	return nil
 }
 
@@ -96,16 +98,19 @@ func (e *EndPointController) ConsumeClaim(session sarama.ConsumerGroupSession, c
 }
 
 func NewEndPointController() *EndPointController {
-	brokers := []string{"127.0.0.1:9092"}
 	group := "endpoint-controller"
 	return &EndPointController{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 }
 func OnPodAdd(pod *api.Pod) {
 	log.Info("OnPodAdd")
+	// deal with empty label
+	if pod.Metadata.Labels == nil || len(pod.Metadata.Labels) == 0 {
+		return
+	}
 	labelIndex, _ := GetLabelIndex(pod.Metadata.Labels)
 	log.Info("GetLabelIndex: %v", labelIndex)
 	// Step 1: Deal with new label
@@ -130,13 +135,14 @@ func OnPodAdd(pod *api.Pod) {
 			if svc != nil {
 				// update service
 				// add the new endpoint to the service
-				// var all_ports []api.ContainerPort
-				for _, container := range pod.Spec.Containers {
-					//all_ports = append(all_ports, container.Ports...)
+
+				// traverse all the service ports need to be exposed
+				for _, targetPort := range svc.Spec.Ports {
 					svc.Status.EndPoints = append(svc.Status.EndPoints,
 						api.EndPoint{
-							IP:    pod.Status.PodIP,
-							Ports: matchTargetPort(svc, container.Ports),
+							ServicePort: strconv.Itoa(targetPort.Port),
+							IP:          pod.Status.PodIP,
+							Ports:       matchTargetPort(targetPort, pod.Spec.Containers),
 						})
 				}
 				log.Info("update service: %v", svc)
@@ -185,13 +191,13 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
 			if svc != nil {
 				// update service
 				// add the new endpoint to the service
-				// var all_ports []api.ContainerPort
-				for _, container := range pod.Spec.Containers {
-					//all_ports = append(all_ports, container.Ports...)
+				// traverse all the service ports need to be exposed
+				for _, targetPort := range svc.Spec.Ports {
 					svc.Status.EndPoints = append(svc.Status.EndPoints,
 						api.EndPoint{
-							IP:    pod.Status.PodIP,
-							Ports: matchTargetPort(svc, container.Ports),
+							ServicePort: strconv.Itoa(targetPort.Port),
+							IP:          pod.Status.PodIP,
+							Ports:       matchTargetPort(targetPort, pod.Spec.Containers),
 						})
 				}
 				log.Info("update service: %v", svc)
@@ -332,14 +338,15 @@ func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
 		namespace, name := util.GetNamespaceAndName(podName)
 		pod, _ := GetPod(namespace, name)
 		if pod != nil {
-			//var all_ports []api.ContainerPort
-			for _, container := range pod.Spec.Containers {
-				//all_ports = append(all_ports, container.Ports...)
+			// traverse all the service ports need to be exposed
+			for _, targetPort := range svc.Spec.Ports {
 				svc.Status.EndPoints = append(svc.Status.EndPoints,
 					api.EndPoint{
-						IP:    pod.Status.PodIP,
-						Ports: matchTargetPort(svc, container.Ports),
+						ServicePort: strconv.Itoa(targetPort.Port),
+						IP:          pod.Status.PodIP,
+						Ports:       matchTargetPort(targetPort, pod.Spec.Containers),
 					})
+				log.Info("endpoint: %v", svc.Status.EndPoints)
 			}
 		}
 	}
@@ -526,14 +533,30 @@ func DeleteService(namespace string, name string) error {
 	return nil
 }
 
-func matchTargetPort(svc *api.Service, ports []api.ContainerPort) []api.ContainerPort {
-	targetPorts := []api.ContainerPort{}
-	for _, target := range svc.Spec.Ports {
-		for _, container := range ports {
-			if uint16(target.TargetPort) == uint16(container.ContainerPort) {
-				targetPorts = append(targetPorts, container)
+func matchTargetPort(targetPort api.ServicePort, containers []api.Container) []api.ContainerPort {
+	matchedPorts := []api.ContainerPort{}
+
+	// if targetPort not set, use the port
+	if targetPort.TargetPort == "" {
+		log.Info("targetPort not set")
+		for _, container := range containers {
+			for _, port := range container.Ports {
+				if uint16(targetPort.Port) == uint16(port.ContainerPort) {
+					matchedPorts = append(matchedPorts, port)
+				}
+			}
+		}
+		return matchedPorts
+	}
+	for _, container := range containers {
+		for _, port := range container.Ports {
+			// targetPort can be the name of the port or the number of the port
+			log.Info("targetPort: %v, containerport: %v", targetPort.TargetPort, port.ContainerPort)
+			if targetPort.TargetPort == port.Name || targetPort.TargetPort == strconv.Itoa(int(port.ContainerPort)) {
+				matchedPorts = append(matchedPorts, port)
+				log.Info("match target port: %v", port)
 			}
 		}
 	}
-	return targetPorts
+	return matchedPorts
 }

@@ -20,6 +20,16 @@ const (
 	NodeTopic = "node"
 	// DNS topic
 	DNSTopic = "dns"
+	// trigger topic
+	TriggerTopic = "trigger"
+	// workflow trigger topic
+	TriggerWorkflowTopic = "triggerWorkflow"
+	// job topic
+	JobTopic = "job"
+	// function topic
+	FunctionTopic = "function"
+	// deleteImage topic
+	DeleteImageTopic = "deleteImage"
 	// endpoint topic
 	EndpointTopic = "endpoint"
 	// pod operation
@@ -62,4 +72,30 @@ type DNSMsg struct {
 	Opt    string  `json:"opt"`
 	NewDNS api.DNS `json:"new_dns,omitempty"`
 	OldDNS api.DNS `json:"old_dns,omitempty"`
+}
+
+type TriggerMsg struct {
+	UUID     string       `json:"uuid,omitempty"`
+	Function api.Function `json:"function,omitempty"`
+	Params   string       `json:"params,omitempty"`
+}
+type WorkflowTriggerMsg struct {
+	UUID     string       `json:"uuid,omitempty"`
+	Workflow api.Workflow `json:"function,omitempty"`
+	Params   string       `json:"params,omitempty"`
+}
+type JobMsg struct {
+	Opt    string  `json:"opt"`
+	NewJob api.Job `json:"new_job,omitempty"`
+	OldJob api.Job `json:"old_job,omitempty"`
+}
+
+type FunctionMsg struct {
+	Opt             string `json:"opt"`
+	OldFunctionName string `json:"old_function_name,omitempty"`
+}
+
+type DeleteImageMsg struct {
+	Namespace string `json:"namespace"`
+	ImageName string `json:"imageName"`
 }

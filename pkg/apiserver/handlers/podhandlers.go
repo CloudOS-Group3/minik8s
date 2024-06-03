@@ -34,7 +34,7 @@ func AddPod(context *gin.Context) {
 
 	var newPod api.Pod
 	if err := context.ShouldBind(&newPod); err != nil {
-		log.Error("decode pod failed")
+		log.Error("decode pod failed, %s", err.Error())
 		context.JSON(http.StatusBadRequest, gin.H{
 			"status": "wrong",
 		})
@@ -44,6 +44,7 @@ func AddPod(context *gin.Context) {
 
 	newPod.Status.StartTime = time.Now()
 	newPod.Metadata.UUID = uuid.NewString()
+	newPod.Status.Phase = string(api.PodPending)
 
 	// check if the pod already exists
 	oldPod, exited := etcdClient.GetPod(newPod.Metadata.NameSpace, newPod.Metadata.Name)

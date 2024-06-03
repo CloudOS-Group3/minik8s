@@ -19,6 +19,7 @@ func main() {
 	rootCmd.AddCommand(cmd.ApplyCmd())
 	rootCmd.AddCommand(cmd.DeleteCmd())
 	rootCmd.AddCommand(cmd.DescribeCmd())
+	rootCmd.AddCommand(cmd.HttpCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

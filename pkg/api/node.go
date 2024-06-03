@@ -29,7 +29,6 @@ const (
 )
 
 type NodeStatus struct {
-	Hostname   string        `yaml:"hostname,omitempty" json:"hostname,omitempty"`
 	Condition  NodeCondition `yaml:"condition,omitempty" json:"condition,omitempty"`
 	PodsNumber int           `yaml:"podsNumber,omitempty" json:"podsNumber,omitempty"`
 	Pods       []Pod         `yaml:"pods,omitempty" json:"pods,omitempty"`

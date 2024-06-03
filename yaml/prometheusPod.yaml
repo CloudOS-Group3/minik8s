@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: prometheus-pod
+  namespace: default
+spec:
+  containers:
+    - name: random
+      image: 192.168.3.8:5050/example-random
+      imagePullPolicy: registry
+      ports:
+        - containerPort: 2112
+          prometheus: true

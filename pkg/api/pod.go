@@ -85,6 +85,7 @@ type ContainerPort struct {
 	ContainerPort int32  `json:"containerPort,omitempty" yaml:"containerPort,omitempty"`
 	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
 	Protocol      string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Prometheus    bool   `json:"prometheus,omitempty" yaml:"prometheus,omitempty"`
 }
 
 type EnvVar struct {
@@ -103,8 +104,10 @@ type ResourceClaim struct {
 }
 
 type ComputeResource struct {
-	Cpu     string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	Memory  string `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Cpu       string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	CpuNumber string `json:"cpuNumber,omitempty" yaml:"cpuNumber,omitempty"`
+	CpuCores  string `json:"cpuCores,omitempty" yaml:"cpuCores,omitempty"`
+	Memory    uint64 `json:"memory,omitempty" yaml:"memory,omitempty"`
 	Storage string `json:"storage,omitempty" yaml:"storage,omitempty"`
 }
 
@@ -129,6 +132,7 @@ const (
 	PullPolicyAlways       = "Always"
 	PullPolicyIfNotPresent = "IfNotPresent"
 	PullPolicyNever        = "Never"
+	PullFromRegistry       = "registry"
 )
 
 type PodPhase string

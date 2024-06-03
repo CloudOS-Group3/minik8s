@@ -3,12 +3,14 @@ package config
 import "strconv"
 
 const (
-	Local      = true
+	Local      = false
 	localhost  = "localhost"
-	Remotehost = "127.0.0.1"
+	Remotehost = "192.168.3.8" // IP of master
 	port       = 6443
 	protocol   = "http://"
 )
+
+var Nodename = ""
 
 const (
 	EtcdDefaultPort = 9092

@@ -25,12 +25,11 @@ type DNSController struct {
 }
 
 func NewDnsController() *DNSController {
-	brokers := []string{"127.0.0.1:9092"}
 	group := "dns-controller"
 	Controller := &DNSController{
 		ready:      make(chan bool),
 		done:       make(chan bool),
-		subscriber: kafka.NewSubscriber(brokers, group),
+		subscriber: kafka.NewSubscriber(group),
 	}
 	URL := config.GetUrlPrefix() + config.DNSsURL
 	var initialDNS []api.DNS
@@ -46,6 +45,7 @@ func (s *DNSController) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (s *DNSController) Cleanup(_ sarama.ConsumerGroupSession) error {
+	s.ready = make(chan bool)
 	return nil
 }
 
@@ -153,12 +153,12 @@ func (s *DNSController) WriteDNS() {
 	os.WriteFile("/etc/hosts", []byte(str), 0644)
 	for _, host := range s.RegisteredDNS {
 		NginxStr := "server {\n\tlisten 80;\n"
-		hostStr := fmt.Sprintf("\tserver_name %s\n", host.Host)
+		hostStr := fmt.Sprintf("\tserver_name %s;\n", host.Host)
 		NginxStr += hostStr
 		for _, path := range host.Paths {
 			pathStr := fmt.Sprintf("\tlocation %s {\n", path.Path)
 			NginxStr += pathStr
-			proxyStr := fmt.Sprintf("\t\tproxy_pass %s:%s\n", path.ServiceIP, path.ServicePort)
+			proxyStr := fmt.Sprintf("\t\tproxy_pass %s:%s;\n", path.ServiceIP, path.ServicePort)
 			NginxStr += proxyStr
 			NginxStr += "\t}\n"
 		}

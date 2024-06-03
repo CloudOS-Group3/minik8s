@@ -20,7 +20,10 @@ func (h TestConsumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error {
 	close(h.ready)
 	return nil
 }
-func (TestConsumerGroupHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
+func (h TestConsumerGroupHandler) Cleanup(_ sarama.ConsumerGroupSession) error {
+	h.ready = make(chan bool)
+	return nil
+}
 func (h TestConsumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		fmt.Printf("msg: %s\n", string(msg.Value))
@@ -48,8 +51,8 @@ func TestKafka(t *testing.T) {
 		return
 	}
 	defer publisher.producer.Close()
-	consumerGroup := NewSubscriber(brokers, consumer_group)
-	consumerGroup_another := NewSubscriber(brokers, consumer_group_2)
+	consumerGroup := NewSubscriber(consumer_group)
+	consumerGroup_another := NewSubscriber(consumer_group_2)
 	if consumerGroup == nil || consumerGroup_another == nil {
 		t.Errorf("kafka consumer init fail")
 		return

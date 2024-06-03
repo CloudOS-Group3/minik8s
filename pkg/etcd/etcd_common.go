@@ -116,8 +116,11 @@ func (store Store) PrefixWatch(wg *sync.WaitGroup, ctx context.Context, prefix s
 			case <-ctx.Done():
 				return
 			default:
+				log.Info("start watching prefix %s", prefix)
 				rch := store.etcdClient.Watch(ctx, prefix, clientv3.WithPrefix())
+				log.Info("watch done")
 				for resp := range rch {
+					log.Info("receive message %s", resp.Events[0].Kv.Key)
 					err := resp.Err()
 					if err != nil {
 						log.Fatal("Failed to watch prefix-watch: %s", err.Error())

@@ -36,8 +36,8 @@ const (
 	StatefulSetsURL = "/apis/apps/v1/namespaces/:namespace/statefulsets"
 	StatefulSetURL  = "/apis/apps/v1/namespaces/:namespace/statefulsets/:name"
 
-	JobsURL = "/apis/batch/v1/namespaces/:namespace/jobs"
-	JobURL  = "/apis/batch/v1/namespaces/:namespace/jobs/:name"
+	JobsURL = "/apis/batch/v1/jobs"
+	JobURL  = "/apis/batch/v1/jobs/:name"
 
 	CronJobsURL = "/apis/batch/v1/namespaces/:namespace/cronjobs"
 	CronJobURL  = "/apis/batch/v1/namespaces/:namespace/cronjobs/:name"
@@ -53,6 +53,24 @@ const (
 
 	DNSsURL = "/api/v1/dns"
 	DNSURL  = "/api/v1/dns/:name"
+
+	FunctionsAllURL = "/api/v1/functions"
+	FunctionsURL    = "/api/v1/namespaces/:namespace/functions"
+	FunctionURL     = "/api/v1/namespaces/:namespace/functions/:name"
+	FunctionRunURL  = "/api/v1/namespaces/:namespace/functions/:name/run"
+
+	WorkflowsAllURL = "/api/v1/workflows"
+	WorkflowsURL    = "/api/v1/namespaces/:namespace/workflows"
+	WorkflowURL     = "/api/v1/namespaces/:namespace/workflows/:name"
+	WorkflowRunURL  = "/api/v1/namespaces/:namespace/workflows/:name/run"
+
+	TriggersURL        = "/api/v1/triggers"
+	TriggerURL         = "/api/v1/namespace/:namespace/trigger/:name"
+	TriggerWorkflowURL = "/api/v1/namespace/:namespace/trigger/workflow/:name"
+	TriggerResultURL   = "/api/v1/triggers/result/:uuid"
+	TriggerResultsURL  = "/api/v1/triggers/result"
+
+	JobResultURL = "/result"
 )
 
 // const used to send and parse url
@@ -63,6 +81,8 @@ const (
 	NamespaceParam       = "namespace"
 	LabelPlaceholder     = ":label"
 	LabelParam           = "label"
+	UUIDPlaceholder      = ":uuid"
+	UUIDParam            = "uuid"
 )
 
 const (

@@ -14,15 +14,28 @@ import (
 
 type HPAController struct{}
 
+var AllHPAWaitTime map[string]float64
+var AllHPAReady map[string]bool
+
 const (
-	hpaDelay    time.Duration = 0 * time.Second
-	hpaInterval time.Duration = 10 * time.Second
+	hpaInterval time.Duration = 5 * time.Second
 )
 
 func (this *HPAController) Run() {
-	<-time.After(hpaDelay)
-
+	AllHPAWaitTime = make(map[string]float64)
+	AllHPAReady = make(map[string]bool)
 	for {
+		allHPAs, err := this.getAllHPAs()
+		if err != nil {
+			log.Error("Failed to get HPA resources")
+		}
+		for _, hpa := range allHPAs {
+			AllHPAWaitTime[hpa.Metadata.Name] += hpaInterval.Seconds()
+			if AllHPAWaitTime[hpa.Metadata.Name] >= hpa.Spec.AdjustInterval {
+				AllHPAReady[hpa.Metadata.Name] = true
+				AllHPAWaitTime[hpa.Metadata.Name] -= hpa.Spec.AdjustInterval
+			}
+		}
 		this.update()
 		<-time.After(hpaInterval)
 	}
@@ -46,42 +59,44 @@ func (this *HPAController) update() {
 
 	log.Debug("all hpas are: %v", allHPAs)
 
-	allPodsWithHPA := map[string]bool{}
-
 	for _, hpa := range allHPAs {
+		if !AllHPAReady[hpa.Metadata.Name] {
+			continue
+		}
+		AllHPAReady[hpa.Metadata.Name] = false
 		targetPods := []api.Pod{}
 		for _, pod := range allPods {
 			if this.checkLabel(pod, hpa) {
 				targetPods = append(targetPods, pod)
-				allPodsWithHPA[pod.Metadata.Name] = true
 			}
 		}
 
 		cpuUsage := this.calculatePodsCPUUsage(targetPods)
-		memoryUsage := this.calculatePodsCPUUsage(targetPods)
+		memoryUsage := this.calculatePodsMemoryUsage(targetPods)
 
 		expectReplicaNum := this.calculateExpectReplicaNum(hpa, cpuUsage, memoryUsage)
 
-		if expectReplicaNum < hpa.Status.CurrentReplicas {
-			this.deleteHPAPods(targetPods, hpa.Status.CurrentReplicas-expectReplicaNum)
+		if expectReplicaNum < len(targetPods) {
+			this.deleteHPAPods(targetPods, len(targetPods)-expectReplicaNum)
 		}
-		if expectReplicaNum > hpa.Status.CurrentReplicas {
-			this.addHPAPods(hpa, hpa.Spec.Template, expectReplicaNum-hpa.Status.CurrentReplicas)
+		if expectReplicaNum > len(targetPods) {
+			this.addHPAPods(hpa, hpa.Spec.Template, expectReplicaNum-len(targetPods))
 		}
 
-		// update currentreplicas to etcd
 		hpa.Status.CurrentReplicas = expectReplicaNum
 		URL := config.GetUrlPrefix() + config.HPAURL
 		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
 		URL = strings.Replace(URL, config.NamePlaceholder, hpa.Metadata.Name, -1)
-
-		byteArr, err := json.Marshal(hpa)
+		bytes, err := json.Marshal(hpa)
 		if err != nil {
-			log.Error("error marshal hpa")
+			log.Error("error marshalling HPA")
 			continue
 		}
-
-		err = httputil.Put(URL, byteArr)
+		err = httputil.Put(URL, bytes)
+		if err != nil {
+			log.Error("error putting HPA")
+			continue
+		}
 	}
 
 }
@@ -148,6 +163,9 @@ func (this *HPAController) calculatePodsMemoryUsage(pods []api.Pod) float64 {
 func (this *HPAController) calculateExpectReplicaNum(hpa api.HPA, cpuUsage float64, memoryUsage float64) int {
 	cpuRatio := cpuUsage / hpa.Spec.Metrics.CPUPercentage
 	memoryRatio := memoryUsage / hpa.Spec.Metrics.MemoryPercentage
+
+	log.Debug("CPUPercentage: %v, MemoryPercentage: %v", hpa.Spec.Metrics.CPUPercentage, hpa.Spec.Metrics.MemoryPercentage)
+	log.Debug("cpuUsage: %v, memoryUsage: %v", cpuRatio, memoryRatio)
 
 	expectNum := int(math.Max(cpuRatio, memoryRatio) * float64(hpa.Status.CurrentReplicas))
 

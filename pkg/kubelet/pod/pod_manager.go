@@ -6,7 +6,9 @@ import (
 	"minik8s/pkg/api"
 	"minik8s/pkg/kubelet/container"
 	"minik8s/pkg/kubelet/node"
+	"minik8s/util/consul"
 	"minik8s/util/log"
+	"strconv"
 )
 
 func CreatePod(pod *api.Pod) bool {
@@ -37,6 +39,25 @@ func CreatePod(pod *api.Pod) bool {
 	}
 	log.Info("add pod %v to check list", pod)
 	node.AddPodToCheckList(pod)
+	count := 0
+	for _, cont := range pod.Spec.Containers {
+		portCount := 0
+		assigned := false
+		for _, port := range cont.Ports {
+			if port.Prometheus == true {
+				assigned = true
+				ID := "user-pod-" + pod.Metadata.NameSpace + "-" + pod.Metadata.Name + "-" + strconv.Itoa(count) + "-" + strconv.Itoa(portCount)
+				name := ID
+				addr := pod.Status.PodIP
+				watchPort := port.ContainerPort
+				consul.RegisterService(ID, name, addr, int(watchPort))
+				portCount++
+			}
+		}
+		if assigned {
+			count++
+		}
+	}
 
 	return true
 }
@@ -44,6 +65,22 @@ func CreatePod(pod *api.Pod) bool {
 func DeletePod(pod *api.Pod) bool {
 	// first delete pod from list
 	node.DeletePodInCheckList(pod)
+	count := 0
+	for _, cont := range pod.Spec.Containers {
+		portCount := 0
+		assigned := false
+		for _, port := range cont.Ports {
+			if port.Prometheus == true {
+				assigned = true
+				ID := "user-pod-" + pod.Metadata.NameSpace + "-" + pod.Metadata.Name + "-" + strconv.Itoa(count) + "-" + strconv.Itoa(portCount)
+				consul.DeRegisterService(ID)
+				portCount++
+			}
+		}
+		if assigned {
+			count++
+		}
+	}
 
 	// delete containers
 	for _, container_ := range pod.Spec.Containers {
