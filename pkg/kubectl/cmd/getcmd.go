@@ -258,13 +258,13 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	header := []string{"name", "status", "age", "usage", "ip"}
+	header := []string{"name", "namespace", "status", "age", "usage", "ip", "node"}
 	var data [][]string
 
 	for _, matchPod := range matchPods {
 		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
 		metricString := fmt.Sprintf("cpu: %.2f%%, memory: %.2f%%", matchPod.Status.CPUPercentage*100, matchPod.Status.MemoryPercentage*100)
-		data = append(data, []string{matchPod.Metadata.Name, matchPod.Status.Phase, age, metricString, matchPod.Status.PodIP})
+		data = append(data, []string{matchPod.Metadata.Name, matchPod.Metadata.NameSpace, matchPod.Status.Phase, age, metricString, matchPod.Status.PodIP, matchPod.Spec.NodeName})
 	}
 
 	prettyprint.PrintTable(header, data)
