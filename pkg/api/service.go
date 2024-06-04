@@ -31,6 +31,9 @@ type ServicePort struct {
 
 	// The name of this port within the service.
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
+	// NodePort: curl <NodeIP>:NodePort, 30000-32767
+	NodePort int `json:"nodePort,omitempty" yaml:"nodePort,omitempty"`
 }
 
 type ServiceStatus struct {
@@ -42,6 +45,8 @@ type ServiceStatus struct {
 type EndPoint struct {
 	// ServicePort: bind PodIP:ContainerPort to ClusterIP:ServicePort
 	ServicePort string `json:"targetPort,omitempty" yaml:"targetPort,omitempty"`
+	// NodePort: bind PodIP:ContainerPort to NodeIP:NodePort
+	NodePort int `json:"nodePort,omitempty" yaml:"nodePort,omitempty"`
 	// IP is the IP address of the pod
 	IP string `json:"ip,omitempty" yaml:"ip,omitempty"`
 	// Ports is a list of ports that are exposed.
