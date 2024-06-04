@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-service1
+spec:
+  selector:
+    app: test
+  ports:
+    - protocol: TCP
+      port: 8888
+      targetPort: 8888
+      nodePort: 30001
+      name: sharer
+    - protocol: TCP
+      port: 3333
+      targetPort: 80
+      nodePort: 30002
+      name: nginx
+  type: ClusterIP

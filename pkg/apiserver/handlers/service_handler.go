@@ -11,6 +11,7 @@ import (
 	"minik8s/util/stringutil"
 	"net"
 	"net/http"
+	"strconv"
 )
 
 func GetService(context *gin.Context) {
@@ -85,6 +86,17 @@ func AddService(context *gin.Context) {
 		}
 	}
 
+	// Allocate NodePort
+	for i, _ := range newService.Spec.Ports {
+		if newService.Spec.Ports[i].NodePort != 0 { // set by user
+			nodePort, err := GenerateNodePort(newService.Status.ClusterIP, newService.Spec.Ports[i].NodePort)
+			if err != nil {
+				log.Fatal("Failed to generate NodePort: %v", err)
+			}
+			newService.Spec.Ports[i].NodePort = nodePort
+		}
+	}
+
 	serviceByteArray, err := json.Marshal(newService)
 	if err != nil {
 		log.Error("Failed to marshal service: %s", err.Error())
@@ -149,6 +161,28 @@ func DeleteService(context *gin.Context) {
 		}
 	}
 
+	// delete NodePort
+	allocatedNodePortStr := etcdClient.GetEtcdPair(nodePortEtcdPrefix)
+	allocatedNodeport := make(map[string]string)
+	if len(allocatedNodePortStr) != 0 {
+		err := json.Unmarshal([]byte(allocatedNodePortStr), &allocatedNodeport)
+		if err != nil {
+			log.Fatal("Failed to unmarshal allocatedNodeport: %s", err.Error())
+		} else {
+			for port, ip := range allocatedNodeport {
+				if ip == oldService.Status.ClusterIP {
+					delete(allocatedNodeport, port)
+				}
+			}
+			allocatedNodePortByte, err := json.Marshal(allocatedNodeport)
+			if err != nil {
+				log.Fatal("Failed to marshal allocatedNodeport: %s", err.Error())
+			} else {
+				etcdClient.PutEtcdPair(nodePortEtcdPrefix, string(allocatedNodePortByte))
+			}
+		}
+	}
+
 	//construct message
 	message := msg.ServiceMsg{
 		Opt:        msg.Delete,
@@ -207,6 +241,49 @@ func GenerateClusterIP(svc *api.Service) error {
 	// no available IP
 	return errors.New("no available IP addresses for ClusterIP allocation")
 
+}
+
+const nodePortEtcdPrefix = "/registry/service/nodePort"
+const nodePortStart = 30001
+const nodePortUpperBound = 32767
+
+func GenerateNodePort(ClusterIp string, nodePort int) (int, error) {
+	allocatedNodePortStr := etcdClient.GetEtcdPair(nodePortEtcdPrefix)
+	allocatedNodeport := make(map[string]string) // map NodePort -> ClusterIP
+	if len(allocatedNodePortStr) != 0 {
+		err := json.Unmarshal([]byte(allocatedNodePortStr), &allocatedNodeport)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	// Check Custom NodePort
+	if nodePort >= nodePortStart && nodePort <= nodePortUpperBound {
+		if allocatedNodeport[strconv.Itoa(nodePort)] == "" {
+			allocatedNodeport[strconv.Itoa(nodePort)] = ClusterIp
+			allocatedNodePortByte, err := json.Marshal(allocatedNodeport)
+			if err != nil {
+				return 0, err
+			}
+			etcdClient.PutEtcdPair(nodePortEtcdPrefix, string(allocatedNodePortByte))
+			return nodePort, nil
+		}
+	}
+
+	// If custom NodePort is not available
+	for port := nodePortStart; port <= nodePortUpperBound; port++ {
+		if allocatedNodeport[strconv.Itoa(port)] == "" {
+			allocatedNodeport[strconv.Itoa(port)] = ClusterIp
+			allocatedNodePortByte, err := json.Marshal(allocatedNodeport)
+			if err != nil {
+				return 0, err
+			}
+			etcdClient.PutEtcdPair(nodePortEtcdPrefix, string(allocatedNodePortByte))
+			return port, nil
+		}
+	}
+	// no available NodePort
+	return 0, errors.New("no available IP addresses for ClusterIP allocation")
 }
 
 func inc(ip net.IP) {

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod2
+  namespace: default
+  labels:
+    app: test
+spec:
+  containers:
+    - name: pod2-greeting
+      image: docker.io/library/python:3.11-slim-bookworm
+      ports:
+        - containerPort: 8888
+      volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/files
+      command: ["python", "/usr/share/files/main.py"]
+      resources:
+        limits:
+          memory: 31457280
+          cpuCores: "1"
+          cpu: "100"
+
+    - name: pod2-nginx
+      image: docker.io/library/nginx:latest
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: shared-data
+          mountPath: /data
+  volumes:
+    - name: shared-data
+      hostPath: /root/minik8s/testdata/pod/code/

@@ -18,6 +18,8 @@ type IPVS interface {
 	DeleteService(service *api.Service) error
 }
 
+var localIp = "192.168.3.5"
+
 type IpvsHandler struct {
 }
 
@@ -90,6 +92,22 @@ func AddEndpoint(service *api.Service) error {
 				fmt.Println("Command succeeded with output:", string(output))
 			}
 			log.Info("bind endpoint %s:%d to service %s:%d", endpoint.IP, port.ContainerPort, service.Status.ClusterIP, endpoint.ServicePort)
+
+			// if node port is not 0, add node port
+			// expose node port
+			if endpoint.NodePort != 0 {
+				//iptables -t nat -A PREROUTING -p tcp --dport 30006 -j DNAT --to-destination 10.244.2.149:80
+				err := exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-p", "tcp", "--dport", strconv.Itoa(endpoint.NodePort), "-j", "DNAT", "--to-destination", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort))).Run()
+				if err != nil {
+					log.Error("Failed to expose node port: %s", err.Error())
+				}
+				//iptables -t nat -A POSTROUTING -p tcp -d 10.244.2.149 --dport 80 -j SNAT --to-source 192.168.3.5
+				err = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-p", "tcp", "-d", endpoint.IP, "--dport", strconv.Itoa(int(port.ContainerPort)), "-j", "SNAT", "--to-source", localIp).Run()
+				if err != nil {
+					log.Error("Failed to expose node port: %s", err.Error())
+				}
+
+			}
 		}
 	}
 	return nil
@@ -144,6 +162,21 @@ func DeleteEndpoint(old *[]api.EndPoint, ClusterIp string) error {
 				fmt.Println("Command succeeded with output:", string(output))
 			}
 			log.Info("unbind endpoint %s:%d from service %s:%d", endpoint.IP, port.ContainerPort, ClusterIp, endpoint.ServicePort)
+			// if node port is not 0, add node port
+			// expose node port
+			if endpoint.NodePort != 0 {
+				//iptables -t nat -D PREROUTING -p tcp --dport 30006 -j DNAT --to-destination 10.244.2.149:80
+				err := exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-p", "tcp", "--dport", strconv.Itoa(endpoint.NodePort), "-j", "DNAT", "--to-destination", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort))).Run()
+				if err != nil {
+					log.Error("Failed to expose node port: %s", err.Error())
+				}
+				//iptables -t nat -D POSTROUTING -p tcp -d 10.244.2.149 --dport 80 -j SNAT --to-source 192.168.3.5
+				err = exec.Command("iptables", "-t", "nat", "-D", "POSTROUTING", "-p", "tcp", "-d", endpoint.IP, "--dport", strconv.Itoa(int(port.ContainerPort)), "-j", "SNAT", "--to-source", localIp).Run()
+				if err != nil {
+					log.Error("Failed to expose node port: %s", err.Error())
+				}
+
+			}
 			time.Sleep(1 * time.Second)
 		}
 	}
