@@ -11,7 +11,7 @@ type Node struct {
 }
 
 type NodeSpec struct {
-	ExternalID string   `yaml:"externalID,omitempty" json:"externalID,omitempty"`
+	NodeIP     string   `yaml:"nodeIP,omitempty" json:"nodeIP,omitempty"`
 	PodCIDR    string   `yaml:"podCIDR,omitempty" json:"podCIDR,omitempty"`
 	PodCIDRs   []string `yaml:"podCIDRs,omitempty" json:"podCIDRs,omitempty"`
 	ProviderID string   `yaml:"providerID,omitempty" json:"providerID,omitempty"`

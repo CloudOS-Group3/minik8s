@@ -41,6 +41,7 @@ func AddNode(context *gin.Context) {
 	}
 
 	nodeByteArray, err := json.Marshal(newNode)
+	newNode.Status.Condition.Status = api.NodeUnknown
 
 	if err != nil {
 		log.Error("error marshal new node")
@@ -57,7 +58,7 @@ func AddNode(context *gin.Context) {
 	ID := "node-exporter-" + newNode.Metadata.Name
 	name := "node-exporter-" + newNode.Metadata.Name
 	port := 9100
-	addr := context.ClientIP()
+	addr := newNode.Spec.NodeIP
 	consul.RegisterService(ID, name, addr, port)
 
 }
@@ -154,7 +155,7 @@ func UpdateNode(context *gin.Context) {
 		ID := "node-exporter-" + newNode.Metadata.Name
 		name := "node-exporter-" + newNode.Metadata.Name
 		port := 9100
-		addr := context.ClientIP()
+		addr := newNode.Spec.NodeIP
 		consul.RegisterService(ID, name, addr, port)
 	} else {
 		var node api.Node
