@@ -200,6 +200,7 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 	if config.Resources.Limits.Memory != 0 {
 		opt = append(opt, oci.WithMemoryLimit(config.Resources.Limits.Memory))
 	}
+	opt = append(opt, oci.WithHostHostsFile)
 	opt_ := []containerd.NewContainerOpts{
 		//containerd.WithImage(image_),
 		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
