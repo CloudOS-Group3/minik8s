@@ -12,7 +12,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"minik8s/pkg/api"
-	"minik8s/pkg/config"
+	apiconfig "minik8s/pkg/config"
 	"minik8s/pkg/kubelet/image"
 	"minik8s/pkg/util"
 	"minik8s/util/httputil"
@@ -125,7 +125,7 @@ func runCommand(name string, args ...string) error {
 	return cmd.Run()
 }
 
-func CreateContainer(containerConfig api.Container, namespace string, pause_pid string, hostMount map[string]string, volumes []api.Volume) containerd.Container {
+func CreateContainer(config api.Container, namespace string, pause_pid string, hostMount map[string]string, volumes []api.Volume) containerd.Container {
 	client, err := util.CreateClient()
 	if err != nil {
 		log.Error("Failed to create containerd client: %v", err.Error())
@@ -135,18 +135,18 @@ func CreateContainer(containerConfig api.Container, namespace string, pause_pid 
 
 	// pull image
 
-	image_ := image.PullImage(containerConfig.Image, containerConfig.ImagePullPolicy, client, namespace)
+	image_ := image.PullImage(config.Image, config.ImagePullPolicy, client, namespace)
 	if image_ == nil {
-		log.Error("Failed to pull image %s", containerConfig.Image)
+		log.Error("Failed to pull image %s", config.Image)
 		return nil
 	}
 
 	// create container
 
 	// check if exists
-	container_, err := client.LoadContainer(ctx, containerConfig.Name)
+	container_, err := client.LoadContainer(ctx, config.Name)
 	if err == nil {
-		log.Info("Container %s already exists", containerConfig.Name)
+		log.Info("Container %s already exists", config.Name)
 		return container_
 	}
 	opt := []oci.SpecOpts{oci.WithImageConfig(image_)}
@@ -164,7 +164,7 @@ func CreateContainer(containerConfig api.Container, namespace string, pause_pid 
 
 	/* Manage volume: mount host path to container */
 	log.Info("hostMount: %v", hostMount)
-	for _, volume := range containerConfig.VolumeMounts {
+	for _, volume := range config.VolumeMounts {
 		permission := "rw"
 		if volume.ReadOnly {
 			permission = "ro"
@@ -202,16 +202,16 @@ func CreateContainer(containerConfig api.Container, namespace string, pause_pid 
 	}
 	opt_ := []containerd.NewContainerOpts{
 		//containerd.WithImage(image_),
-		containerd.WithNewSnapshot(containerConfig.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
+		containerd.WithNewSnapshot(config.Name+"_"+fmt.Sprintf("%d", time.Now().Unix()), image_),
 		containerd.WithNewSpec(opt...),
 	}
 	container, err := client.NewContainer(
 		ctx,
-		containerConfig.Name,
+		config.Name,
 		opt_...,
 	)
 	if err != nil {
-		log.Error("Failed to create container %s: %v", containerConfig.Name, err.Error())
+		log.Error("Failed to create container %s: %v", config.Name, err.Error())
 		return nil
 	}
 
@@ -229,9 +229,9 @@ func CreateContainer(containerConfig api.Container, namespace string, pause_pid 
 
 	if len(volumes) > 0 {
 
-		URL := config.GetUrlPrefix() + config.PersistentVolumeClaimURL
-		URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
-		URL = strings.Replace(URL, config.NamePlaceholder, volumes[0].PersistentVolumeClaim.ClaimName, -1)
+		URL := apiconfig.GetUrlPrefix() + apiconfig.PersistentVolumeClaimURL
+		URL = strings.Replace(URL, apiconfig.NamespacePlaceholder, "default", -1)
+		URL = strings.Replace(URL, apiconfig.NamePlaceholder, volumes[0].PersistentVolumeClaim.ClaimName, -1)
 
 		var pvc api.PVC
 		err := httputil.Get(URL, &pvc, "data")
@@ -241,30 +241,24 @@ func CreateContainer(containerConfig api.Container, namespace string, pause_pid 
 		}
 
 		mountPoint := ""
-		for _, volumeMount := range containerConfig.VolumeMounts {
+		for _, volumeMount := range config.VolumeMounts {
 			if volumeMount.Name == volumes[0].Name {
 				mountPoint = volumeMount.MountPath
 			}
 		}
 
-		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "apt", "update"); err != nil {
-			log.Error("error apt update")
-		}
-		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "apt", "install", "nfs-common", "-y"); err != nil {
-			log.Error("error apt install")
-		}
-		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "mkdir", "-p", mountPoint); err != nil {
+		if err = runCommand("nerdctl", "exec", "-it", config.Name, "mkdir", "-p", mountPoint); err != nil {
 			log.Error("error mkdir")
 		}
 		serverMountPoint := pvc.Status.TargetPV.Spec.NFS.Server + ":" + pvc.Status.TargetPV.Spec.NFS.Path
 
 		log.Debug("local mount point: %s, server mount point: %s", mountPoint, serverMountPoint)
-		if err = runCommand("nerdctl", "exec", "-it", containerConfig.Name, "mount", "-t", "nfs", "-o", "nolock", serverMountPoint, mountPoint); err != nil {
+		if err = runCommand("nerdctl", "exec", "-it", config.Name, "mount", "-t", "nfs", "-o", "nolock", serverMountPoint, mountPoint); err != nil {
 			log.Error("error mount")
 		}
 	}
 
-	log.Info("Container %s created", containerConfig.Name)
+	log.Info("Container %s created", config.Name)
 	return container
 
 }

@@ -18,6 +18,6 @@ spec:
         emptyDir: {}
       containers:
       - name: nginx
-        image: docker.io/library/nginx:latest
+        image: docker.io/lty010722/auto-count:v1
         ports:
         - containerPort: 80
