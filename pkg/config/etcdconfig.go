@@ -20,6 +20,9 @@ const (
 	// usage: /registry/endpoints/namespace/<label-key>
 	EndpointPath = "/registry/endpoints/"
 
+	// usage: /registry/jobs/<namespace>/<job-name>
+	EtcdJobPath = "/registry/jobs/"
+
 	// usage: /registry/labelIndex/<label>
 	LabelIndexPath = "/registry/labelIndex/"
 
@@ -53,6 +56,9 @@ const (
 	// usage: /registry/workflow/<name>
 	WorkflowPath = "/registry/workflow/"
 
-	// usage: /registry/job/<job_id>
-	EtcdJobPath = "/registry/jobs/"
+	// usage: /registry/pv/<name>
+	EtcdPVPath = "/registry/pv/"
+
+	// usage: /registry/pvc/<name>
+	ETcdPVCPath = "/registry/pvc/"
 )

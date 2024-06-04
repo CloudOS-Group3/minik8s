@@ -1,29 +1,107 @@
 package main
 
 import (
-    "fmt"
-    "sync"
+	"context"
+	"fmt"
+	"log"
+	"strconv"
+	"time"
+
+	"github.com/containerd/containerd"
+	"github.com/containerd/containerd/cio"
+	"github.com/containerd/containerd/namespaces"
+	"github.com/containerd/containerd/oci"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
-func worker(id int, wg *sync.WaitGroup) {
-    // defer wg.Done() // 在协程完成时调用 Done() 方法
-
-    fmt.Printf("Worker %d starting\n", id)
-    // 在这里执行协程的任务
-    fmt.Printf("Worker %d done\n", id)
-}
-
 func main() {
-    var wg sync.WaitGroup
+	client, err := containerd.New("/run/containerd/containerd.sock")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
 
-    // 启动三个协程
-    for i := 1; i <= 3; i++ {
-        wg.Add(1) // 告诉 WaitGroup 有一个协程需要等待
-        go worker(i, &wg)
-    }
+	ctx := namespaces.WithNamespace(context.Background(), "example")
 
-    // 等待所有协程完成
-    wg.Wait() // 这会阻塞主函数的执行，直到所有协程都完成
+	// Pull an image
+	image, err := client.Pull(ctx, "docker.io/library/nginx:latest", containerd.WithPullUnpack)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Println("All workers done")
+	containerName := "example-" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	snapshotName := "example-" + strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	// Create a container
+	container, err := client.NewContainer(
+		ctx,
+		containerName,
+		containerd.WithNewSnapshot(snapshotName, image),
+		containerd.WithNewSpec(oci.WithImageConfig(image)),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer container.Delete(ctx, containerd.WithSnapshotCleanup)
+
+	// Create a task
+	task, err := container.NewTask(ctx, cio.NewCreator(cio.WithStdio))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer task.Delete(ctx)
+
+	// Start the task
+	if err := task.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	// Define a helper function to execute commands in the container
+	execCommand := func(ctx context.Context, task containerd.Task, command []string) error {
+		execID := command[0]
+		execProcessSpec := specs.Process{
+			Args: command,
+			Cwd:  "/",
+			Env:  []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
+		}
+
+		execTask, err := task.Exec(ctx, execID, &execProcessSpec, cio.NewCreator(cio.WithStdio))
+		if err != nil {
+			return err
+		}
+		defer execTask.Delete(ctx)
+
+		if err := execTask.Start(ctx); err != nil {
+			return err
+		}
+
+		statusC, err := execTask.Wait(ctx)
+		if err != nil {
+			return err
+		}
+
+		status := <-statusC
+		code, _, err := status.Result()
+		if err != nil {
+			return err
+		}
+
+		if code != 0 {
+			return fmt.Errorf("command %s exited with status %d", command, code)
+		}
+
+		return nil
+	}
+
+	// Execute apt-get update
+	if err := execCommand(ctx, task, []string{"apt-get", "update"}); err != nil {
+		log.Fatal(err)
+	}
+
+	// Execute apt-get install -y curl
+	if err := execCommand(ctx, task, []string{"apt-get", "install", "-y", "curl"}); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Successfully installed curl")
 }

@@ -79,6 +79,10 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyHPAHandler(content)
 	case "DNS":
 		applyDNSHandler(content)
+	case "PV":
+		applyPVHandler(content)
+	case "PVC":
+		applyPVCHandler(content)
 	case "Function":
 		applyFunctionHandler(content)
 	case "Trigger":
@@ -303,6 +307,50 @@ func applyDNSHandler(content []byte) {
 		return
 	}
 	log.Info("apply DNS successed")
+}
+
+func applyPVHandler(content []byte) {
+	log.Info("creating or updating PV")
+	pv := &api.PV{}
+	err := yaml.Unmarshal(content, pv)
+	if err != nil {
+		log.Error("Error yaml unmarshal PV")
+		return
+	}
+	byteArr, err := json.Marshal(*pv)
+	if err != nil {
+		log.Error("Error json marshal PV")
+		return
+	}
+	URL := config.GetUrlPrefix() + config.PersistentVolumesURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply PV successed")
+}
+
+func applyPVCHandler(content []byte) {
+	log.Info("creating or updating PV")
+	pvc := &api.PVC{}
+	err := yaml.Unmarshal(content, pvc)
+	if err != nil {
+		log.Error("Error yaml unmarshal PVC")
+		return
+	}
+	byteArr, err := json.Marshal(*pvc)
+	if err != nil {
+		log.Error("Error json marshal PVC")
+		return
+	}
+	URL := config.GetUrlPrefix() + config.PersistentVolumeClaimsURL
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply PVC successed")
 }
 
 func applyTriggerHandler(content []byte) {

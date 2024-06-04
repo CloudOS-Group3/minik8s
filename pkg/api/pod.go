@@ -94,8 +94,13 @@ type EnvVar struct {
 }
 
 type ResourceRequirements struct {
+	Claims   []ResourceClaim `json:"claims,omitempty" yaml:"claims,omitempty"`
 	Limits   ComputeResource `json:"limits,omitempty" yaml:"limits,omitempty"`
 	Requests ComputeResource `json:"requests,omitempty" yaml:"requests,omitempty"`
+}
+
+type ResourceClaim struct {
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 }
 
 type ComputeResource struct {
@@ -103,6 +108,7 @@ type ComputeResource struct {
 	CpuNumber string `json:"cpuNumber,omitempty" yaml:"cpuNumber,omitempty"`
 	CpuCores  string `json:"cpuCores,omitempty" yaml:"cpuCores,omitempty"`
 	Memory    uint64 `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Storage string `json:"storage,omitempty" yaml:"storage,omitempty"`
 }
 
 type VolumeMount struct {
@@ -112,8 +118,14 @@ type VolumeMount struct {
 }
 
 type Volume struct {
-	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
-	HostPath string `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
+	Name                  string                            `json:"name,omitempty" yaml:"name,omitempty"`
+	HostPath              string                            `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
+	NFS                   NFSVolumeSource                   `json:"nfs,omitempty" yaml:"nfs,omitempty"`
+	PersistentVolumeClaim PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty" yaml:"persistentVolumeClaim,omitempty"`
+}
+
+type PersistentVolumeClaimVolumeSource struct {
+	ClaimName string `json:"claimName,omitempty" yaml:"claimName,omitempty"`
 }
 
 const (

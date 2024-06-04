@@ -14,6 +14,8 @@ var Nodename = ""
 
 const (
 	EtcdDefaultPort = 9092
+	NFSServerIP     = "192.168.3.6"
+	NFSRootPath     = "/nfsroot/"
 )
 
 func GetUrlPrefix() string {
