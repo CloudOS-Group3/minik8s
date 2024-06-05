@@ -238,7 +238,7 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 		err := httputil.Get(URL, &pvc, "data")
 		if err != nil {
 			log.Error("Failed to get PVC: %v", err)
-			return nil
+			return container
 		}
 
 		mountPoint := ""

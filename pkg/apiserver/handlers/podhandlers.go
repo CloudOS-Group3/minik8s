@@ -140,10 +140,11 @@ func UpdatePod(context *gin.Context) {
 			NewPod: newPod,
 		}
 	} else {
-		message = msg.PodMsg{
-			Opt:    msg.Add,
-			NewPod: newPod,
-		}
+		//message = msg.PodMsg{
+		//	Opt:    msg.Add,
+		//	NewPod: newPod,
+		//}
+		log.Warn("pod %s doesn't exist", newPod.Metadata.Name)
 	}
 	msg_json, _ := json.Marshal(message)
 	publisher.Publish(msg.PodTopic, string(msg_json))
