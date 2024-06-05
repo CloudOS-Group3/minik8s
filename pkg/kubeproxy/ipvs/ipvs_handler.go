@@ -67,14 +67,14 @@ func AddService(service *api.Service) error {
 			log.Error("Command output:", string(output))
 		}
 
-		//iptables -t nat -A POSTROUTING -m ipvs --vaddr 10.96.0.1 --vport 8888 -j MASQUERADE
-		cmd = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-m", "ipvs", "--vaddr", service.Status.ClusterIP, "--vport", strconv.Itoa(int(port.Port)), "-j", "MASQUERADE")
-		output, err = cmd.CombinedOutput()
-		log.Info("cmd: %v", cmd)
-		if err != nil {
-			log.Error("Error:", err)
-			log.Error("Command output:", string(output))
-		}
+		////iptables -t nat -A POSTROUTING -m ipvs --vaddr 10.96.0.1 --vport 8888 -j MASQUERADE
+		//cmd = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-m", "ipvs", "--vaddr", service.Status.ClusterIP, "--vport", strconv.Itoa(int(port.Port)), "-j", "MASQUERADE")
+		//output, err = cmd.CombinedOutput()
+		//log.Info("cmd: %v", cmd)
+		//if err != nil {
+		//	log.Error("Error:", err)
+		//	log.Error("Command output:", string(output))
+		//}
 
 		// if node port is not 0, add node port
 		// expose node port
