@@ -273,13 +273,14 @@ func getPodCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	header := []string{"name", "namespace", "status", "age", "usage", "ip", "node"}
+	header := []string{"name", "namespace", "status", "age", "usage", "ip", "node", "selector"}
 	var data [][]string
 
 	for _, matchPod := range matchPods {
 		age := time.Now().Sub(matchPod.Status.StartTime).Round(time.Second).String()
+		label := util.ConvertLabelToString(matchPod.Metadata.Labels)
 		metricString := fmt.Sprintf("cpu: %.2f%%, memory: %.2f%%", matchPod.Status.CPUPercentage*100, matchPod.Status.MemoryPercentage*100)
-		data = append(data, []string{matchPod.Metadata.Name, matchPod.Metadata.NameSpace, matchPod.Status.Phase, age, metricString, matchPod.Status.PodIP, matchPod.Spec.NodeName})
+		data = append(data, []string{matchPod.Metadata.Name, matchPod.Metadata.NameSpace, matchPod.Status.Phase, age, metricString, matchPod.Status.PodIP, matchPod.Spec.NodeName, label})
 	}
 
 	prettyprint.PrintTable(header, data)
@@ -350,11 +351,24 @@ func getServiceCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	header := []string{"name", "label", "ip"}
+	header := []string{"name", "namespace", "selector", "Cluster ip", "Pod Ip:Port --> Cluster IP:Target Port (Node Port)"}
 	data := [][]string{}
 	for _, matchService := range matchServices {
 		labelstring := util.ConvertLabelToString(matchService.Spec.Selector)
-		data = append(data, []string{matchService.Metadata.Name, labelstring, matchService.Status.ClusterIP})
+		var endpoints = ""
+		var first = true
+		for _, endpoint := range matchService.Status.EndPoints {
+			for _, port := range endpoint.Ports {
+				ep := fmt.Sprintf("%s:%d-->%s:%s(%d)", endpoint.IP, port.ContainerPort, matchService.Status.ClusterIP, endpoint.ServicePort, endpoint.NodePort)
+				if first {
+					endpoints = fmt.Sprintf("%s", ep)
+					first = false
+				} else {
+					endpoints = fmt.Sprintf("%s\n%s", endpoints, ep)
+				}
+			}
+		}
+		data = append(data, []string{matchService.Metadata.Name, matchService.Metadata.NameSpace, labelstring, matchService.Status.ClusterIP, endpoints})
 
 	}
 	prettyprint.PrintTable(header, data)
