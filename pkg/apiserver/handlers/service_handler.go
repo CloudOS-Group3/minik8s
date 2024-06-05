@@ -126,6 +126,50 @@ func AddService(context *gin.Context) {
 		"status": "ok",
 	})
 }
+func UpdateService(context *gin.Context) {
+	log.Info("UpdateService")
+	var newService api.Service
+	if err := context.ShouldBind(&newService); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "wrong",
+		})
+		return
+	}
+
+	// check if the service already exists
+	URL := config.ServicePath + newService.Metadata.NameSpace + "/" + newService.Metadata.Name
+	oldService := &api.Service{}
+	res := etcdClient.GetEtcdPair(URL)
+	_ = json.Unmarshal([]byte(res), oldService)
+
+	if res == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"status": "no service found",
+		})
+		return
+	}
+
+	serviceByteArray, err := json.Marshal(newService)
+	if err != nil {
+		log.Error("Failed to marshal service: %s", err.Error())
+		return
+	}
+	log.Info("new service is: %+v", newService)
+	etcdClient.PutEtcdPair(URL, string(serviceByteArray))
+
+	//construct message
+	var message = msg.ServiceMsg{
+		Opt:        msg.Update,
+		OldService: *oldService,
+		NewService: newService,
+	}
+	msg_json, _ := json.Marshal(message)
+	publisher.Publish(msg.ServiceTopic, string(msg_json))
+
+	context.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+	})
+}
 
 func DeleteService(context *gin.Context) {
 	namespace := context.Param(config.NamespaceParam)

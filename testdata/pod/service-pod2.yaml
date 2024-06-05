@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
     - name: pod2-greeting
-      image: 192.168.3.5:5050/service-test-image
+      image: 192.168.3.8:5050/service-test-image
       imagePullPolicy: registry
       ports:
         - containerPort: 8888
@@ -18,7 +18,7 @@ spec:
       command: ["python", "/usr/share/files/footprint-front2.py"]
 
     - name: pod2-backend
-      image: 192.168.3.5:5050/service-test-image
+      image: 192.168.3.8:5050/service-test-image
       imagePullPolicy: registry
       command: [ "python", "/usr/share/files/footprint-backend.py" ]
       volumeMounts:
