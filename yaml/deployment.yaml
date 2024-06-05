@@ -13,11 +13,9 @@ spec:
       labels:
         app: server
     spec:
-      volumes:
-      - name: shared-data
-        emptyDir: {}
       containers:
-      - name: nginx
-        image: docker.io/lty010722/auto-count:v1
+      - name: auto-count
+        image: docker.io/lty010722/auto-count:latest
+#        imagePullPolicy: registry
         ports:
-        - containerPort: 80
+        - containerPort: 12345
