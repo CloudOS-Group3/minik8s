@@ -18,8 +18,6 @@ type IPVS interface {
 	DeleteService(service *api.Service) error
 }
 
-var localIp = "192.168.3.5"
-
 type IpvsHandler struct {
 }
 
@@ -61,12 +59,34 @@ func AddService(service *api.Service) error {
 			return err
 		}
 		// ip addr add
-		cmd := exec.Command("ip", "addr", "add", service.Status.ClusterIP, "dev", "flannel.1")
+		cmd := exec.Command("ip", "addr", "add", service.Status.ClusterIP+"/32", "dev", "minik8s0")
 		output, err := cmd.CombinedOutput()
 		log.Info("cmd: %v", cmd)
 		if err != nil {
-			fmt.Println("Error:", err)
-			fmt.Println("Command output:", string(output))
+			log.Error("Error:", err)
+			log.Error("Command output:", string(output))
+		}
+
+		//iptables -t nat -A POSTROUTING -m ipvs --vaddr 10.96.0.1 --vport 8888 -j MASQUERADE
+		cmd = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-m", "ipvs", "--vaddr", service.Status.ClusterIP, "--vport", strconv.Itoa(int(port.Port)), "-j", "MASQUERADE")
+		output, err = cmd.CombinedOutput()
+		log.Info("cmd: %v", cmd)
+		if err != nil {
+			log.Error("Error:", err)
+			log.Error("Command output:", string(output))
+		}
+
+		// if node port is not 0, add node port
+		// expose node port
+		if port.NodePort != 0 {
+			// iptables -t nat -A PREROUTING -p tcp --dport 30006 -j DNAT --to-destination 10.96.0.2:8888
+			cmd = exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-p", "tcp", "--dport", strconv.Itoa(port.NodePort), "-j", "DNAT", "--to-destination", service.Status.ClusterIP+":"+strconv.Itoa(int(port.Port)))
+			output, err = cmd.CombinedOutput()
+			log.Info("cmd: %v", cmd)
+			if err != nil {
+				log.Error("Error:", err)
+				log.Error("Command output:", string(output))
+			}
 		}
 	}
 
@@ -93,21 +113,6 @@ func AddEndpoint(service *api.Service) error {
 			}
 			log.Info("bind endpoint %s:%d to service %s:%d", endpoint.IP, port.ContainerPort, service.Status.ClusterIP, endpoint.ServicePort)
 
-			// if node port is not 0, add node port
-			// expose node port
-			if endpoint.NodePort != 0 {
-				//iptables -t nat -A PREROUTING -p tcp --dport 30006 -j DNAT --to-destination 10.244.2.149:80
-				err := exec.Command("iptables", "-t", "nat", "-A", "PREROUTING", "-p", "tcp", "--dport", strconv.Itoa(endpoint.NodePort), "-j", "DNAT", "--to-destination", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort))).Run()
-				if err != nil {
-					log.Error("Failed to expose node port: %s", err.Error())
-				}
-				//iptables -t nat -A POSTROUTING -p tcp -d 10.244.2.149 --dport 80 -j SNAT --to-source 192.168.3.5
-				err = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-p", "tcp", "-d", endpoint.IP, "--dport", strconv.Itoa(int(port.ContainerPort)), "-j", "SNAT", "--to-source", localIp).Run()
-				if err != nil {
-					log.Error("Failed to expose node port: %s", err.Error())
-				}
-
-			}
 		}
 	}
 	return nil
@@ -127,9 +132,20 @@ func DeleteService(service *api.Service) error {
 			fmt.Println("Error:", err)
 			fmt.Println("Command output:", string(output))
 		}
+
+		// if node port is not 0, delete node port
+		// iptables -t nat -D PREROUTING -p tcp --dport 30006 -j DNAT --to-destination 10.96.0.2:8888
+		if port.NodePort != 0 {
+			cmd = exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-p", "tcp", "--dport", strconv.Itoa(port.NodePort), "-j", "DNAT", "--to-destination", service.Status.ClusterIP+":"+strconv.Itoa(int(port.Port)))
+			output, err = cmd.CombinedOutput()
+			if err != nil {
+				fmt.Println("Error:", err)
+				fmt.Println("Command output:", string(output))
+			}
+		}
 	}
 	// ip addr del
-	cmd := exec.Command("ip", "addr", "del", service.Status.ClusterIP, "dev", "flannel.1")
+	cmd := exec.Command("ip", "addr", "del", service.Status.ClusterIP+"/32", "dev", "minik8s0")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -162,21 +178,6 @@ func DeleteEndpoint(old *[]api.EndPoint, ClusterIp string) error {
 				fmt.Println("Command succeeded with output:", string(output))
 			}
 			log.Info("unbind endpoint %s:%d from service %s:%d", endpoint.IP, port.ContainerPort, ClusterIp, endpoint.ServicePort)
-			// if node port is not 0, add node port
-			// expose node port
-			if endpoint.NodePort != 0 {
-				//iptables -t nat -D PREROUTING -p tcp --dport 30006 -j DNAT --to-destination 10.244.2.149:80
-				err := exec.Command("iptables", "-t", "nat", "-D", "PREROUTING", "-p", "tcp", "--dport", strconv.Itoa(endpoint.NodePort), "-j", "DNAT", "--to-destination", endpoint.IP+":"+strconv.Itoa(int(port.ContainerPort))).Run()
-				if err != nil {
-					log.Error("Failed to expose node port: %s", err.Error())
-				}
-				//iptables -t nat -D POSTROUTING -p tcp -d 10.244.2.149 --dport 80 -j SNAT --to-source 192.168.3.5
-				err = exec.Command("iptables", "-t", "nat", "-D", "POSTROUTING", "-p", "tcp", "-d", endpoint.IP, "--dport", strconv.Itoa(int(port.ContainerPort)), "-j", "SNAT", "--to-source", localIp).Run()
-				if err != nil {
-					log.Error("Failed to expose node port: %s", err.Error())
-				}
-
-			}
 			time.Sleep(1 * time.Second)
 		}
 	}
