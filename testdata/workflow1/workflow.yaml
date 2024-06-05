@@ -7,44 +7,65 @@ triggerType:
   http: true
 graph:
   function:
-    name: function1
+    name: BuyTrainTicket
     namespace: default
   rule:
     case:
       - expression:
           - variable: x
             opt: ">"
-            value: "10"
+            value: "0"
             type: int
         successor:
           function:
-            name: function2
+            name: ReserveFlight
             namespace: default
           rule:
             case:
               - expression:
                   - variable: x
                     opt: ">"
-                    value: "20"
+                    value: "0"
                     type: int
                 successor:
                   function:
-                    name: function5
+                    name: ReserveHotel
                     namespace: default
+                  rule:
+                    case:
+                      - expression:
+                          - variable: x
+                            opt: "<"
+                            value: "0"
+                            type: int
+                        successor:
+                          function:
+                            name: CancelFlight
+                            namespace: default
+                          rule:
+                            default:
+                              function:
+                                name: CancelTrainTicket
+                                namespace: default
+                              rule:
+                                default:
+                                  function:
+                                    name: OrderFailed
+                                    namespace: default
+                    default:
+                      function:
+                        name: OrderSucceeded
+                        namespace: default
             default:
               function:
-                name: function6
+                name: CancelTrainTicket
                 namespace: default
-      - expression:
-          - variable: x
-            opt: "<"
-            value: "1"
-            type: int
-        successor:
-          function:
-            name: function3
-            namespace: default
+              rule:
+                default:
+                  function:
+                    name: OrderFailed
+                    namespace: default
     default:
       function:
-        name: function4
+        name: OrderFailed
         namespace: default

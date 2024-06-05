@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Function
+metadata:
+  name: CancelFlight
+language: python
+filePath: /root/minik8s/testdata/workflow1/CancelFlight/
+triggerType:
+  http: true
+params:
+  - name: x
+    type: int
+result:
+  - name: x
+    type: int

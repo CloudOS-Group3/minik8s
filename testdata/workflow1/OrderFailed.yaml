@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Function
 metadata:
-  name: function2
+  name: OrderSucceeded
 language: python
-filePath: /root/minik8s/testdata/workflow1/function2/
+filePath: /root/minik8s/testdata/workflow1/OrderFailed/
 triggerType:
   http: true
 params:
@@ -12,5 +12,5 @@ params:
 result:
   - name: x
     type: int
-  - name: greeting
+  - name: result
     type: string

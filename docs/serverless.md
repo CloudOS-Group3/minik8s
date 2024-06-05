@@ -15,9 +15,9 @@ yaml文件示例如下：
 apiVersion: v1
 kind: Function
 metadata:
-  name: function1
+  name: BuyTrainTicket
 language: python
-filePath: /root/minik8s/testdata/workflow1/function1/
+filePath: /root/minik8s/testdata/workflow1/BuyTrainTicket/
 triggerType:
   http: true
 params:
