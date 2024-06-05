@@ -143,6 +143,7 @@ func OnPodAdd(pod *api.Pod) {
 							ServicePort: strconv.Itoa(targetPort.Port),
 							IP:          pod.Status.PodIP,
 							Ports:       matchTargetPort(targetPort, pod.Spec.Containers),
+							NodePort:    targetPort.NodePort,
 						})
 				}
 				log.Info("update service: %v", svc)
@@ -198,6 +199,7 @@ func OnPodUpdate(pod *api.Pod, oldLabel map[string]string) {
 							ServicePort: strconv.Itoa(targetPort.Port),
 							IP:          pod.Status.PodIP,
 							Ports:       matchTargetPort(targetPort, pod.Spec.Containers),
+							NodePort:    targetPort.NodePort,
 						})
 				}
 				log.Info("update service: %v", svc)
@@ -345,6 +347,7 @@ func OnServiceUpdate(svc *api.Service, oldLabel map[string]string) {
 						ServicePort: strconv.Itoa(targetPort.Port),
 						IP:          pod.Status.PodIP,
 						Ports:       matchTargetPort(targetPort, pod.Spec.Containers),
+						NodePort:    targetPort.NodePort,
 					})
 				log.Info("endpoint: %v", svc.Status.EndPoints)
 			}

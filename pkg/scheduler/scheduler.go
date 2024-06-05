@@ -71,6 +71,9 @@ func (s *Scheduler) PodHandler(msg []byte) {
 		return
 	} else {
 		for {
+			if len(s.nodes) == 0 {
+				return
+			}
 			index := s.count % len(s.nodes)
 			s.count = s.count + 1
 			if s.nodes[index].Status.Condition.Status == api.NodeReady {

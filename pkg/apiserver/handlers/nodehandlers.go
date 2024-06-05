@@ -39,9 +39,8 @@ func AddNode(context *gin.Context) {
 		})
 		return
 	}
-
-	nodeByteArray, err := json.Marshal(newNode)
 	newNode.Status.Condition.Status = api.NodeUnknown
+	nodeByteArray, err := json.Marshal(newNode)
 
 	if err != nil {
 		log.Error("error marshal new node")
