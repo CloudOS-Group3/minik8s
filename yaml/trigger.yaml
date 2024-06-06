@@ -3,4 +3,4 @@ kind: Trigger
 spec:
   type: etcdTrigger
   functionNamespace: default
-  functionName: matrix-calculate
+  functionName: BuyTrainTicket
