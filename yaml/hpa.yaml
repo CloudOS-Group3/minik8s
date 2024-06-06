@@ -15,11 +15,13 @@ spec:
     spec:
       containers:
         - name: stress
-          image: docker.io/lty010722/stress:latest
+          image: 192.168.3.8:5050/stress
+          imagePullPolicy: registry
           ports:
             - containerPort: 12344
         - name: auto-count
-          image: docker.io/lty010722/auto-count:latest
+          image: 192.168.3.8:5050/auto-count
+          imagePullPolicy: registry
           ports:
             - containerPort: 12345
   adjustInterval: 10

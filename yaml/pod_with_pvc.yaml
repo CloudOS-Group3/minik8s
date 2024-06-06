@@ -5,8 +5,9 @@ metadata:
   namespace: default
 spec:
   containers:
-    - name: nginx
-      image: docker.io/lty010722/nfs-client:v1
+    - name: nfs-client
+      image: 192.168.3.8:5050/nfs-client
+      imagePullPolicy: registry
       ports:
         - containerPort: 80
       volumeMounts:
