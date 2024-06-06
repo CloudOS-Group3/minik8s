@@ -40,7 +40,7 @@ func AddTrigger(context *gin.Context) {
 		workflow.Trigger.Event = true
 		byteArr, _ := json.Marshal(workflow)
 		etcdClient.PutEtcdPair(wfURL, string(byteArr))
-		TriggerURL := config.EtcdTriggerWorkflowPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionNamespace
+		TriggerURL := config.EtcdTriggerWorkflowPath + trigger.Spec.FunctionNamespace + "/" + trigger.Spec.FunctionName
 		byteArr, _ = json.Marshal(trigger)
 		etcdClient.PutEtcdPair(TriggerURL, string(byteArr))
 		return

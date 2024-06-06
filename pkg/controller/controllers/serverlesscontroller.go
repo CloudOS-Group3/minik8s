@@ -217,10 +217,10 @@ func (this *ServerlessController) clearExpirePod() {
 	for {
 		<-time.After(CheckInterval)
 		log.Debug("checking expire pod")
-		for functionName, freePods := range this.functionFreePods {
-			for index := 0; index < len(freePods); index++ {
-				log.Info("freepod: %d, array length: %d", index, len(freePods))
-				freePod := freePods[index]
+		for functionName, _ := range this.functionFreePods {
+			for index := 0; index < len(this.functionFreePods[functionName]); index++ {
+				log.Info("freepod: %d, array length: %d", index, len(this.functionFreePods[functionName]))
+				freePod := this.functionFreePods[functionName][index]
 				if freePod.freeTime >= MaxFreeTime && freePod.pod != nil {
 					log.Debug("pod %s is expired", freePod.pod.Metadata.Name)
 					URL := config.GetUrlPrefix() + config.PodURL
@@ -232,7 +232,7 @@ func (this *ServerlessController) clearExpirePod() {
 						log.Error("delete pod err %v", err)
 						return
 					}
-					if index == len(freePods)-1 {
+					if index == len(this.functionFreePods[functionName])-1 {
 						log.Info("delete")
 						this.functionFreePods[functionName] = this.functionFreePods[functionName][:index]
 						break

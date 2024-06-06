@@ -88,7 +88,7 @@ func DeleteCmd() *cobra.Command {
 	deleteServiceCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteFunctionCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
 	deleteTriggerCmd.Flags().StringP("namespace", "n", "default", "specify the namespace of the resource")
-	deleteCmd.Flags().BoolP("workflow", "w", false, "Indicates if the trigger is a workflow")
+	deleteTriggerCmd.Flags().BoolP("workflow", "w", false, "Indicates if the trigger is a workflow")
 
 	deleteCmd.AddCommand(deletePodCmd)
 	deleteCmd.AddCommand(deleteDeploymentCmd)
