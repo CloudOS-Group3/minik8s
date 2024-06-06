@@ -203,7 +203,7 @@ func (this *HPAController) addHPAPods(hpa api.HPA, template api.PodTemplateSpec,
 			newPod.Spec.Containers[index].Name = newPod.Spec.Containers[index].Name + "-" + stringutil.GenerateRandomString(5)
 		}
 
-		newPod.Metadata.Labels["hpaUUID"] = hpa.Metadata.UUID
+		//newPod.Metadata.Labels["hpaUUID"] = hpa.Metadata.UUID
 
 		log.Debug("the pod to be add is %+v", newPod)
 		URL := config.GetUrlPrefix() + config.PodsURL

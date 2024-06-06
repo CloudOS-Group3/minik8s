@@ -18,7 +18,7 @@ func main() {
 	counter = 0
 	server := gin.Default()
 	server.GET("/", count)
-	err := server.Run("localhost:8080")
+	err := server.Run(":12345")
 	if err != nil {
 		log.Fatal("server start error", err)
 		return

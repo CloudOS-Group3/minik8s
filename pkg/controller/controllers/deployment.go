@@ -60,14 +60,14 @@ func (this *DeploymentController) update() {
 		this.updateDeploymentStatus(targetPods, deployment)
 	}
 
-	for _, pod := range allPods {
-		if pod.Metadata.Labels["deployment"] == "" {
-			continue
-		}
-		if _, ok := allPodsWithDeployment[pod.Metadata.UUID]; !ok {
-			this.deletePod([]api.Pod{pod}, 1)
-		}
-	}
+	//for _, pod := range allPods {
+	//	if pod.Metadata.Labels["deployment"] == "" {
+	//		continue
+	//	}
+	//	if _, ok := allPodsWithDeployment[pod.Metadata.UUID]; !ok {
+	//		this.deletePod([]api.Pod{pod}, 1)
+	//	}
+	//}
 
 }
 
@@ -126,7 +126,7 @@ func (this *DeploymentController) addPod(template api.PodTemplateSpec, deploymen
 	if err != nil {
 		log.Error("error unmarshalling pod template")
 	}
-	newPod.Metadata.Labels["deployment"] = deploymentMetadata.UUID
+	//newPod.Metadata.Labels["deployment"] = deploymentMetadata.UUID
 	if newPod.Metadata.NameSpace == "" {
 		newPod.Metadata.NameSpace = "default"
 	}

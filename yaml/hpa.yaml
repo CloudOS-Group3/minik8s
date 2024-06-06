@@ -14,14 +14,18 @@ spec:
         app: hpa
     spec:
       containers:
-        - name: nginx
-          image: docker.io/library/nginx:latest
+        - name: stress
+          image: docker.io/lty010722/stress:latest
           ports:
-            - containerPort: 80
-  adjustInterval: 15
+            - containerPort: 12344
+        - name: auto-count
+          image: docker.io/lty010722/auto-count:latest
+          ports:
+            - containerPort: 12345
+  adjustInterval: 10
   selector:
     matchLabels:
       app: hpa
   metrics:
-    cpuPercentage: 0.01
+    cpuPercentage: 0.1
     memoryPercentage: 0.1

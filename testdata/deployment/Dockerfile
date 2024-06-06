@@ -1,4 +1,4 @@
-FROM nginx:latest
+FROM alpine
 
 WORKDIR /build
 
@@ -6,6 +6,6 @@ COPY example /build
 
 RUN cd /build
 
-EXPOSE 8080
+EXPOSE 12345
 
 CMD ["./example"]
