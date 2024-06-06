@@ -3,7 +3,6 @@ package scheduler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/IBM/sarama"
 	"minik8s/pkg/api"
 	"minik8s/pkg/api/msg_type"
@@ -82,7 +81,7 @@ func (s *Scheduler) PodHandler(msg []byte) {
 			}
 		}
 	}
-	fmt.Printf("pod %s has assigned to node %s\n", pod.Metadata.Name, pod.Spec.NodeName)
+	log.Info("pod %s has assigned to node %s\n", pod.Metadata.Name, pod.Spec.NodeName)
 
 	URL := config.GetUrlPrefix() + config.PodURL
 	URL = strings.Replace(URL, config.NamespacePlaceholder, pod.Metadata.NameSpace, -1)
@@ -123,6 +122,7 @@ func (s *Scheduler) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	topics := []string{msg_type.PodTopic, msg_type.NodeTopic}
+	log.Info("scheduler started")
 	s.subscriber.Subscribe(wg, ctx, topics, s)
 	<-s.ready
 	<-s.done
