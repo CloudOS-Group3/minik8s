@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: new-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      name: new-pod
+      labels:
+        app: server
+    spec:
+      containers:
+      - name: auto-count
+        image: 192.168.3.8:5050/auto-count
+        imagePullPolicy: registry
+        ports:
+        - containerPort: 12345

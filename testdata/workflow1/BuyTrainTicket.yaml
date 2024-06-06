@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Function
+metadata:
+  name: BuyTrainTicket
+language: python
+filePath: /root/minik8s/testdata/workflow1/BuyTrainTicket/
+triggerType:
+  http: true
+params:
+  - name: x
+    type: int
+result:
+  - name: x
+    type: int
+  - name: status
+    type: string
+  - name: msg
+    type: string

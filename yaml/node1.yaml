@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Node
+metadata:
+  name: node1
+spec:
+  nodeIP: 192.168.3.12
+  podCIDR: 10.244.4.0/24

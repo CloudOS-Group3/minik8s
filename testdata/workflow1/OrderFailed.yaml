@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Function
+metadata:
+  name: OrderFailed
+language: python
+filePath: /root/minik8s/testdata/workflow1/OrderFailed/
+triggerType:
+  http: true
+params:
+  - name: x
+    type: int
+  - name: msg
+    type: string
+result:
+  - name: result
+    type: string
+    # etcdctl put /trigger/default/BuyTrainTicket {\"x\":1000} --endpoints=192.168.3.8:2379

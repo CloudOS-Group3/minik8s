@@ -1,0 +1,72 @@
+name: test all cases
+
+on:
+    push:
+        branches: ["master", "dev", "feature/*"]
+
+    pull_request:
+        branches: ["master", "dev", "feature/*"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
+
+            - name: Set up Go
+              uses: actions/setup-go@v2
+              with:
+                  go-version: 1.22.2
+
+            - name: Download etcd
+              run: |
+                wget https://github.com/etcd-io/etcd/releases/download/v3.5.13/etcd-v3.5.13-linux-amd64.tar.gz
+                tar -zxvf etcd-v3.5.13-linux-amd64.tar.gz
+                cd etcd-v3.5.13-linux-amd64
+                ./etcd &> /dev/null &
+
+            - name: Download nerdctl
+              run: |
+                mkdir -p nerdctl
+                cd nerdctl
+                wget https://github.com/containerd/nerdctl/releases/download/v1.0.0/nerdctl-1.0.0-linux-amd64.tar.gz
+                tar -xf nerdctl-1.0.0-linux-amd64.tar.gz
+                cp nerdctl /usr/local/bin/
+
+            - name: Download Kafka
+              run: |
+                sudo apt-get update
+                sudo apt-get install openjdk-8-jdk
+                wget https://archive.apache.org/dist/kafka/3.6.0/kafka_2.13-3.6.0.tgz
+                tar -zxvf kafka_2.13-3.6.0.tgz
+                cd kafka_2.13-3.6.0
+                KAFKA_CLUSTER_ID="$(bin/kafka-storage.sh random-uuid)"
+                bin/kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c config/kraft/server.properties
+                bin/kafka-server-start.sh config/kraft/server.properties &> /dev/null &
+
+            - name: Download etcdctl
+              run: |
+                wget https://github.com/etcd-io/etcd/releases/download/v3.4.14/etcd-v3.4.14-linux-amd64.tar.gz
+                tar -zxf etcd-v3.4.14-linux-amd64.tar.gz
+                mv etcd-v3.4.14-linux-amd64/etcdctl /usr/local/bin
+                sudo chmod +x /usr/local/bin/
+                etcdctl version
+
+            - name: Flannel Config
+              run: |
+                   export ETCDCTL_API=2
+                   etcdctl --endpoints http://127.0.0.1:2379 set /coreos.com/network/config '{"Network": "10.0.0.0/16", "SubnetLen": 24, "SubnetMin": "10.0.1.0","SubnetMax": "10.0.20.0", "Backend": {"Type": "vxlan"}}'
+                   nerdctl run -d --privileged -v /run/flannel:/run/flannel --net host --name flannel registry.cn-hangzhou.aliyuncs.com/acs/flannel:v0.15.1.22-20a397e6-aliyun \
+                   -etcd-prefix /coreos.com/network -iface eth0 -etcd-endpoints http://192.168.0.180:2379 -ip-masq
+                   nerdctl network ls
+
+            - name: Download Nginx
+              run: |
+                sudo apt install -y curl gnupg2 ca-certificates lsb-release
+                sudo apt install -y nginx
+                sudo systemctl start nginx
+
+            - name: Run tests
+              run: sudo go test ./...
