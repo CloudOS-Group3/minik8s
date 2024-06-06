@@ -3,7 +3,9 @@ kind: DNS
 name: new-dns
 host: example.com
 paths:
-  - path: /test
-    serviceNamespace: test
+  - path: /footprint
     serviceName: test-service1
-    servicePort: 8000
+    servicePort: 8888
+  - path: /counter
+    serviceName: deployment-service
+    servicePort: 12345

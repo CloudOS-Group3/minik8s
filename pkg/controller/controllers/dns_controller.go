@@ -158,7 +158,7 @@ func (s *DNSController) WriteDNS() {
 		for _, path := range host.Paths {
 			pathStr := fmt.Sprintf("\tlocation %s {\n", path.Path)
 			NginxStr += pathStr
-			proxyStr := fmt.Sprintf("\t\tproxy_pass %s:%s;\n", path.ServiceIP, path.ServicePort)
+			proxyStr := fmt.Sprintf("\t\tproxy_pass http://%s:%s/;\n", path.ServiceIP, path.ServicePort)
 			NginxStr += proxyStr
 			NginxStr += "\t}\n"
 		}
