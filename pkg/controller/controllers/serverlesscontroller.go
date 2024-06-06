@@ -221,7 +221,7 @@ func (this *ServerlessController) clearExpirePod() {
 			for index := 0; index < len(freePods); index++ {
 				log.Info("freepod: %d, array length: %d", index, len(freePods))
 				freePod := freePods[index]
-				if freePod.freeTime >= MaxFreeTime {
+				if freePod.freeTime >= MaxFreeTime && freePod.pod != nil {
 					log.Debug("pod %s is expired", freePod.pod.Metadata.Name)
 					URL := config.GetUrlPrefix() + config.PodURL
 					URL = strings.Replace(URL, config.NamespacePlaceholder, "default", -1)
