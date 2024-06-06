@@ -137,6 +137,38 @@ func applyFunctionHandler(content []byte) {
 		return
 	}
 
+	// Check if exsit
+	existFunction := &api.Function{}
+	URL := config.GetUrlPrefix() + config.FunctionURL
+	URL = strings.Replace(URL, config.NamespacePlaceholder, function.Metadata.NameSpace, -1)
+	URL = strings.Replace(URL, config.NamePlaceholder, function.Metadata.Name, -1)
+	_ = httputil.Get(URL, existFunction, "data")
+	if existFunction.Metadata.Name != "" {
+		byteArr, err := json.Marshal(*function)
+		if err != nil {
+			log.Error("Error json marshal function, %s", err.Error())
+			return
+		}
+		log.Warn("Function %s already exists", function.Metadata.Name)
+		URL = config.GetUrlPrefix() + config.FunctionURL
+		URL = strings.Replace(URL, config.NamespacePlaceholder, function.Metadata.NameSpace, -1)
+		URL = strings.Replace(URL, config.NamePlaceholder, function.Metadata.Name, -1)
+		// delete old function
+		err = httputil.Delete(URL)
+		if err != nil {
+			log.Error("Error http delete function, %s", err.Error())
+			return
+		}
+		// create new function
+		err = httputil.Post(URL, byteArr)
+		if err != nil {
+			log.Error("Error http put function, %s", err.Error())
+			return
+		}
+		log.Info("update function successed, %v", function)
+		return
+	}
+
 	//Generate
 	function.Metadata.UUID = uuid.NewString()
 	if function.Metadata.NameSpace == "" {
@@ -148,7 +180,7 @@ func applyFunctionHandler(content []byte) {
 		log.Error("Error json marshal function, %s", err.Error())
 		return
 	}
-	URL := config.GetUrlPrefix() + config.FunctionURL
+	URL = config.GetUrlPrefix() + config.FunctionURL
 	URL = strings.Replace(URL, config.NamespacePlaceholder, function.Metadata.NameSpace, -1)
 	URL = strings.Replace(URL, config.NamePlaceholder, function.Metadata.Name, -1)
 	err = httputil.Post(URL, byteArr)

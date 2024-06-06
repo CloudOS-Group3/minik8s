@@ -190,6 +190,7 @@ func (this *WorkflowController) execNextNode(job api.Job) {
 	}
 	workflowStatus.waitJob = trigger_uuid
 	workflowStatus.currNode = *succssor
+	workflowStatus.retRes = function.Result
 	this.jobList[trigger_uuid] = workflowStatus
 	jsonString, _ := json.Marshal(triggerMsg)
 	this.publisher.Publish(msg_type.TriggerTopic, string(jsonString))

@@ -6,4 +6,4 @@ def main(x, msg):
     response = requests.post('http://192.168.3.8:19293/canceltrain', json=request_data)
     msg = "Fail to order. Flight ticket has been canceled."
 
-    return x, msg
+    return x+100, msg
