@@ -7,7 +7,7 @@ paths:
     serviceNamespace: default
     serviceName: test-service1
     servicePort: 8888
-  - path: /nginx
+  - path: /counter
     serviceNamespace: default
-    serviceName: nginx-service
-    servicePort: 80
+    serviceName: hpa-service
+    servicePort: 12345
