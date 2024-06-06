@@ -4,8 +4,10 @@ name: new-dns
 host: example.com
 paths:
   - path: /footprint
+    serviceNamespace: default
     serviceName: test-service1
     servicePort: 8888
-  - path: /counter
-    serviceName: deployment-service
-    servicePort: 12345
+  - path: /nginx
+    serviceNamespace: default
+    serviceName: nginx-service
+    servicePort: 80

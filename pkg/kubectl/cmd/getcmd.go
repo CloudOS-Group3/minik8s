@@ -475,10 +475,14 @@ func getDNSCmdHandler(cmd *cobra.Command, args []string) {
 			matchDNS = append(matchDNS, *dns)
 		}
 	}
-	header := []string{"name", "host"}
+	header := []string{"name", "host", "path"}
 	data := [][]string{}
 	for _, matched := range matchDNS {
-		data = append(data, []string{matched.Host, matched.Name})
+		str := ""
+		for _, path := range matched.Paths {
+			str += path.Path + ","
+		}
+		data = append(data, []string{matched.Name, matched.Host, str})
 	}
 	prettyprint.PrintTable(header, data)
 }
