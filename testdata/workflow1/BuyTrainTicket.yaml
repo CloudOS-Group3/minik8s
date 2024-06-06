@@ -12,3 +12,7 @@ params:
 result:
   - name: x
     type: int
+  - name: status
+    type: string
+  - name: msg
+    type: string

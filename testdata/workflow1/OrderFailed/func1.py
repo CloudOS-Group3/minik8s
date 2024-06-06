@@ -1,5 +1,3 @@
-# add args
-def main(x):
-    result = "Order Failed"
-
-    return x, result
+def main(x, msg):
+    ret = "Order Failed: "+ msg + ". Your change is " + str(x) + "."
+    return ret

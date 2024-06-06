@@ -9,8 +9,8 @@ triggerType:
 params:
   - name: x
     type: int
+  - name: msg
+    type: string
 result:
-  - name: x
-    type: int
   - name: result
     type: string

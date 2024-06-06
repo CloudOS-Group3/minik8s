@@ -9,6 +9,12 @@ triggerType:
 params:
   - name: x
     type: int
+  - name: msg
+    type: string
 result:
   - name: x
     type: int
+  - name: status
+    type: string
+  - name: msg
+    type: string

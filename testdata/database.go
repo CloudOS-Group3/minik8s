@@ -44,6 +44,9 @@ func init() {
 	TrainTickets = make([]string, 10)
 	FlightTickets = make([]string, 10)
 	HotelOrder = make([]string, 10)
+	TrainReserved = make([]bool, 10)
+	FlightReserved = make([]bool, 10)
+	HotelReserved = make([]bool, 10)
 	for i := 0; i < 10; i++ {
 		TrainTickets[i] = uuid.NewString()
 		FlightTickets[i] = uuid.NewString()
@@ -85,6 +88,7 @@ func BuyTrainTicket(context *gin.Context) {
 					UUID:   TrainTickets[index],
 				}
 				context.JSON(200, reply)
+				return
 			}
 		}
 	}
@@ -121,6 +125,7 @@ func ReserveFlight(context *gin.Context) {
 					UUID:   FlightTickets[index],
 				}
 				context.JSON(200, reply)
+				return
 			}
 		}
 	}
@@ -157,6 +162,7 @@ func ReserveHotel(context *gin.Context) {
 					UUID:   HotelOrder[index],
 				}
 				context.JSON(200, reply)
+				return
 			}
 		}
 	}

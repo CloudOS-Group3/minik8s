@@ -1,5 +1,9 @@
-# add args
-def main(x):
-    x = x + 800
+import requests
+def main(x, msg):
+    request_data = {
+        'uuid': msg
+    }
+    response = requests.post('http://192.168.3.8:19293/cancelflight', json=request_data)
+    msg = "Fail to order. Train ticket has been canceled."
 
-    return x
+    return x, msg

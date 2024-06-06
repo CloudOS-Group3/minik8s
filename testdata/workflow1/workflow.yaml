@@ -12,10 +12,10 @@ graph:
   rule:
     case:
       - expression:
-          - variable: x
-            opt: ">"
-            value: "0"
-            type: int
+          - variable: status
+            opt: "="
+            value: "Succeeded"
+            type: string
         successor:
           function:
             name: ReserveFlight
@@ -23,10 +23,10 @@ graph:
           rule:
             case:
               - expression:
-                  - variable: x
-                    opt: ">"
-                    value: "0"
-                    type: int
+                  - variable: status
+                    opt: "="
+                    value: "Succeeded"
+                    type: string
                 successor:
                   function:
                     name: ReserveHotel
@@ -34,10 +34,10 @@ graph:
                   rule:
                     case:
                       - expression:
-                          - variable: x
-                            opt: "<"
-                            value: "0"
-                            type: int
+                          - variable: status
+                            opt: "="
+                            value: "Failed"
+                            type: string
                         successor:
                           function:
                             name: CancelFlight
