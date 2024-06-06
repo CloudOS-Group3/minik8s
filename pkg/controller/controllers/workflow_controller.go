@@ -136,10 +136,21 @@ func (this *WorkflowController) execNextNode(job api.Job) {
 
 	// deal with ret result
 	var result []interface{}
-	if err := json.Unmarshal([]byte(job.Result), &result); err != nil {
-		log.Error("Error unmarshaling Result: %s", err.Error())
-		this.errorEnd(job.JobID, "Error unmarshaling Result in function "+workflowStatus.currNode.Function.Name)
-		return
+	trimmedResult := strings.TrimSpace(job.Result)
+	if strings.HasPrefix(trimmedResult, "[") {
+		// Handle as JSON array
+		if err := json.Unmarshal([]byte(trimmedResult), &result); err != nil {
+			log.Error("Error unmarshaling Result: %s", err.Error())
+			return
+		}
+	} else {
+		// Handle as single string
+		var singleResult string
+		if err := json.Unmarshal([]byte(trimmedResult), &singleResult); err != nil {
+			log.Error("Error unmarshaling single Result: %s", err.Error())
+			return
+		}
+		result = append(result, singleResult)
 	}
 	result_str := function_util.ConvertToStringList(result)
 	resWithName, _ := function_util.CheckParams(workflowStatus.retRes, result_str)
@@ -198,6 +209,10 @@ func (this *WorkflowController) execNextNode(job api.Job) {
 }
 
 func (this *WorkflowController) errorEnd(jobUUID string, err string) {
+	if this.jobList[jobUUID] == nil {
+		log.Error("Can't find workflow uuid by job uuid: %s", jobUUID)
+		return
+	}
 	updateResult([]string{"Error", err}, this.jobList[jobUUID])
 	delete(this.jobList, jobUUID)
 }
