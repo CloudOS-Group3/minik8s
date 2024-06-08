@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: GPU
+metadata:
+  name: hello-gpu
+args:
+  job-name: hello-gpu
+  partition: dgx2
+  N: 1
+  ntasks-per-node: 1
+  cpus-per-task: 2
+  gres: gpu:2
+sourcePath: /root/minik8s/testdata/Gpu/hellogpu/
