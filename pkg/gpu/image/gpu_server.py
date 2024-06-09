@@ -17,7 +17,7 @@ cpus_per_task = os.getenv('CPUS_PER_TASK')
 gres = os.getenv('GRES')
 
 if not partition:
-    partition = 'gpu'
+    partition = 'dgx2'
 if not N:
     N = 1
 if not ntasks_per_node:
@@ -68,7 +68,7 @@ ulimit -s unlimited
 
 module load gcc/11.2.0 cuda/11.8.0
 
-./{cuda_file_name}
+make run
 ''')
 
 # ================== Connect to the server ==================
@@ -104,7 +104,7 @@ try:
 
     # compile the cuda file
     # nvcc file.cu -o file -lcublas
-    _stdin, _stdout, stderr = ssh.exec_command(f'module load gcc/11.2.0 cuda/11.8.0; nvcc {remote_dir}/{cuda_file_name}.cu -o {remote_dir}/{cuda_file_name} -lcublas')
+    _stdin, _stdout, stderr = ssh.exec_command(f'module load gcc/11.2.0 cuda/11.8.0; cd {remote_dir}; make build')
     output = stderr.read().decode()
     if output != '':
         raise Exception(output)

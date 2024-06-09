@@ -13,6 +13,7 @@ import (
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -229,6 +230,11 @@ func GpuResultHandler(context *gin.Context) {
 
 	// get pod, pod name is <job_name>-<uuid>
 	pod, success := etcdClient.GetPod(gpu.GPUNamespace, newResult.UUID)
+	if pod.Spec.NodeName == "node1" {
+		_ = exec.Command("scp", "-r", "root@192.168.3.12:"+job.SourcePath, job.SourcePath).Run()
+	} else if pod.Spec.NodeName == "node2" {
+		_ = exec.Command("scp", "-r", "root@192.168.3.11:"+job.SourcePath, job.SourcePath).Run()
+	}
 	if success {
 		etcdClient.DeletePod(gpu.GPUNamespace, pod.Metadata.Name)
 		message := msg.PodMsg{
