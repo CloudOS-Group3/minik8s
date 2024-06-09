@@ -6,7 +6,7 @@ args:
   job-name: hello-gpu
   partition: dgx2
   N: 1
-  ntasks-per-node: 1
+  ntasks-per-node: 2
   cpus-per-task: 2
-  gres: gpu:2
+  gres: gpu:1
 sourcePath: /root/minik8s/testdata/Gpu/hellogpu/

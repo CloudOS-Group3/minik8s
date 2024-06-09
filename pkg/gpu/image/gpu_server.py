@@ -9,12 +9,12 @@ result_server_url = 'http://192.168.3.8:6443/gpu_result'
 
 
 # ================ Configuration ================
-job_name = os.getenv('job-name')
-partition = os.getenv('partition')
+job_name = os.getenv('JOB_NAME')
+partition = os.getenv('PARTITION')
 N = os.getenv('N')
-ntasks_per_node = os.getenv('ntasks-per-node')
-cpus_per_task = os.getenv('cpus-per-task')
-gres = os.getenv('gres')
+ntasks_per_node = os.getenv('NTASKS_PER_NODE')
+cpus_per_task = os.getenv('CPUS_PER_TASK')
+gres = os.getenv('GRES')
 
 if not partition:
     partition = 'gpu'

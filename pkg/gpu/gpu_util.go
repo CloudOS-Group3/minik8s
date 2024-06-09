@@ -34,7 +34,7 @@ func CreateGPUPod(gpu_config *api.GPUJob) *api.Pod {
 					VolumeMounts: []api.VolumeMount{
 						{
 							Name:      "shared-data",
-							MountPath: "/src",
+							MountPath: "/app/src",
 						},
 					},
 				},
@@ -58,8 +58,8 @@ func CreateGpuImage(gpu_config *api.GPUJob) error {
 		"--build-arg", "job_name="+gpu_config.Metadata.Name+"-"+gpu_config.Metadata.UUID,
 		"--build-arg", "partition="+gpu_config.Args["partition"],
 		"--build-arg", "N="+gpu_config.Args["N"],
-		"--build-arg", "ntasks_per_node="+gpu_config.Args["ntasks_per_node"],
-		"--build-arg", "cpus_per_task="+gpu_config.Args["cpus_per_task"],
+		"--build-arg", "ntasks_per_node="+gpu_config.Args["ntasks-per-node"],
+		"--build-arg", "cpus_per_task="+gpu_config.Args["cpus-per-task"],
 		"--build-arg", "gres="+gpu_config.Args["gres"],
 		"-t",
 		function_util.GetImageName(gpu_config.Metadata.Name, GPUNamespace), "/root/minik8s/pkg/gpu/image/")

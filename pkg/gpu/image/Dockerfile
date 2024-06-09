@@ -24,13 +24,12 @@ ENV NTASKS_PER_NODE=${ntasks_per_node}
 ENV CPUS_PER_TASK=${cpus_per_task}
 ENV GRES=${gres}
 
-WORKDIR /src
+WORKDIR /app
 
-COPY gpu_server.py /src
+COPY gpu_server.py /app
 
-RUN cd /src
+RUN cd /app
 RUN pip install requests
-RUN pip install time
 RUN pip install paramiko
 
 CMD ["python", "gpu_server.py"]
