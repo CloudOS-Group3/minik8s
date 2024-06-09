@@ -134,6 +134,7 @@ try:
 
     # download the result file
     sftp.get(f'{remote_dir}/{job_id}.out', f'{local_dir}/{job_name}.out')
+    time.sleep(5)
     sftp.get(f'{remote_dir}/{job_id}.err', f'{local_dir}/{job_name}.err')
     print(f"Downloaded result file {job_id}.out.")
     send_back_result('success')
