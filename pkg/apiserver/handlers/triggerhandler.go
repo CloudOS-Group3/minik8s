@@ -10,7 +10,6 @@ import (
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -269,52 +268,4 @@ func GetTriggerResults(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{
 		"data": jsonString,
 	})
-}
-
-const resultPathPrefix = "/root/minik8s/testdata/Gpu/result/"
-
-func HttpTriggerGpuJob(context *gin.Context) {
-	// Get Gpu Func
-	log.Info("Http trigger gpu job")
-	name := context.Param(config.NameParam)
-	URL := config.GPUFuncPath + name
-	str := etcdClient.GetEtcdPair(URL)
-	if str == "" {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"status": "unknown gpu job",
-		})
-		return
-	}
-	var gpuSpec api.GpuFunc
-	_ = json.Unmarshal([]byte(str), &gpuSpec)
-	log.Info("gpu job: %v", gpuSpec)
-
-	// make dir
-	uuid := uuid.NewString()
-	resultPath := resultPathPrefix + name + "-" + uuid
-	err := os.MkdirAll(resultPath, 0755)
-	if err != nil {
-		log.Error("Error create result dir: %s", err.Error())
-		context.JSON(http.StatusBadRequest, gin.H{
-			"status": "wrong",
-		})
-		return
-	}
-	gpuJob := &api.GpuJob{
-		GpuSpec:   gpuSpec,
-		Status:    "Created",
-		StartTime: time.Now().Format("2006-01-02 15:04:05"),
-		Result:    resultPath,
-		UUID:      uuid,
-	}
-	// store gpu job
-	byteArr, _ := json.Marshal(gpuJob)
-	etcdClient.PutEtcdPair(config.GPUjobPath+uuid, string(byteArr))
-	context.JSON(http.StatusOK, gin.H{
-		"status": "success",
-	})
-
-	// trigger gpu job
-	publisher.Publish(msg_type.GpuJobTopic, string(byteArr))
-
 }
