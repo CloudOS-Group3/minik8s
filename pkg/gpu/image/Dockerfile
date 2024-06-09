@@ -8,22 +8,30 @@ ENV PIP_DEFAULT_TIMEOUT=100 \
     # cache is useless in docker image, so disable to reduce image size
     PIP_NO_CACHE_DIR=1
 
-WORKDIR /src
-ARG SOURCE_DIR
-# print the value of SOURCE_DIR
-RUN echo $SOURCE_DIR
-COPY ${SOURCE_DIR} /src/
+# Declare build arguments
+ARG job_name
+ARG partition
+ARG N
+ARG ntasks_per_node
+ARG cpus_per_task
+ARG gres
 
-# Find the .py file and rename it to main.py
-RUN cd /src && \
-    py_file=$(ls *.py) && \
-    mv "$py_file" my_function.py
+# Set environment variables from build arguments
+ENV JOB_NAME=${job_name}
+ENV PARTITION=${partition}
+ENV N=${N}
+ENV NTASKS_PER_NODE=${ntasks_per_node}
+ENV CPUS_PER_TASK=${cpus_per_task}
+ENV GRES=${gres}
+
+WORKDIR /src
 
 COPY gpu_server.py /src
 
 RUN cd /src
-RUN pip install flask
 RUN pip install requests
+RUN pip install time
+RUN pip install paramiko
 
 CMD ["python", "gpu_server.py"]
 

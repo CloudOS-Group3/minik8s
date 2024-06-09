@@ -70,7 +70,11 @@ const (
 	TriggerResultURL   = "/api/v1/triggers/result/:uuid"
 	TriggerResultsURL  = "/api/v1/triggers/result"
 
-	JobResultURL = "/result"
+	JobResultURL    = "/result"
+	GpuJobResultURL = "/gpu_result"
+
+	GPUJobsURL = "/api/v1/gpujobs"
+	GPUJobURL  = "/api/v1/gpujob/:name"
 )
 
 // const used to send and parse url

@@ -14,4 +14,10 @@ type GPUJob struct {
 
 	// Status: Created, Running, Ended
 	Status string `json:"status,omitempty" yaml:"status,omitempty"`
+
+	// StartTime: the start time of the job
+	StartTime string `json:"startTime,omitempty" yaml:"startTime,omitempty"`
+
+	// EndTime: the end time of the job
+	EndTime string `json:"endTime,omitempty" yaml:"endTime,omitempty"`
 }

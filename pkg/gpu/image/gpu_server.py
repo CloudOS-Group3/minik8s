@@ -5,18 +5,7 @@ import paramiko
 import os
 import requests
 
-def send_back_result(status):
-    response_data = {
-        'status': status,
-        'job_name': job_name,
-    }
-
-    try:
-        response = requests.post('http://192.168.3.8:6443/gpu_result', json=response_data)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-    except requests.exceptions.RequestException as e:
-        print(f"Error sending data to http://192.168.3.8:6443/gpu_result: {e}")
-        response_data['error'] = str(e)
+result_server_url = 'http://192.168.3.8:6443/gpu_result'
 
 
 # ================ Configuration ================
@@ -38,6 +27,29 @@ if not cpus_per_task:
 if not gres:
     gres = 'gpu:1'
 
+def send_back_result(status):
+    response_data = {
+        'uuid': job_name,
+        'result': status,
+        'error': '',
+    }
+
+    try:
+        response = requests.post(result_server_url, json=response_data)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending data to {result_server_url}: {e}")
+        response_data['error'] = str(e)
+
+local_dir = './src'
+remote_dir = f'/lustre/home/acct-stu/stu1047/{job_name}'
+
+# get .cu file name
+cu_files = [f for f in os.listdir(local_dir) if f.endswith('.cu')]
+if len(cu_files) == 0:
+    raise Exception("No .cu file found.")
+
+cuda_file_name = cu_files[0].rstrip('.cu')
 # save the job script to a file
 job_script_path = f'./{job_name}.slurm'
 with open(job_script_path, 'w') as f:
@@ -48,15 +60,15 @@ with open(job_script_path, 'w') as f:
 #SBATCH --ntasks-per-node={ntasks_per_node}
 #SBATCH --cpus-per-task={cpus_per_task}
 #SBATCH --gres={gres}
-#SBATCH --output=result/%j.out
-#SBATCH --error=result/%j.err
+#SBATCH --output=%j.out
+#SBATCH --error=%j.err
 
 ulimit -l unlimited
 ulimit -s unlimited
 
-module load gcc
+module load gcc/11.2.0 cuda/11.8.0
 
-./{job_name}
+./{cuda_file_name}
 ''')
 
 # ================== Connect to the server ==================
@@ -64,8 +76,6 @@ hostname = 'pilogin.hpc.sjtu.edu.cn'
 port = 22
 username = 'stu1047'
 password = 'OVnUMAbopDWK'
-local_dir = './src'
-remote_dir = f'/lustre/home/acct-stu/stu1047/{job_name}'
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -92,8 +102,16 @@ try:
     sftp.put(job_script_path, f'{remote_dir}/{job_name}.slurm')
     sftp.close()
 
+    # compile the cuda file
+    # nvcc file.cu -o file -lcublas
+    _stdin, _stdout, stderr = ssh.exec_command(f'module load gcc/11.2.0 cuda/11.8.0; nvcc {remote_dir}/{cuda_file_name}.cu -o {remote_dir}/{cuda_file_name} -lcublas')
+    output = stderr.read().decode()
+    if output != '':
+        raise Exception(output)
+    print(f"Compiled cuda file {cuda_file_name}.")
+
     # upload the job script to the server
-    stdin, stdout, stderr = ssh.exec_command(f'sbatch {remote_dir}/{job_name}.slurm')
+    stdin, stdout, stderr = ssh.exec_command(f'cd {remote_dir}; sbatch {job_name}.slurm')
     output = stdout.read().decode()
     if output == '':
         raise Exception(stderr.read().decode())
@@ -103,7 +121,7 @@ try:
     # ================== Wait for the result ==================
     while True:
         try:
-            sftp.stat(f'/lustre/home/acct-stu/stu1047/result/{job_id}.out')
+            sftp.stat(f'{remote_dir}/{job_id}.out')
             print(f"Result file {job_id}.out is available.")
             break
         except FileNotFoundError:
@@ -115,7 +133,7 @@ try:
             sftp = ssh.open_sftp()
 
     # download the result file
-    sftp.get(f'/lustre/home/acct-stu/stu1047/result/{job_id}.out', f'./{job_name}.out')
+    sftp.get(f'{remote_dir}/{job_id}.out', f'./{job_name}.out')
     print(f"Downloaded result file {job_id}.out.")
     send_back_result('success')
 
