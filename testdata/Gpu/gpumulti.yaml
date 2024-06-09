@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: GPU
+metadata:
+  name: matrix-multi
+args:
+  job-name: matrix-multi
+  partition: dgx2
+  N: 1
+  ntasks-per-node: 1
+  cpus-per-task: 6  #Please do not ask for more than 6 cpu cores for 1 gpu card.
+  gres: gpu:1
+sourcePath: /root/minik8s/testdata/Gpu/matrix_multiply/
