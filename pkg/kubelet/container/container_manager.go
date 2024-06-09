@@ -228,7 +228,7 @@ func CreateContainer(config api.Container, namespace string, pause_pid string, h
 		return nil
 	}
 
-	if len(volumes) > 0 {
+	if len(volumes) > 0 && volumes[0].PersistentVolumeClaim.ClaimName != "" {
 
 		URL := apiconfig.GetUrlPrefix() + apiconfig.PersistentVolumeClaimURL
 		URL = strings.Replace(URL, apiconfig.NamespacePlaceholder, "default", -1)

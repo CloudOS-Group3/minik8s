@@ -91,10 +91,36 @@ func applyCmdHandler(cmd *cobra.Command, args []string) {
 		applyWorkflowHandler(content)
 	case "Node":
 		applyNodeHandler(content)
+	case "GPU":
+		applyGPUHandler(content)
 	default:
 		log.Warn("Unknown resource kind")
 	}
 
+}
+
+func applyGPUHandler(content []byte) {
+	log.Info("Creating or updating GPU")
+	gpu := &api.GPUJob{}
+	err := yaml.Unmarshal(content, gpu)
+	if err != nil {
+		log.Error("Error yaml unmarshal GPU")
+		return
+	}
+	byteArr, err := json.Marshal(*gpu)
+	if err != nil {
+		log.Error("Error json marshal GPU")
+		return
+	}
+
+	URL := config.GetUrlPrefix() + config.GPUJobURL
+	URL = strings.Replace(URL, config.NamePlaceholder, gpu.Metadata.Name, -1)
+	err = httputil.Post(URL, byteArr)
+	if err != nil {
+		log.Error("Error http post: %s", err.Error())
+		return
+	}
+	log.Info("apply GPU successed")
 }
 
 func applyWorkflowHandler(content []byte) {
