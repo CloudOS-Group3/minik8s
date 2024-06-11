@@ -8,11 +8,14 @@ import (
 	"minik8s/pkg/api"
 	msg "minik8s/pkg/api/msg_type"
 	"minik8s/pkg/config"
+	"minik8s/pkg/gpu"
 	"minik8s/util/httputil"
 	"minik8s/util/log"
 	"minik8s/util/stringutil"
 	"net/http"
+	"os/exec"
 	"strings"
+	"time"
 )
 
 func GetJobs(context *gin.Context) {
@@ -196,4 +199,50 @@ func JobResultHandler(context *gin.Context) {
 	}
 	msg_json, _ := json.Marshal(message)
 	publisher.Publish(msg.JobTopic, string(msg_json))
+}
+
+func GpuResultHandler(context *gin.Context) {
+	log.Info("received gpu result request")
+	var newResult api.JobResult
+	bytes, _ := ioutil.ReadAll(context.Request.Body)
+	_ = json.Unmarshal(bytes, &newResult)
+	log.Info("job result info: %+v", newResult)
+
+	// Here UUID is <job_name>-<uuid>
+	URL := config.GPUjobPath + newResult.UUID
+	jobJson := etcdClient.GetEtcdPair(URL)
+	var job api.GPUJob
+	_ = json.Unmarshal([]byte(jobJson), &job)
+	log.Info("job info: %+v", job)
+
+	job.Status = api.JOB_ENDED
+	if newResult.Error == "" {
+		job.Result = newResult.Result
+		log.Info("job result info: %+v", job.Result)
+	} else {
+		job.Result = job.SourcePath
+	}
+	job.EndTime = time.Now().Format("2006-01-02 15:04:05")
+
+	jobByteArr, _ := json.Marshal(job)
+	log.Info("job result: %v", job)
+	etcdClient.PutEtcdPair(URL, string(jobByteArr))
+
+	// get pod, pod name is <job_name>-<uuid>
+	pod, success := etcdClient.GetPod(gpu.GPUNamespace, newResult.UUID)
+	if pod.Spec.NodeName == "node1" {
+		_ = exec.Command("scp", "-r", "root@192.168.3.12:"+job.SourcePath, job.SourcePath).Run()
+	} else if pod.Spec.NodeName == "node2" {
+		_ = exec.Command("scp", "-r", "root@192.168.3.11:"+job.SourcePath, job.SourcePath).Run()
+	}
+	if success {
+		etcdClient.DeletePod(gpu.GPUNamespace, pod.Metadata.Name)
+		message := msg.PodMsg{
+			Opt:    msg.Delete,
+			OldPod: pod,
+		}
+		msg_json, _ := json.Marshal(message)
+		publisher.Publish(msg.PodTopic, string(msg_json))
+	}
+
 }

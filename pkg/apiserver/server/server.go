@@ -112,5 +112,10 @@ func (server *apiServer) bind() {
 	server.router.DELETE(config.JobURL, handlers.DeleteJob)
 	server.router.PUT(config.JobURL, handlers.UpdateJob)
 	server.router.POST(config.JobResultURL, handlers.JobResultHandler)
+	server.router.POST(config.GpuJobResultURL, handlers.GpuResultHandler)
+
+	server.router.POST(config.GPUJobURL, handlers.AddGpuFunc)
+	server.router.GET(config.GPUJobsURL, handlers.GetAllGpuJobs)
+	server.router.GET(config.GPUJobURL, handlers.GetGpuJobsByName)
 
 }

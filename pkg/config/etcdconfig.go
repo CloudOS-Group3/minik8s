@@ -61,4 +61,7 @@ const (
 
 	// usage: /registry/pvc/<name>
 	ETcdPVCPath = "/registry/pvc/"
+
+	// usage: /registry/gpujob/<name>
+	GPUjobPath = "/registry/gpujob/"
 )

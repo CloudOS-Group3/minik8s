@@ -102,6 +102,12 @@ func GetCmd() *cobra.Command {
 		Run:   getDNSCmdHandler,
 	}
 
+	getGPUCmd := &cobra.Command{
+		Use:   "gpu",
+		Short: "get gpu",
+		Run:   getGPUCmdHandler,
+	}
+
 	getPodCmd.Aliases = []string{"po", "pods"}
 	getNodeCmd.Aliases = []string{"no", "nodes"}
 	getServiceCmd.Aliases = []string{"svc", "service"}
@@ -127,8 +133,40 @@ func GetCmd() *cobra.Command {
 	getCmd.AddCommand(getResultCmd)
 	getCmd.AddCommand(getWorkflowCmd)
 	getCmd.AddCommand(getDNSCmd)
+	getCmd.AddCommand(getGPUCmd)
 
 	return getCmd
+}
+
+func getGPUCmdHandler(cmd *cobra.Command, args []string) {
+	matchGPUJobs := []api.GPUJob{}
+
+	if len(args) == 0 {
+		log.Info("getting all GPU jobs")
+		URL := config.GetUrlPrefix() + config.GPUJobsURL
+		err := httputil.Get(URL, &matchGPUJobs, "data")
+		if err != nil {
+			log.Error("error get all GPU jobs: %s", err.Error())
+			return
+		}
+	} else {
+		URL := config.GetUrlPrefix() + config.GPUJobURL
+		URL = strings.Replace(URL, config.NamePlaceholder, args[0], -1)
+		err := httputil.Get(URL, &matchGPUJobs, "data")
+		if err != nil {
+			log.Error("error get GPU job: %s", err.Error())
+			return
+		}
+	}
+
+	header := []string{"name", "source path", "result path", "status", "start time", "end time"}
+	data := [][]string{}
+
+	for _, matchGPUJob := range matchGPUJobs {
+		data = append(data, []string{matchGPUJob.Metadata.Name, matchGPUJob.SourcePath, matchGPUJob.Result, matchGPUJob.Status, matchGPUJob.StartTime, matchGPUJob.EndTime})
+	}
+	prettyprint.PrintTable(header, data)
+
 }
 
 func getWorkflowCmdHandler(cmd *cobra.Command, args []string) {
